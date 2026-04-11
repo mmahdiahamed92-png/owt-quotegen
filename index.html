@@ -202,14 +202,21 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .flights-table .fl-route b{color:#1a1a1a;font-size:10pt}
 .page .flights-table .fl-route .fl-name{display:block;font-size:8pt;color:#999;font-style:italic;margin-top:2px}
 
-/* Hotels — simple stable cards, no absolute positioning */
+/* Hotels — stable two-column table layout */
 .page .hotelgrid{display:block}
-.page .hotel{border:1px solid #eee8d5;border-radius:12px;margin-bottom:12px;page-break-inside:avoid;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.04)}
-.page .hotel img{width:100%;height:auto;max-height:48mm;object-fit:cover;display:block;border-radius:12px 12px 0 0}
-.page .hotel .h-info{padding:12px 14px}
-.page .hotel .h-info b{font-family:var(--fh);font-size:12pt;color:#1a1a1a;font-weight:600;display:block;margin-bottom:2px}
-.page .hotel .h-info .stars{color:#D4AF6A;font-size:8pt;letter-spacing:2px;margin-bottom:4px}
-.page .hotel .h-info small{display:block;color:#888;font-size:8.5pt;line-height:1.6}
+.page .hotel{border:1px solid #eee8d5;border-radius:12px;margin-bottom:14px;page-break-inside:avoid;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.04);overflow:visible}
+.page .hotel table.h-layout{width:100%;border-collapse:collapse}
+.page .hotel .h-img-cell{width:40%;vertical-align:top;padding:0}
+.page .hotel .h-img-cell img{width:100%;height:auto;max-height:50mm;object-fit:cover;display:block;border-radius:12px 0 0 12px}
+.page .hotel .h-detail-cell{vertical-align:top;padding:14px 16px}
+.page .hotel .h-name{font-family:var(--fh);font-size:13pt;font-weight:600;color:#1a1a1a;letter-spacing:-.015em;margin:0 0 4px;line-height:1.2}
+.page .hotel .h-stars{color:#D4AF6A;font-size:8pt;letter-spacing:2px;margin-bottom:4px}
+.page .hotel .h-loc{font-size:8pt;color:#999;margin-bottom:6px}
+.page .hotel .h-meta{display:block;margin-bottom:8px}
+.page .hotel .h-pill{display:inline-block;font-size:6.5pt;color:#8B6B3A;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);padding:3px 9px;border-radius:100px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-right:6px}
+.page .hotel .h-highlights{margin:0;padding:0;list-style:none;font-size:8pt;color:#555;line-height:1.65}
+.page .hotel .h-highlights li{padding:2px 0 2px 14px;position:relative}
+.page .hotel .h-highlights li:before{content:'';position:absolute;left:0;top:7px;width:4px;height:4px;border-radius:50%;background:#D4AF6A}
 
 .page table.price{width:100%;border-collapse:separate;border-spacing:0;font-size:10pt;border:1px solid #eee;border-radius:14px;overflow:hidden}
 .page table.price th{background:#1a1a1a;color:#fff;padding:13px 16px;text-align:left;font-weight:500;letter-spacing:.04em;font-size:9.5pt;text-transform:uppercase}
@@ -318,7 +325,8 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
   .page .title p{font-size:9pt}
   .page .hdr{flex-direction:column;gap:10px}
   .page .hdr .qi{text-align:left}
-  .page .hotel img{max-height:35mm}
+  .page .hotel .h-img-cell{display:none}
+  .page .hotel .h-detail-cell{padding:10px 12px}
   .page .twocol{grid-template-columns:1fr;gap:8px}
   .page .day .day-inner{flex-direction:column}
   .page .day.even .day-inner{flex-direction:column}
@@ -1802,13 +1810,30 @@ function _render(){
   let p2=current.days.length?`<div class="page"><div class="sect"><h2>Your Journey, Day by Day</h2>${dayHTML}</div>`:'';
 
   // hotels
-  const hotelHTML=current.hotels.map(h=>`<div class="hotel">
-    ${h.img?`<img src="${IMG.src(h.img)}">`:''}
-    <div class="h-info">
-      <b>${esc(h.name)}</b>
-      ${h.stars?`<div class="stars">${stars(h.stars)}</div>`:''}
-      <small>📍 ${esc(h.city)} · <b style="color:#1a1a1a;font-weight:700">${esc(h.nights)} Night${h.nights==='1'?'':'s'}</b>${h.board?' · '+esc(h.board):''}</small>
-    </div></div>`).join('');
+  const hotelHTML=current.hotels.map(h=>{
+    const n=parseInt(h.nights)||0;
+    const s=parseInt(h.stars)||0;
+    return `<div class="hotel"><table class="h-layout"><tr>
+      ${h.img?`<td class="h-img-cell"><img src="${IMG.src(h.img)}"></td>`:''}
+      <td class="h-detail-cell"${h.img?'':' colspan="2"'}>
+        <div class="h-name">${esc(h.name)}</div>
+        ${s?`<div class="h-stars">${stars(s)}</div>`:''}
+        <div class="h-loc">📍 ${esc(h.city||'')}</div>
+        <div class="h-meta">
+          ${n?`<span class="h-pill">${n} Night${n>1?'s':''}</span>`:''}
+          ${h.board?`<span class="h-pill">${esc(h.board)}</span>`:''}
+          ${s>=5?`<span class="h-pill">Luxury</span>`:''}
+        </div>
+        <ul class="h-highlights">
+          ${h.city?`<li>${esc(h.city)} — prime location</li>`:''}
+          ${s>=4?'<li>Premium rooms & amenities</li>':''}
+          ${h.board?`<li>${esc(h.board)} included daily</li>`:''}
+          ${n?`<li>${n} night${n>1?'s':''} of comfort & relaxation</li>`:''}
+          ${s>=5?'<li>World-class service & hospitality</li>':''}
+        </ul>
+      </td>
+    </tr></table></div>`;
+  }).join('');
   const hotelsBlock=current.hotels.length?`<div class="sect"><h2>Accommodation</h2><div class="hotelgrid">${hotelHTML}</div></div>`:'';
 
   // transfers section (appended to hotels page or standalone)
