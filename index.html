@@ -236,6 +236,21 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .excursion .exc-highlights li{padding:2px 0 2px 14px;position:relative}
 .page .excursion .exc-highlights li:before{content:'';position:absolute;left:0;top:7px;width:4px;height:4px;border-radius:50%;background:#D4AF6A}
 
+/* Itinerary Summary Timeline */
+.page .itin-summary{background:#fafaf7;border:1px solid #eee8d5;border-radius:14px;padding:20px 22px;margin-top:10px}
+.page .itin-list{position:relative;padding-left:28px}
+.page .itin-list:before{content:'';position:absolute;left:13px;top:18px;bottom:18px;width:2px;background:linear-gradient(180deg,#D4AF6A,#eaddc0)}
+.page .itin-item{display:table;width:100%;padding:8px 0;page-break-inside:avoid}
+.page .itin-item .itin-left{display:table-cell;vertical-align:middle;width:auto}
+.page .itin-item .itin-right{display:table-cell;vertical-align:middle;text-align:right;width:90px}
+.page .itin-icon{width:26px;height:26px;border-radius:50%;background:#1a1a1a;display:inline-block;vertical-align:middle;text-align:center;line-height:26px;margin-left:-28px;margin-right:10px;position:relative;z-index:1}
+.page .itin-icon svg{vertical-align:middle;margin-top:-2px}
+.page .itin-title{display:inline-block;vertical-align:middle}
+.page .itin-title .it-name{font-size:10pt;font-weight:600;color:#1a1a1a;letter-spacing:-.01em}
+.page .itin-title .it-type{font-size:7.5pt;color:#999;margin-top:1px;letter-spacing:.04em}
+.page .itin-date{font-size:8.5pt;color:#555;font-weight:500}
+.page .itin-divider{border:0;border-top:1px solid #eee8d5;margin:0}
+
 .page table.price{width:100%;border-collapse:separate;border-spacing:0;font-size:10pt;border:1px solid #eee;border-radius:14px;overflow:hidden}
 .page table.price th{background:#1a1a1a;color:#fff;padding:13px 16px;text-align:left;font-weight:500;letter-spacing:.04em;font-size:9.5pt;text-transform:uppercase}
 .page table.price td{padding:13px 16px;border-bottom:1px solid #f3f3f3;color:#333;font-weight:400}
@@ -1848,6 +1863,37 @@ function _render(){
   else p1Body=titleEl+clientEl+overviewEl+heroEl+trustpilotEl;
   let p1=`<div class="page">${header}${p1Body}</div>`;
 
+  // Itinerary Summary — auto-generated timeline
+  const itinItems=[];
+  const svgS=(d)=>`<svg width="14" height="14" viewBox="0 0 24 24" fill="#D4AF6A">${d}</svg>`;
+  const planeS=svgS('<path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>');
+  const hotelS=svgS('<path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/>');
+  const pinS=svgS('<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>');
+  const carS=svgS('<path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>');
+  if(current.flightsInc&&(current.flightOutFrom||current.flightOutTo))
+    itinItems.push({icon:planeS,name:(current.flightOutFrom||'—').replace(/\s*\([A-Z]{3}\)/,'')+' → '+(current.flightOutTo||'—').replace(/\s*\([A-Z]{3}\)/,''),type:'Outbound Flight',date:current.flightOutDate});
+  (current.hotels||[]).forEach(h=>{if(h.name)itinItems.push({icon:hotelS,name:h.name,type:'Hotel'+(h.city?' · '+h.city:'')+(h.nights?' · '+h.nights+' Night'+(h.nights==='1'?'':'s'):''),date:''})});
+  (current.excursions||[]).forEach(x=>{if(x.name)itinItems.push({icon:pinS,name:x.name,type:'Excursion'+(x.location?' · '+x.location:''),date:x.date})});
+  (current.internalFlights||[]).filter(f=>f.from||f.to).forEach(f=>{
+    itinItems.push({icon:planeS,name:(f.from||'—').replace(/\s*\([A-Z]{3}\)/,'')+' → '+(f.to||'—').replace(/\s*\([A-Z]{3}\)/,''),type:'Internal Flight'+(f.airline?' · '+f.airline:''),date:f.date});
+  });
+  (current.transfers||[]).filter(t=>t.from||t.to).forEach(t=>{
+    itinItems.push({icon:carS,name:(t.from||'')+' → '+(t.to||''),type:'Transfer',date:t.date});
+  });
+  if(current.flightsInc&&(current.flightRetFrom||current.flightRetTo))
+    itinItems.push({icon:planeS,name:(current.flightRetFrom||'—').replace(/\s*\([A-Z]{3}\)/,'')+' → '+(current.flightRetTo||'—').replace(/\s*\([A-Z]{3}\)/,''),type:'Return Flight',date:current.flightRetDate});
+  const pItin=itinItems.length?pgWrap(`<div class="sect"><h2>Itinerary Summary</h2>
+    <div class="itin-summary"><div class="itin-list">
+      ${itinItems.map((it,idx)=>`<div class="itin-item">
+        <div class="itin-left">
+          <div class="itin-icon">${it.icon}</div>
+          <div class="itin-title"><div class="it-name">${esc(it.name)}</div><div class="it-type">${it.type}</div></div>
+        </div>
+        <div class="itin-right"><div class="itin-date">${it.date?fmt(it.date):''}</div></div>
+      </div>${idx<itinItems.length-1?'<hr class="itin-divider">':''}`).join('')}
+    </div></div>
+  </div>`):'';
+
   // hotels
   const hotelHTML=current.hotels.map(h=>{
     const n=parseInt(h.nights)||0;
@@ -2009,7 +2055,7 @@ function _render(){
     <div class="foot" style="margin-top:14px"><b>${esc(t.closing||'')}</b><br>Your journey starts safely with ${esc(b.name||'OWT Group')}<br>${esc(b.contact||'')}</div>
   </div>`;
 
-  $('preview').innerHTML=p1+pFlights+p3+pExc+pXfer+p4+p5;
+  $('preview').innerHTML=p1+pItin+pFlights+p3+pExc+pXfer+p4+p5;
 }
 
 // ====== SAVE ======
