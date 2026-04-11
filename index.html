@@ -1786,17 +1786,12 @@ function _render(){
         <td style="padding:8px 10px;font-size:8.5pt;color:#555">${t.operator?esc(t.operator):''}${t.operator&&t.notes?' · ':''}${t.notes?'<i>'+esc(t.notes)+'</i>':''}</td>
       </tr>`).join('')}
     </table></div>`:''
-  // Combine itinerary + hotels + transfers into continuous pages
-  const p2Content=(p2?'':'')+hotelsBlock+xferHTML;
-  let p3='';
-  if(p2&&p2Content){
-    p2=p2+p2Content+'</div>';
-  }else if(p2){
-    p2=p2+'</div>';
-  }else if(p2Content){
-    p3=`<div class="page">${p2Content}</div>`;
-  }
-  let pXfer='';
+  // Close itinerary page
+  if(p2)p2=p2+'</div>';
+  // Accommodation page
+  let p3=hotelsBlock?`<div class="page">${hotelsBlock}</div>`:'';
+  // Transfers page
+  let pXfer=xferHTML?`<div class="page">${xferHTML}</div>`:'';
 
   // page 4 — pricing + incl/excl + terms
   const priceRows=current.prices.map(pr=>`<tr class="${pr.total?'total':''}"><td>${esc(pr.label)}</td><td style="text-align:right">${cur}${esc(pr.amt)}</td></tr>`).join('');
