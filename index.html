@@ -2024,8 +2024,10 @@ function generatePDF(){
     overlay.innerHTML='<div>Generating PDF…</div><div id="__pdfProg" style="font-size:11px;color:#A1A1A6;letter-spacing:.1em">Page 0 / '+pages.length+'</div>';
     document.body.appendChild(overlay);
 
-    const pdf=new (window.jspdf?.jsPDF||window.jsPDF)({unit:'mm',format:'a4',orientation:'portrait',compress:true});
-    const pageWmm=210,pageHmm=297;
+    const pageWmm=210;
+    const maxHmm=297; // cap at A4 max
+    const minHmm=80;  // minimum page height
+    let pdf=null;
 
     const prevEl=$('preview');
     const prevTransform=prevEl.style.transform;
@@ -2048,15 +2050,17 @@ function generatePDF(){
         hidden.forEach(([n,d])=>n.style.display=d);
         const img=canvas.toDataURL('image/jpeg',0.95);
         const ratio=canvas.height/canvas.width;
-        const wmm=pageWmm,hmm=wmm*ratio;
-        if(i>0)pdf.addPage();
-        if(hmm>pageHmm){
-          const scaledW=pageHmm/ratio;
-          const xOff=(pageWmm-scaledW)/2;
-          pdf.addImage(img,'JPEG',xOff,0,scaledW,pageHmm);
+        // Calculate content height in mm, clamped between min and max
+        let contentHmm=Math.round(pageWmm*ratio);
+        contentHmm=Math.max(minHmm,Math.min(maxHmm,contentHmm));
+        if(i===0){
+          // First page: create PDF with this page's custom size
+          pdf=new (window.jspdf?.jsPDF||window.jsPDF)({unit:'mm',format:[pageWmm,contentHmm],orientation:'portrait',compress:true});
         }else{
-          pdf.addImage(img,'JPEG',0,0,wmm,hmm);
+          // Add page with custom height matching content
+          pdf.addPage([pageWmm,contentHmm],'portrait');
         }
+        pdf.addImage(img,'JPEG',0,0,pageWmm,contentHmm);
         i++;
         setTimeout(next,30);
       }).catch(err=>{
