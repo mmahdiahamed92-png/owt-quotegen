@@ -1687,6 +1687,10 @@ function renderItems(){
         <input type="number" min="1" max="40" list="nights-quick" placeholder="Nights" value="${esc(h.nights)}" oninput="current.hotels[${i}].nights=this.value;render();autoSave()">
       </div>
       <div class="row">
+        <div><label style="margin-top:4px">Check-in</label><input type="date" value="${esc(h.checkin||'')}" onchange="current.hotels[${i}].checkin=this.value;render();autoSave()"></div>
+        <div><label style="margin-top:4px">Check-out</label><input type="date" value="${esc(h.checkout||'')}" onchange="current.hotels[${i}].checkout=this.value;render();autoSave()"></div>
+      </div>
+      <div class="row">
         <select onchange="current.hotels[${i}].stars=this.value;render();autoSave()">
           <option value="">★ Star Rating</option>
           ${[1,2,3,4,5].map(n=>`<option value="${n}" ${h.stars==n?'selected':''}>${'★'.repeat(n)} (${n})</option>`).join('')}
@@ -1832,12 +1836,7 @@ function _render(){
     :`<div class="hero-ph" style="${shapeStyles[current.heroShape||'rect']}">${esc(current.dest||'Destination')}</div>`;
   const tFont=current.titleFont||'Satoshi';
   const titleEl=`<div class="title" style="position:relative"><button class="prev-edit no-print" onclick="editField('tourTitle')" title="Edit title">✏️</button><h1 style="font-family:'${tFont}',serif">${esc(current.tourTitle||'Your Bespoke Tour')}</h1><p>${esc(current.tourSub||'')}</p></div>`;
-  const clientEl=`<div class="clientbox" style="position:relative"><button class="prev-edit no-print" onclick="editField('startDate')" title="Edit client & travel details">✏️</button>
-      <b>Prepared For:</b> ${esc(current.clientName||'—')} &nbsp;·&nbsp; ${esc(current.clientContact||'')}<br>
-      <b>Travelers:</b> ${esc(current.travelers||'')} &nbsp;·&nbsp; <b>Departure:</b> ${esc(current.departureAirport||'—')}<br>
-      <b>Travel Dates:</b> ${fmt(current.startDate)} – ${fmt(current.endDate)}<br>
-      <b>Destinations:</b> ${esc(current.dest||'')}
-    </div>`;
+  const clientEl='';
   const flightsEl=current.flightsInc?(function(){
     const al=current.flightAirline||'Airline TBC';
     const cls=current.flightClass||'Economy';
@@ -1961,17 +1960,23 @@ function _render(){
     </div>`;
   })():'';
   const overviewText=(current.overview||DEFAULT_OVERVIEW).replace(/\{brand\}/g,b.name||'');
-  const overviewEl=`<div class="sect" style="position:relative;text-align:center"><button class="prev-edit no-print" onclick="editField('overview')" title="Edit overview">✏️</button>
-      <div style="margin-bottom:10px"><svg width="32" height="32" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
-      <h2 style="border-bottom:none;text-align:center;margin-bottom:8px">Package Overview</h2>
-      <p style="font-size:9.5pt;line-height:1.8;color:#444;max-width:85%;margin:0 auto;text-align:center">${esc(overviewText)}</p>
-    </div>`;
-  // Quote Summary Block
   const totalRow=current.prices.find(p=>p.total);
   const totalAmt=totalRow?cur+esc(totalRow.amt):'';
   const trust=(b.trust||DEFAULT_TRUST);
-  const quoteSummaryEl=`<div class="quote-summary" style="position:relative"><button class="prev-edit no-print" onclick="editField('quoteNo')" title="Edit quote details">✏️</button>
+  const overviewEl=`<div class="sect" style="position:relative;text-align:center">
+      <button class="prev-edit no-print" onclick="editField('overview')" title="Edit overview">✏️</button>
+      <button class="prev-edit no-print" style="right:40px" onclick="editField('clientName')" title="Edit client details">👤</button>
+      <div style="margin-bottom:10px"><svg width="32" height="32" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+      <h2 style="border-bottom:none;text-align:center;margin-bottom:8px">Package Overview</h2>
+      <p style="font-size:9.5pt;line-height:1.8;color:#444;max-width:85%;margin:0 auto;text-align:center;margin-bottom:14px">${esc(overviewText)}</p>
+    </div>
+    <div class="quote-summary">
     <div class="qs-grid">
+      <div class="qs-row"><div class="qs-label">Prepared For</div><div class="qs-value">${esc(current.clientName||'—')}</div></div>
+      <div class="qs-row"><div class="qs-label">Travellers</div><div class="qs-value">${esc(current.travelers||'—')}</div></div>
+      <div class="qs-row"><div class="qs-label">Destination</div><div class="qs-value">${esc(current.dest||'—')}</div></div>
+      <div class="qs-row"><div class="qs-label">Departure</div><div class="qs-value">${esc(current.departureAirport||'—')}</div></div>
+      <div class="qs-row"><div class="qs-label">Travel Dates</div><div class="qs-value">${fmt(current.startDate)} – ${fmt(current.endDate)}</div></div>
       <div class="qs-row"><div class="qs-label">Quote Ref</div><div class="qs-value">${esc(current.quoteNo||'—')}</div></div>
       <div class="qs-row"><div class="qs-label">Date</div><div class="qs-value">${fmt(current.quoteDate)}</div></div>
       <div class="qs-row"><div class="qs-label">Valid Until</div><div class="qs-value">${fmt(current.validity)}</div></div>
@@ -2001,10 +2006,10 @@ function _render(){
       <span style="font-size:8pt;color:#555;letter-spacing:.02em">Rated <b style="color:#1a1a1a">Excellent</b> on <b style="color:#00B67A">Trustpilot</b> · Based on verified reviews</span>
     </div>
   </${tpTag}>`;
-  if(hp==='top')p1Body=heroEl+trustpilotEl+titleEl+clientEl+overviewEl+quoteSummaryEl;
-  else if(hp==='below-title')p1Body=titleEl+heroEl+trustpilotEl+clientEl+overviewEl+quoteSummaryEl;
-  else if(hp==='below-client')p1Body=titleEl+clientEl+heroEl+trustpilotEl+overviewEl+quoteSummaryEl;
-  else p1Body=titleEl+clientEl+overviewEl+quoteSummaryEl+heroEl+trustpilotEl;
+  if(hp==='top')p1Body=heroEl+trustpilotEl+titleEl+overviewEl;
+  else if(hp==='below-title')p1Body=titleEl+heroEl+trustpilotEl+overviewEl;
+  else if(hp==='below-client')p1Body=titleEl+heroEl+trustpilotEl+overviewEl;
+  else p1Body=titleEl+overviewEl+heroEl+trustpilotEl;
   let p1=`<div class="page">${header}${p1Body}</div>`;
 
   // Itinerary Summary — auto-generated timeline
@@ -2057,6 +2062,7 @@ function _render(){
           ${h.board?`<span class="h-pill">${esc(h.board)}</span>`:''}
           ${s>=5?`<span class="h-pill">Luxury</span>`:''}
         </div>
+        ${h.checkin||h.checkout?`<div style="font-size:7.5pt;color:#888;margin-bottom:6px">📅 Check-in: <b style="color:#1a1a1a">${h.checkin?fmt(h.checkin):'TBC'}</b> · Check-out: <b style="color:#1a1a1a">${h.checkout?fmt(h.checkout):'TBC'}</b></div>`:''}
         <ul class="h-highlights">
           ${h.city?`<li>${esc(h.city)} — prime location</li>`:''}
           ${s>=4?'<li>Premium rooms & amenities</li>':''}
