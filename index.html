@@ -1903,16 +1903,36 @@ function _render(){
   const xfers=(current.transfers||[]).filter(t=>t.type||t.from||t.to);
   const TICONS={private_car:'🚗',shared_shuttle:'🚐',coach:'🚌',minivan:'🚙',limousine:'🚘',ferry:'⛴️',speedboat:'🚤',yacht:'⛵',train:'🚆',metro:'🚇',domestic_flight:'✈️',seaplane:'🛩️',helicopter:'🚁',tuk_tuk:'🛺',cable_car:'🚡',other:'📝'};
   const TNAMES={private_car:'Private Car',shared_shuttle:'Shared Shuttle',coach:'Coach / Bus',minivan:'Minivan',limousine:'Limousine / VIP',ferry:'Ferry',speedboat:'Speedboat',yacht:'Yacht / Catamaran',train:'Train / Rail',metro:'Metro / Subway',domestic_flight:'Domestic Flight',seaplane:'Seaplane',helicopter:'Helicopter',tuk_tuk:'Tuk Tuk',cable_car:'Cable Car',other:'Other'};
-  const xferHTML=xfers.length?`<div class="sect"><h2>Transfers</h2>
-    <table class="flights-table">
-      <tr><th>Mode</th><th>Route</th><th>Date / Time</th><th>Details</th></tr>
-      ${xfers.map(t=>`<tr>
-        <td><b>${TICONS[t.type]||''} ${esc(TNAMES[t.type]||t.type||'—')}</b></td>
-        <td>${esc(t.from||'—')} → ${esc(t.to||'—')}</td>
-        <td>${t.date?fmt(t.date):'—'}${t.time?' · '+esc(t.time):''}</td>
-        <td>${t.operator?esc(t.operator):'—'}${t.notes?' · '+esc(t.notes):''}</td>
-      </tr>`).join('')}
-    </table></div>`:''
+  const xferCard=(t)=>{
+    const icon=TICONS[t.type]||'🚐';
+    const mode=TNAMES[t.type]||t.type||'Transfer';
+    return `<div class="fl-hero-card">
+      <div class="fl-hero-label">${icon} ${esc(mode)}</div>
+      <div class="fl-hero-route">
+        <div class="fl-h-from">
+          <div class="fl-h-code" style="font-size:22pt">${esc(t.from||'—')}</div>
+        </div>
+        <div class="fl-h-mid">
+          <div class="fl-h-line"></div>
+          <div class="fl-h-plane">${icon}</div>
+        </div>
+        <div class="fl-h-to">
+          <div class="fl-h-code" style="font-size:22pt">${esc(t.to||'—')}</div>
+        </div>
+      </div>
+      <div class="fl-hero-meta">
+        ${t.date?`<div class="fl-hm"><div class="fl-hm-label">Date</div><div class="fl-hm-value">${fmt(t.date)}</div></div>`:''}
+        ${t.time?`<div class="fl-hm"><div class="fl-hm-label">Time</div><div class="fl-hm-value">${esc(t.time)}</div></div>`:''}
+        ${t.operator?`<div class="fl-hm"><div class="fl-hm-label">Operator</div><div class="fl-hm-value">${esc(t.operator)}</div></div>`:''}
+        ${t.notes?`<div class="fl-hm"><div class="fl-hm-label">Notes</div><div class="fl-hm-value">${esc(t.notes)}</div></div>`:''}
+      </div>
+    </div>`;
+  };
+  const xferHTML=xfers.length?`<div class="sect">
+    <div class="fl-hero-title">Transfer Details</div>
+    <div class="fl-hero-sub">Your arranged transfers between destinations</div>
+    ${xfers.map(t=>xferCard(t)).join('')}
+  </div>`:''
   // Close itinerary page
   if(p2)p2=p2+'</div>';
   // Flights page
