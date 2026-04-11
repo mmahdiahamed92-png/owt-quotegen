@@ -877,22 +877,7 @@ body.viewer-mode #quoteViewer{display:block!important}
 
       <h3>Tour</h3>
       <label>Package Title</label><input id="tourTitle" placeholder="Magical Greek Islands">
-      <label>Title Font Style</label>
-      <select id="titleFont" onchange="syncFormToCurrent();updateTitlePreview()">
-        <option value="Satoshi">Satoshi — Modern Sans</option>
-        <option value="Playfair Display">Playfair Display — Elegant Serif</option>
-        <option value="Cormorant Garamond">Cormorant Garamond — Luxury Serif</option>
-        <option value="DM Serif Display">DM Serif Display — Classic</option>
-        <option value="Lora">Lora — Editorial</option>
-        <option value="Merriweather">Merriweather — Readable Serif</option>
-        <option value="Raleway">Raleway — Thin Modern</option>
-        <option value="Montserrat">Montserrat — Bold Modern</option>
-        <option value="Libre Baskerville">Libre Baskerville — Traditional</option>
-        <option value="Cinzel">Cinzel — Engraved Luxury</option>
-        <option value="Josefin Sans">Josefin Sans — Light Elegant</option>
-        <option value="Antic Didone">Antic Didone — Fashion</option>
-        <option value="Carattere">Carattere — Disney / Whimsical</option>
-      </select>
+      <input type="hidden" id="titleFont" value="Cinzel">
       <div id="titleFontPreview" style="margin-top:6px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;color:var(--gold);font-size:20px;min-height:48px;display:flex;align-items:center;transition:font-family .3s"></div>
       <label>Subtitle</label><input id="tourSub" placeholder="7 Nights / 8 Days">
       <label>Destinations</label><input id="dest" placeholder="Athens, Santorini, Mykonos">
@@ -1398,7 +1383,7 @@ function blankQuote(){
     flightOutName:'',flightOutDuration:'',flightRetName:'',flightRetDuration:'',
     flightRetFrom:'',flightRetTo:'',flightRetDate:'',flightRetTime:'',flightRetNo:'',
     internalFlights:[],
-    tourTitle:'',tourSub:'',titleFont:'Satoshi',startDate:'',endDate:'',dest:'',heroSrc:'',
+    tourTitle:'',tourSub:'',titleFont:'Cinzel',startDate:'',endDate:'',dest:'',heroSrc:'',
     days:[],hotels:[],excursions:[],transfers:[],prices:[{label:'Per Person (Twin Sharing)',amt:'',total:false},{label:'Total Package Price',amt:'',total:true}],
     curr:'GBP',incl:DEFAULT_INCL,excl:DEFAULT_EXCL,terms:brands[0]?.terms||'',
     overview:DEFAULT_OVERVIEW,footMsg:DEFAULT_FOOTMSG,
