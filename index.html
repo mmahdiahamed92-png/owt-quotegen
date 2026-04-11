@@ -1840,8 +1840,10 @@ function _render(){
     </div>`;
   })():'';
   const overviewText=(current.overview||DEFAULT_OVERVIEW).replace(/\{brand\}/g,b.name||'');
-  const overviewEl=`<div class="sect" style="position:relative"><button class="prev-edit no-print" onclick="editField('overview')" title="Edit overview">✏️</button><h2>Package Overview</h2>
-      <p style="font-size:9.5pt;line-height:1.7;color:#444">${esc(overviewText)}</p>
+  const overviewEl=`<div class="sect" style="position:relative;text-align:center"><button class="prev-edit no-print" onclick="editField('overview')" title="Edit overview">✏️</button>
+      <div style="margin-bottom:10px"><svg width="32" height="32" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+      <h2 style="border-bottom:none;text-align:center;margin-bottom:8px">Package Overview</h2>
+      <p style="font-size:9.5pt;line-height:1.8;color:#444;max-width:85%;margin:0 auto;text-align:center">${esc(overviewText)}</p>
     </div>`;
   const hp=current.heroPos||'below-title';
   let p1Body='';
