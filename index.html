@@ -153,26 +153,29 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .preview-toolbar span{color:var(--gold)}
 
 /* PDF PAGE — white client-facing, premium */
-.page{width:210mm;min-height:297mm;background:#fff;color:#1a1a1a;margin:0 auto 22px;padding:18mm 16mm;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);font-family:var(--fb);font-size:10pt;page-break-after:always;position:relative;letter-spacing:-.005em;border-radius:2px}
-.page .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;margin-bottom:20px;border-bottom:1px solid #eaddc0}
+.page{width:210mm;min-height:auto;background:#fff;color:#1a1a1a;margin:0 auto 12px;padding:14mm 16mm;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);font-family:var(--fb);font-size:10pt;position:relative;letter-spacing:-.005em;border-radius:2px}
+.page:empty{display:none}
+.page .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid #eaddc0}
 .page .hdr .agency{font-family:var(--fh);font-size:24pt;color:#1a1a1a;font-weight:500;line-height:1.02;letter-spacing:-.025em;font-variation-settings:"opsz" 144,"SOFT" 30}
 .page .hdr .agency small{display:block;font-family:var(--fb);font-size:8.5pt;color:#888;font-weight:400;margin-top:6px;letter-spacing:.02em}
 .page .hdr .qi{text-align:right;font-size:8.5pt;color:#666;line-height:1.7;font-weight:400}
 .page .hdr .qi b{color:var(--gold-dark);font-family:var(--fb);font-size:9pt;display:block;margin-bottom:4px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
 .page .logo{max-height:216px;max-width:520px;margin-bottom:14px;display:block;object-fit:contain}
 
-.page .title{text-align:center;margin:24px 0 20px}
+.page .title{text-align:center;margin:16px 0 14px}
 .page .title h1{font-family:var(--fh);font-size:38pt;color:#1a1a1a;font-weight:400;margin:0;letter-spacing:-.035em;line-height:1.02;font-variation-settings:"opsz" 144,"SOFT" 30}
 .page .title p{margin:12px 0 0;color:#888;font-size:11pt;font-weight:300;letter-spacing:.02em;font-family:var(--fa);font-style:italic}
 .page .hero{width:100%;max-width:100%;height:auto;max-height:130mm;min-height:50mm;object-fit:cover;border-radius:4px;margin-bottom:14px;display:block}
 .page .hero-ph{width:100%;height:80mm;background:linear-gradient(135deg,#C9A84C,#A88B3D);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--fh);font-size:20pt;border-radius:4px;margin-bottom:14px}
 .page .hotel img{width:100%;height:auto;max-height:50mm;min-height:30mm;object-fit:cover;background:#f0e8d0;display:block}
 
-.page .clientbox{background:#fafaf7;border:1px solid #eee8d5;padding:18px 22px;border-radius:14px;margin-bottom:22px;font-size:9.5pt;line-height:1.85;color:#444}
+.page .clientbox{background:#fafaf7;border:1px solid #eee8d5;padding:14px 18px;border-radius:14px;margin-bottom:14px;font-size:9.5pt;line-height:1.75;color:#444}
 .page .clientbox b{color:#1a1a1a;font-weight:600;letter-spacing:.02em;text-transform:uppercase;font-size:8pt;display:inline-block;margin-right:4px}
 
-.page .sect{margin:22px 0}
-.page .sect h2{font-family:var(--fh);font-size:17pt;color:#1a1a1a;padding-bottom:10px;margin:0 0 16px;font-weight:500;letter-spacing:-.025em;border-bottom:1px solid #eaeaea;font-variation-settings:"opsz" 144,"SOFT" 30}
+.page .sect{margin:14px 0}
+.page .sect:first-child{margin-top:0}
+.page .sect:last-child{margin-bottom:0}
+.page .sect h2{font-family:var(--fh);font-size:17pt;color:#1a1a1a;padding-bottom:8px;margin:0 0 12px;font-weight:500;letter-spacing:-.025em;border-bottom:1px solid #eaeaea;font-variation-settings:"opsz" 144,"SOFT" 30}
 
 .page .day{display:flex;gap:14px;margin-bottom:14px;page-break-inside:avoid;align-items:flex-start}
 .page .day .img{width:42mm;height:42mm;object-fit:cover;border-radius:18px;flex-shrink:0;background:#f0e8d0;box-shadow:0 4px 12px rgba(0,0,0,.08)}
@@ -180,7 +183,7 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .day .body b{color:#1a1a1a;font-family:var(--fh);font-size:13pt;font-weight:500;letter-spacing:-.02em;font-variation-settings:"opsz" 36,"SOFT" 30}
 .page .day .body p{margin:5px 0 0;font-size:9pt;line-height:1.6;color:#555;letter-spacing:-.005em}
 
-.page .hotelgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.page .hotelgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .page .hotel{border:1px solid #eee;border-radius:16px;overflow:hidden;page-break-inside:avoid;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.04)}
 .page .hotel img{width:100%;height:42mm;object-fit:cover;background:#f0e8d0;display:block}
 .page .hotel .h{padding:12px 14px}
@@ -199,7 +202,7 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page ul.list li{margin-bottom:6px;padding-left:18px;position:relative}
 .page ul.list li:before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--gold)}
 .page .twocol{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-.page .foot{margin-top:28px;padding-top:16px;border-top:1px solid #eaeaea;font-size:8.5pt;color:#888;text-align:center;line-height:1.8;font-weight:400}
+.page .foot{margin-top:16px;padding-top:12px;border-top:1px solid #eaeaea;font-size:8.5pt;color:#888;text-align:center;line-height:1.8;font-weight:400}
 .page .foot b{color:#1a1a1a;font-family:var(--fh);font-size:11pt;font-weight:600;letter-spacing:-.01em}
 
 /* LIBRARY MODAL — liquid glass */
@@ -349,7 +352,8 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
   .nav,.panel,.preview-toolbar,.modal-bg,.actions-bar{display:none!important}
   .editor{display:block;height:auto}
   .preview{padding:0;background:#fff;overflow:visible}
-  .page{box-shadow:none;margin:0;width:auto;min-height:auto}
+  .page{box-shadow:none;margin:0;width:auto;min-height:auto;page-break-after:always}
+  .page:last-child{page-break-after:auto}
   body{background:#fff}
 }
 </style>
@@ -1754,14 +1758,14 @@ function _render(){
   const dayHTML=current.days.map((d,i)=>`<div class="day">
     ${d.img?`<img class="img" src="${IMG.src(d.img)}">`:'<div class="img" style="display:flex;align-items:center;justify-content:center;color:#aaa;font-size:8pt">No image</div>'}
     <div class="body"><b>Day ${i+1} — ${esc(d.title)}</b><p>${nl(d.desc)}</p></div></div>`).join('');
-  let p2=current.days.length?`<div class="page"><div class="sect"><h2>Day-by-Day Itinerary</h2>${dayHTML}</div></div>`:'';
+  let p2=current.days.length?`<div class="page"><div class="sect"><h2>Day-by-Day Itinerary</h2>${dayHTML}</div>`:'';
 
-  // page 3 — hotels
+  // hotels + transfers (combined into one continuous section)
   const hotelHTML=current.hotels.map(h=>`<div class="hotel">
-    ${h.img?`<img src="${IMG.src(h.img)}" style="${h.dims?`aspect-ratio:${h.dims.ratio};height:auto;width:100%;max-height:55mm;object-fit:cover`:''}">`:'<div style="height:38mm;background:#f0e8d0;display:flex;align-items:center;justify-content:center;color:#aaa">No image</div>'}
+    ${h.img?`<img src="${IMG.src(h.img)}" style="${h.dims?`aspect-ratio:${h.dims.ratio};height:auto;width:100%;max-height:55mm;object-fit:cover`:''}">`:''}
     <div class="h"><b>${esc(h.name)}</b>${h.stars?`<div class="stars">${stars(h.stars)}</div>`:''}
     <small>📍 ${esc(h.city)} · <b style="color:#1a1a1a;font-size:10pt;font-weight:700">${esc(h.nights)} Night${h.nights==='1'?'':'s'}</b>${h.board?' · '+esc(h.board):''}</small></div></div>`).join('');
-  let p3=current.hotels.length?`<div class="page"><div class="sect"><h2>Accommodation</h2><div class="hotelgrid">${hotelHTML}</div></div></div>`:'';
+  const hotelsBlock=current.hotels.length?`<div class="sect"><h2>Accommodation</h2><div class="hotelgrid">${hotelHTML}</div></div>`:'';
 
   // transfers section (appended to hotels page or standalone)
   const xfers=(current.transfers||[]).filter(t=>t.type||t.from||t.to);
@@ -1782,7 +1786,17 @@ function _render(){
         <td style="padding:8px 10px;font-size:8.5pt;color:#555">${t.operator?esc(t.operator):''}${t.operator&&t.notes?' · ':''}${t.notes?'<i>'+esc(t.notes)+'</i>':''}</td>
       </tr>`).join('')}
     </table></div>`:''
-  let pXfer=xferHTML?`<div class="page">${xferHTML}</div>`:'';
+  // Combine itinerary + hotels + transfers into continuous pages
+  const p2Content=(p2?'':'')+hotelsBlock+xferHTML;
+  let p3='';
+  if(p2&&p2Content){
+    p2=p2+p2Content+'</div>';
+  }else if(p2){
+    p2=p2+'</div>';
+  }else if(p2Content){
+    p3=`<div class="page">${p2Content}</div>`;
+  }
+  let pXfer='';
 
   // page 4 — pricing + incl/excl + terms
   const priceRows=current.prices.map(pr=>`<tr class="${pr.total?'total':''}"><td>${esc(pr.label)}</td><td style="text-align:right">${cur}${esc(pr.amt)}</td></tr>`).join('');
