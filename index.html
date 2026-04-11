@@ -1918,72 +1918,75 @@ function extractEmail(s){const m=(s||'').match(/[\w\.\-]+@[\w\.\-]+\.\w+/);retur
 // Generate PDF as Blob/File using html2pdf — clean off-screen render
 function generatePDF(){
   return new Promise((resolve,reject)=>{
-    if(!window.html2pdf){reject(new Error('PDF library not loaded'));return}
+    const html2canvas=window.html2canvas;
+    if(!html2canvas){reject(new Error('html2canvas not available'));return}
     if(!current){reject(new Error('No quote loaded'));return}
 
     const filename=`${current.quoteNo||'quote'}.pdf`;
     const pages=[...$('preview').querySelectorAll('.page')];
-    if(!pages.length){reject(new Error('Preview is empty — open a quote first'));return}
+    if(!pages.length){reject(new Error('Preview is empty'));return}
 
     // Loading overlay
     const overlay=document.createElement('div');
     overlay.style.cssText='position:fixed;inset:0;background:rgba(8,8,12,.92);z-index:99999;display:flex;align-items:center;justify-content:center;color:#D4AF6A;font-family:Satoshi,sans-serif;font-size:16px;letter-spacing:.18em;text-transform:uppercase;flex-direction:column;gap:14px';
-    overlay.innerHTML='<div>Generating PDF…</div><div id="__pdfProg" style="font-size:11px;color:#A1A1A6;letter-spacing:.1em">Page 0 / '+pages.length+'</div>';
+    overlay.innerHTML='<div>Generating PDF…</div><div id="__pdfProg" style="font-size:11px;color:#A1A1A6;letter-spacing:.1em">Preparing…</div>';
     document.body.appendChild(overlay);
 
-    // Render each .page individually to canvas, then assemble in jsPDF.
-    // This is the most reliable method — avoids clone/clip issues entirely.
-    const {jsPDF}=window.jspdf||window.html2pdf.jsPDF||{};
-    const html2canvas=window.html2canvas;
-    if(!html2canvas){reject(new Error('html2canvas not available'));document.body.removeChild(overlay);return}
+    // Build one continuous wrapper with all page content (no gaps)
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:fixed;top:0;left:0;width:210mm;background:#fff;z-index:99998;overflow:visible;padding:0;margin:0';
+    pages.forEach(p=>{
+      const c=p.cloneNode(true);
+      c.querySelectorAll('.no-print,.prev-edit,.edit-trust-btn').forEach(n=>n.remove());
+      // Strip page chrome — make continuous flow
+      c.style.cssText='width:100%;min-height:auto;height:auto;margin:0;padding:14mm 16mm;box-shadow:none;border-radius:0;page-break-after:auto;border-bottom:none;position:relative';
+      wrap.appendChild(c);
+    });
+    document.body.appendChild(wrap);
 
-    const pdf=new (window.jspdf?.jsPDF||window.jsPDF)({unit:'mm',format:'a4',orientation:'portrait',compress:true});
-    const pageWmm=210,pageHmm=297;
-
-    // Neutralize any responsive scale transform on #preview for accurate capture
+    // Neutralize preview transform
     const prevEl=$('preview');
     const prevTransform=prevEl.style.transform;
     prevEl.style.transform='none';
 
-    let i=0;
-    function next(){
-      if(i>=pages.length){
+    setTimeout(()=>{
+      $('__pdfProg').textContent='Rendering…';
+      html2canvas(wrap,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false}).then(canvas=>{
         prevEl.style.transform=prevTransform;
+        document.body.removeChild(wrap);
+
+        // Slice the tall canvas into A4 pages
+        const pdf=new (window.jspdf?.jsPDF||window.jsPDF)({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+        const pageWmm=210,pageHmm=297;
+        const pxPerMm=canvas.width/pageWmm;
+        const pageHpx=Math.floor(pageHmm*pxPerMm);
+        const totalPages=Math.ceil(canvas.height/pageHpx);
+
+        for(let p=0;p<totalPages;p++){
+          if(p>0)pdf.addPage();
+          $('__pdfProg').textContent=`Page ${p+1} / ${totalPages}`;
+          // Slice this page's portion from the canvas
+          const sliceH=Math.min(pageHpx,canvas.height-p*pageHpx);
+          const slice=document.createElement('canvas');
+          slice.width=canvas.width;
+          slice.height=sliceH;
+          const ctx=slice.getContext('2d');
+          ctx.drawImage(canvas,0,p*pageHpx,canvas.width,sliceH,0,0,canvas.width,sliceH);
+          const img=slice.toDataURL('image/jpeg',0.92);
+          const sliceHmm=sliceH/pxPerMm;
+          pdf.addImage(img,'JPEG',0,0,pageWmm,sliceHmm);
+        }
+
         document.body.removeChild(overlay);
         const blob=pdf.output('blob');
         resolve({blob,filename,file:new File([blob],filename,{type:'application/pdf'})});
-        return;
-      }
-      const el=pages[i];
-      $('__pdfProg').textContent=`Page ${i+1} / ${pages.length}`;
-      // hide pencils inside this page during capture
-      const hidden=[];
-      el.querySelectorAll('.no-print,.prev-edit,.edit-trust-btn').forEach(n=>{hidden.push([n,n.style.display]);n.style.display='none'});
-      html2canvas(el,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false}).then(canvas=>{
-        hidden.forEach(([n,d])=>n.style.display=d);
-        const img=canvas.toDataURL('image/jpeg',0.95);
-        // Fit to A4 keeping aspect ratio of capture
-        const ratio=canvas.height/canvas.width;
-        const wmm=pageWmm,hmm=wmm*ratio;
-        if(i>0)pdf.addPage();
-        // If captured page taller than A4, scale down to fit height
-        if(hmm>pageHmm){
-          const scaledW=pageHmm/ratio;
-          const xOff=(pageWmm-scaledW)/2;
-          pdf.addImage(img,'JPEG',xOff,0,scaledW,pageHmm);
-        }else{
-          pdf.addImage(img,'JPEG',0,0,wmm,hmm);
-        }
-        i++;
-        setTimeout(next,30);
       }).catch(err=>{
-        hidden.forEach(([n,d])=>n.style.display=d);
         prevEl.style.transform=prevTransform;
+        if(wrap.parentNode)document.body.removeChild(wrap);
         document.body.removeChild(overlay);
         reject(err);
       });
-    }
-    setTimeout(next,80);
+    },200);
   });
 }
 function downloadPDF(){
