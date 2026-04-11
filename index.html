@@ -1066,7 +1066,7 @@ const SB={
     await this.client.from('qg_settings').upsert({user_id:this.user.id,agent_name:agentName,seq:seq,templates:tpl,updated_at:new Date().toISOString()});
   },
   async pullSettings(){
-    const{data}=await this.client.from('qg_settings').select('*').single();
+    const{data}=await this.client.from('qg_settings').select('*').maybeSingle();
     return data;
   },
   // ---- IMAGE UPLOAD to Supabase Storage ----
@@ -1086,12 +1086,13 @@ const SB={
   // ---- FULL SYNC (pull from cloud → local) ----
   async pullAll(){
     try{
+      const safe=p=>p.catch(e=>{console.warn('Pull:',e);return null});
       const [cloudBrands,cloudQuotes,cloudLib,settings]=await Promise.all([
-        this.pullBrands(),this.pullQuotes(),this.pullLibrary(),this.pullSettings()
+        safe(this.pullBrands()),safe(this.pullQuotes()),safe(this.pullLibrary()),safe(this.pullSettings())
       ]);
-      if(cloudBrands.length){brands=cloudBrands;save(LS.brands,brands)}
-      if(cloudQuotes.length){quotes=cloudQuotes;save(LS.quotes,quotes)}
-      if(cloudLib.length){library=cloudLib;save(LS.library,library)}
+      if(cloudBrands&&cloudBrands.length){brands=cloudBrands;save(LS.brands,brands)}
+      if(cloudQuotes&&cloudQuotes.length){quotes=cloudQuotes;save(LS.quotes,quotes)}
+      if(cloudLib&&cloudLib.length){library=cloudLib;save(LS.library,library)}
       if(settings){
         if(settings.agent_name)save(LS.agent,settings.agent_name);
         if(settings.seq)save(LS.seq,settings.seq);
