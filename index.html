@@ -3842,6 +3842,8 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       <b>${esc(f.from||'—')} → ${esc(f.to||'—')}</b>
       <small>${fmtD(f.date)}${f.time?' · '+esc(f.time):''}${f.no?' · '+esc(f.no):''}</small>
     </div>`).join('');
+    var vBagItems=[].concat(q.baggageCabin||[]).concat(q.baggageChecked||[]).concat(q.baggageCustom?[q.baggageCustom]:[]).filter(Boolean);
+    var vBagHTML=vBagItems.length?'<div class="qv-card" style="border-left:3px solid #D4AF6A;margin-top:8px"><div style="font-size:10px;color:#D4AF6A;font-weight:700;letter-spacing:.12em;margin-bottom:4px">BAGGAGE ALLOWANCE</div>'+vBagItems.map(function(b){return '<small style="display:block;margin-bottom:2px">✓ '+esc(b)+'</small>'}).join('')+'</div>':'';
     const flightsHTML=q.flightsInc?`
       <div class="qv-card">
         <div style="font-size:11px;color:#D4AF6A;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">OUTBOUND</div>
@@ -3855,7 +3857,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
         <small>${fmtD(q.flightRetDate)}${q.flightRetTime?' · '+esc(q.flightRetTime):''}${q.flightRetNo?' · '+esc(q.flightRetNo):''}${q.flightRetDuration?' · '+esc(q.flightRetDuration):''}</small>
       </div>
       ${q.flightAirline?`<div style="text-align:center;font-size:11px;color:#888;margin-top:6px"><b style="color:#1a1a1a">${esc(q.flightAirline)}</b> · ${esc(q.flightClass||'Economy')} Class</div>`:''}
-      `+(function(){var bi=[].concat(q.baggageCabin||[]).concat(q.baggageChecked||[]).concat(q.baggageCustom?[q.baggageCustom]:[]).filter(Boolean);return bi.length?'<div class="qv-card" style="border-left:3px solid #D4AF6A;margin-top:8px"><div style="font-size:10px;color:#D4AF6A;font-weight:700;letter-spacing:.12em;margin-bottom:4px">BAGGAGE ALLOWANCE</div>'+bi.map(function(b){return '<small style="display:block;margin-bottom:2px">✓ '+esc(b)+'</small>'}).join('')+'</div>':''})()+``:'';
+      ${vBagHTML}`:'';
     // Transfers
     const transfersHTML=(q.transfers||[]).filter(t=>t.type||t.from).map(t=>`<div class="qv-card">
       <b>${esc(t.type?t.type.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Transfer')}</b>
