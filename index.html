@@ -195,13 +195,42 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .day .no-img-ph{width:48%;min-height:52mm;background:linear-gradient(135deg,rgba(212,175,106,.15),rgba(212,175,106,.06));display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
 .page .day .no-img-ph span{color:#c4a860;font-size:9pt;font-weight:500}
 
-.page .hotelgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.page .hotel{border:1px solid #eee;border-radius:16px;overflow:hidden;page-break-inside:avoid;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.04)}
-.page .hotel img{width:100%;height:42mm;object-fit:cover;background:#f0e8d0;display:block}
-.page .hotel .h{padding:12px 14px}
-.page .hotel .h b{font-family:var(--fh);font-size:12.5pt;color:#1a1a1a;font-weight:500;letter-spacing:-.02em;font-variation-settings:"opsz" 36,"SOFT" 30}
-.page .hotel .h .stars{color:var(--gold);font-size:9pt;margin:3px 0;letter-spacing:1px}
-.page .hotel .h small{display:block;color:#888;font-size:8.5pt;margin-top:4px;font-weight:400}
+/* Premium Flight Cards */
+.page .flight-card{border:1px solid #eaddc0;border-radius:14px;overflow:hidden;margin-bottom:10px;page-break-inside:avoid;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.page .flight-header{background:linear-gradient(135deg,#1a1a1a,#2a2520);padding:8px 16px;display:flex;justify-content:space-between;align-items:center}
+.page .flight-header .fl-label{font-size:7.5pt;color:#D4AF6A;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
+.page .flight-header .fl-number{font-size:7.5pt;color:#fff;background:rgba(212,175,106,.2);padding:3px 10px;border-radius:100px;font-weight:600;border:1px solid rgba(212,175,106,.3)}
+.page .flight-body{padding:12px 16px;background:#fafaf7;display:flex;align-items:center;gap:8px}
+.page .flight-airport{flex:1;text-align:center}
+.page .flight-airport .code{font-size:16pt;font-weight:700;color:#1a1a1a;letter-spacing:.04em;line-height:1}
+.page .flight-airport .city{font-size:7pt;color:#999;margin-top:2px}
+.page .flight-route{flex:0 0 auto;display:flex;align-items:center;gap:4px;color:#D4AF6A;padding:0 4px}
+.page .flight-route .fl-dot{width:5px;height:5px;border-radius:50%;background:#D4AF6A}
+.page .flight-route .fl-line{width:20px;height:1px;background:linear-gradient(90deg,#D4AF6A,#eaddc0)}
+.page .flight-route .fl-plane{font-size:11pt}
+.page .flight-meta{display:flex;justify-content:center;gap:16px;padding:6px 16px 8px;border-top:1px solid #eee8d5}
+.page .flight-meta div{text-align:center}
+.page .flight-meta .fm-label{text-transform:uppercase;letter-spacing:.1em;color:#bbb;font-size:6.5pt;margin-bottom:1px}
+.page .flight-meta .fm-value{color:#1a1a1a;font-weight:600;font-size:8pt}
+
+/* Premium Hotel Cards */
+.page .hotelgrid{display:flex;flex-direction:column;gap:14px}
+.page .hotel{border:1px solid #eee8d5;border-radius:16px;overflow:hidden;page-break-inside:avoid;background:#fff;box-shadow:0 3px 16px rgba(0,0,0,.05)}
+.page .hotel-inner{display:flex;align-items:stretch}
+.page .hotel-img{width:44%;flex-shrink:0;position:relative;overflow:hidden;min-height:44mm;background:linear-gradient(135deg,#f0e8d0,#e8dcc0)}
+.page .hotel-img img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
+.page .hotel-img .h-badge{position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);color:#fff;font-size:7.5pt;font-weight:700;padding:4px 10px;border-radius:100px;border:1px solid rgba(212,175,106,.3)}
+.page .hotel-img .h-badge span{color:#D4AF6A}
+.page .hotel-detail{flex:1;padding:14px 16px;display:flex;flex-direction:column;justify-content:center}
+.page .hotel-detail .h-name{font-family:var(--fh);font-size:13pt;font-weight:600;color:#1a1a1a;letter-spacing:-.02em;margin:0 0 2px;line-height:1.2}
+.page .hotel-detail .h-stars{color:#D4AF6A;font-size:8pt;letter-spacing:2px;margin-bottom:3px}
+.page .hotel-detail .h-loc{font-size:7.5pt;color:#999;margin-bottom:6px}
+.page .hotel-detail .h-board{display:inline-block;font-size:6.5pt;color:#8B6B3A;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);padding:2px 8px;border-radius:100px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.page .hotel-detail .h-highlights{margin:0;padding:0;list-style:none;font-size:7.5pt;color:#555;line-height:1.6}
+.page .hotel-detail .h-highlights li{padding:1px 0 1px 12px;position:relative}
+.page .hotel-detail .h-highlights li:before{content:'';position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:#D4AF6A}
+.page .hotel-no-img{width:44%;min-height:44mm;background:linear-gradient(135deg,rgba(212,175,106,.12),rgba(212,175,106,.05));display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.page .hotel-no-img span{color:#c4a860;font-size:9pt;font-weight:500}
 
 .page table.price{width:100%;border-collapse:separate;border-spacing:0;font-size:10pt;border:1px solid #eee;border-radius:14px;overflow:hidden}
 .page table.price th{background:#1a1a1a;color:#fff;padding:13px 16px;text-align:left;font-weight:500;letter-spacing:.04em;font-size:9.5pt;text-transform:uppercase}
@@ -310,7 +339,9 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
   .page .title p{font-size:9pt}
   .page .hdr{flex-direction:column;gap:10px}
   .page .hdr .qi{text-align:left}
-  .page .hotelgrid{grid-template-columns:1fr}
+  .page .hotel-inner{flex-direction:column!important}
+  .page .hotel{direction:ltr!important}
+  .page .hotel-img,.page .hotel-no-img{width:100%;min-height:32mm}
   .page .twocol{grid-template-columns:1fr;gap:8px}
   .page .day .day-inner{flex-direction:column}
   .page .day.even{direction:ltr}
@@ -1722,26 +1753,36 @@ function _render(){
       <b>Destinations:</b> ${esc(current.dest||'')}
     </div>`;
   const flightsEl=current.flightsInc?(function(){
-    const row=(label,from,to,date,time,no,name)=>`
-      <tr>
-        <td style="padding:8px 10px;font-size:9pt;color:#8B6B3A;font-weight:600;letter-spacing:.08em;text-transform:uppercase;vertical-align:top">${label}</td>
-        <td style="padding:8px 10px;font-size:10pt;color:#1a1a1a"><b>${esc(from||'—')}</b> → <b>${esc(to||'—')}</b>${name?`<br><span style="font-size:8.5pt;color:#888;font-style:italic">${esc(name)}</span>`:''}</td>
-        <td style="padding:8px 10px;font-size:9pt;color:#555;vertical-align:top">${esc(date||'')}${time?'<br>'+esc(time):''}</td>
-        <td style="padding:8px 10px;font-size:9pt;color:#555;vertical-align:top">${esc(no||'')}</td>
-      </tr>`;
+    const xCode=s=>{const m=(s||'').match(/\(([A-Z]{3})\)/);return m?m[1]:''};
+    const xCity=s=>(s||'—').replace(/\s*\([A-Z]{3}\)\s*/,'');
+    const card=(label,from,to,date,time,no,name,airline)=>{
+      const fc=xCode(from),tc=xCode(to);
+      return `<div class="flight-card">
+        <div class="flight-header">
+          <span class="fl-label">${label}</span>
+          ${no?`<span class="fl-number">${esc(no)}</span>`:''}
+        </div>
+        <div class="flight-body">
+          <div class="flight-airport"><div class="code">${esc(fc||xCity(from))}</div>${fc?`<div class="city">${esc(xCity(from))}</div>`:''}</div>
+          <div class="flight-route"><span class="fl-dot"></span><span class="fl-line"></span><span class="fl-plane">✈</span><span class="fl-line"></span><span class="fl-dot"></span></div>
+          <div class="flight-airport"><div class="code">${esc(tc||xCity(to))}</div>${tc?`<div class="city">${esc(xCity(to))}</div>`:''}</div>
+        </div>
+        <div class="flight-meta">
+          ${date?`<div><div class="fm-label">Date</div><div class="fm-value">${esc(date)}</div></div>`:''}
+          ${time?`<div><div class="fm-label">Departure</div><div class="fm-value">${esc(time)}</div></div>`:''}
+          ${airline?`<div><div class="fm-label">Airline</div><div class="fm-value">${esc(airline)}</div></div>`:''}
+          ${name?`<div><div class="fm-label">Route</div><div class="fm-value">${esc(name)}</div></div>`:''}
+        </div>
+      </div>`;
+    };
     const al=current.flightAirline||'Airline TBC';
+    const cls=current.flightClass||'Economy';
     const internals=(current.internalFlights||[]).filter(f=>f.from||f.to);
-    return `<div class="sect"><h2>Flights</h2>
-      <div style="font-size:9pt;color:#555;margin-bottom:8px"><b>${esc(al)}</b> · ${esc(current.flightClass||'Economy')} Class</div>
-      <table style="width:100%;border-collapse:collapse;border:1px solid #eaddc0;border-radius:8px;overflow:hidden">
-        <tr style="background:rgba(212,175,106,.06)"><th style="padding:6px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Leg</th><th style="padding:6px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Route</th><th style="padding:6px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Date / Time</th><th style="padding:6px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Flight #</th></tr>
-        ${row('Outbound',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName)}
-        ${internals.map((f,i)=>{
-          const lbl=f.airline?'Internal · '+esc(f.airline):'Internal '+(i+1);
-          return row(lbl,f.from,f.to,f.date,f.time,f.no,f.name);
-        }).join('')}
-        ${row('Return',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName)}
-      </table>
+    return `<div class="sect"><h2>Flight Details</h2>
+      <div style="font-size:9pt;color:#555;margin-bottom:10px"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(cls)} Class</div>
+      ${card('Outbound',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName,'')}
+      ${internals.map((f,i)=>card('Domestic'+(f.airline?' · '+f.airline:''),f.from,f.to,f.date,f.time,f.no,f.name,f.airline)).join('')}
+      ${card('Return',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName,'')}
     </div>`;
   })():'';
   const overviewText=(current.overview||DEFAULT_OVERVIEW).replace(/\{brand\}/g,b.name||'');
@@ -1798,11 +1839,27 @@ function _render(){
   let p2=current.days.length?`<div class="page"><div class="sect"><h2>Your Journey, Day by Day</h2>${dayHTML}</div>`:'';
 
   // hotels
-  const hotelHTML=current.hotels.map(h=>`<div class="hotel">
-    ${h.img?`<img src="${IMG.src(h.img)}" style="${h.dims?`aspect-ratio:${h.dims.ratio};height:auto;width:100%;max-height:55mm;object-fit:cover`:''}">`:''}
-    <div class="h"><b>${esc(h.name)}</b>${h.stars?`<div class="stars">${stars(h.stars)}</div>`:''}
-    <small>📍 ${esc(h.city)} · <b style="color:#1a1a1a;font-size:10pt;font-weight:700">${esc(h.nights)} Night${h.nights==='1'?'':'s'}</b>${h.board?' · '+esc(h.board):''}</small></div></div>`).join('');
-  const hotelsBlock=current.hotels.length?`<div class="sect"><h2>Accommodation</h2><div class="hotelgrid">${hotelHTML}</div></div>`:'';
+  const hotelHTML=current.hotels.map((h,hi)=>{
+    const even=hi%2===1;
+    const imgEl=h.img
+      ?`<div class="hotel-img"><img src="${IMG.src(h.img)}"><div class="h-badge"><span>${esc(h.nights)}</span> Night${h.nights==='1'?'':'s'}</div></div>`
+      :`<div class="hotel-no-img"><div class="h-badge" style="position:absolute;bottom:8px;left:8px"><span>${esc(h.nights)}</span> Night${h.nights==='1'?'':'s'}</div><span>${esc(h.name||'Hotel')}</span></div>`;
+    const detailEl=`<div class="hotel-detail">
+      <div class="h-name">${esc(h.name)}</div>
+      ${h.stars?`<div class="h-stars">${stars(h.stars)}</div>`:''}
+      <div class="h-loc">📍 ${esc(h.city||'')}</div>
+      ${h.board?`<div class="h-board">${esc(h.board)}</div>`:''}
+      <ul class="h-highlights">
+        ${h.city?`<li>Located in the heart of ${esc(h.city)}</li>`:''}
+        ${h.stars>=4?'<li>Premium amenities & facilities</li>':''}
+        ${h.board?`<li>${esc(h.board)} included</li>`:''}
+        ${h.nights?`<li>${esc(h.nights)} night${h.nights==='1'?'':'s'} stay</li>`:''}
+      </ul>
+    </div>`;
+    const inner=even?detailEl+imgEl:imgEl+detailEl;
+    return `<div class="hotel"${even?' style="direction:rtl"':''}><div class="hotel-inner"${even?' style="direction:ltr"':''}>${inner}</div></div>`;
+  }).join('');
+  const hotelsBlock=current.hotels.length?`<div class="sect"><h2>Your Accommodation</h2><div class="hotelgrid">${hotelHTML}</div></div>`:'';
 
   // transfers section (appended to hotels page or standalone)
   const xfers=(current.transfers||[]).filter(t=>t.type||t.from||t.to);
