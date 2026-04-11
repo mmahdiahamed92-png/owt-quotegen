@@ -255,6 +255,22 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .itin-date{font-size:8.5pt;color:#555;font-weight:500}
 .page .itin-divider{border:0;border-top:1px solid #eee8d5;margin:0}
 
+/* Quote Summary Block */
+.page .quote-summary{background:#fafaf7;border:1px solid #eee8d5;border-radius:14px;padding:18px 20px;margin-top:12px}
+.page .qs-grid{display:table;width:100%;border-collapse:collapse}
+.page .qs-row{display:table-row}
+.page .qs-label{display:table-cell;padding:5px 10px 5px 0;font-size:8pt;color:#999;text-transform:uppercase;letter-spacing:.1em;font-weight:600;width:35%;vertical-align:top;border-bottom:1px solid #eee8d5}
+.page .qs-value{display:table-cell;padding:5px 0;font-size:9.5pt;color:#1a1a1a;font-weight:500;border-bottom:1px solid #eee8d5}
+.page .qs-row:last-child .qs-label,.page .qs-row:last-child .qs-value{border-bottom:0}
+.page .qs-price{text-align:center;margin-top:14px;padding:14px;background:linear-gradient(135deg,#1a1a1a,#2a2520);border-radius:10px;color:#fff}
+.page .qs-price .qs-p-label{font-size:7pt;text-transform:uppercase;letter-spacing:.2em;color:#D4AF6A;margin-bottom:4px}
+.page .qs-price .qs-p-amount{font-family:var(--fh);font-size:22pt;font-weight:600;letter-spacing:-.02em}
+.page .qs-deposit{text-align:center;margin-top:8px;padding:8px 14px;background:rgba(212,175,106,.08);border:1px solid rgba(212,175,106,.2);border-radius:8px;font-size:8pt;color:#8B6B3A;font-weight:600;letter-spacing:.04em}
+.page .qs-badges{display:table;width:100%;margin-top:12px;border-collapse:separate;border-spacing:8px 0}
+.page .qs-badge{display:table-cell;text-align:center;padding:8px 6px;border:1px solid #eee8d5;border-radius:8px;background:#fff}
+.page .qs-badge .qs-b-label{font-size:7pt;color:#8B6B3A;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.page .qs-badge .qs-b-value{font-size:11pt;color:#1a1a1a;font-weight:600;margin-top:2px}
+
 .page table.price{width:100%;border-collapse:separate;border-spacing:0;font-size:10pt;border:1px solid #eee;border-radius:14px;overflow:hidden}
 .page table.price th{background:#1a1a1a;color:#fff;padding:13px 16px;text-align:left;font-weight:500;letter-spacing:.04em;font-size:9.5pt;text-transform:uppercase}
 .page table.price td{padding:13px 16px;border-bottom:1px solid #f3f3f3;color:#333;font-weight:400}
@@ -1911,6 +1927,29 @@ function _render(){
       <h2 style="border-bottom:none;text-align:center;margin-bottom:8px">Package Overview</h2>
       <p style="font-size:9.5pt;line-height:1.8;color:#444;max-width:85%;margin:0 auto;text-align:center">${esc(overviewText)}</p>
     </div>`;
+  // Quote Summary Block
+  const totalRow=current.prices.find(p=>p.total);
+  const totalAmt=totalRow?cur+esc(totalRow.amt):'';
+  const trust=(b.trust||DEFAULT_TRUST);
+  const quoteSummaryEl=`<div class="quote-summary">
+    <div class="qs-grid">
+      <div class="qs-row"><div class="qs-label">Quote Ref</div><div class="qs-value">${esc(current.quoteNo||'—')}</div></div>
+      <div class="qs-row"><div class="qs-label">Date</div><div class="qs-value">${fmt(current.quoteDate)}</div></div>
+      <div class="qs-row"><div class="qs-label">Valid Until</div><div class="qs-value">${fmt(current.validity)}</div></div>
+      <div class="qs-row"><div class="qs-label">Agent</div><div class="qs-value">${esc(current.agent||'—')}</div></div>
+      <div class="qs-row"><div class="qs-label">Travellers</div><div class="qs-value">${esc(current.travelers||'—')}</div></div>
+      <div class="qs-row"><div class="qs-label">Destination</div><div class="qs-value">${esc(current.dest||'—')}</div></div>
+      <div class="qs-row"><div class="qs-label">Departure</div><div class="qs-value">${esc(current.departureAirport||'—')}</div></div>
+      <div class="qs-row"><div class="qs-label">Travel Dates</div><div class="qs-value">${fmt(current.startDate)} – ${fmt(current.endDate)}</div></div>
+    </div>
+    ${totalAmt?`<div class="qs-price"><div class="qs-p-label">Total Package Price</div><div class="qs-p-amount">${totalAmt}</div></div>`:''}
+    ${totalAmt?`<div class="qs-deposit">50% deposit required to confirm booking</div>`:''}
+    <div class="qs-badges">
+      ${trust.atol?`<div class="qs-badge"><div class="qs-b-label">ATOL</div><div class="qs-b-value">${esc(trust.atol)}</div></div>`:''}
+      ${trust.abta?`<div class="qs-badge"><div class="qs-b-label">ABTA</div><div class="qs-b-value">${esc(trust.abta)}</div></div>`:''}
+      ${trust.iata?`<div class="qs-badge"><div class="qs-b-label">IATA</div><div class="qs-b-value">${esc(trust.iata)}</div></div>`:''}
+    </div>
+  </div>`;
   const hp=current.heroPos||'below-title';
   let p1Body='';
   const tpUrl=b.trustpilotUrl||'';
@@ -1927,10 +1966,10 @@ function _render(){
       <span style="font-size:8pt;color:#555;letter-spacing:.02em">Rated <b style="color:#1a1a1a">Excellent</b> on <b style="color:#00B67A">Trustpilot</b> · Based on verified reviews</span>
     </div>
   </${tpTag}>`;
-  if(hp==='top')p1Body=heroEl+trustpilotEl+titleEl+clientEl+overviewEl;
-  else if(hp==='below-title')p1Body=titleEl+heroEl+trustpilotEl+clientEl+overviewEl;
-  else if(hp==='below-client')p1Body=titleEl+clientEl+heroEl+trustpilotEl+overviewEl;
-  else p1Body=titleEl+clientEl+overviewEl+heroEl+trustpilotEl;
+  if(hp==='top')p1Body=heroEl+trustpilotEl+titleEl+clientEl+overviewEl+quoteSummaryEl;
+  else if(hp==='below-title')p1Body=titleEl+heroEl+trustpilotEl+clientEl+overviewEl+quoteSummaryEl;
+  else if(hp==='below-client')p1Body=titleEl+clientEl+heroEl+trustpilotEl+overviewEl+quoteSummaryEl;
+  else p1Body=titleEl+clientEl+overviewEl+quoteSummaryEl+heroEl+trustpilotEl;
   let p1=`<div class="page">${header}${p1Body}</div>`;
 
   // Itinerary Summary — auto-generated timeline
