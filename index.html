@@ -1748,13 +1748,16 @@ function _render(){
       <span style="font-size:8pt;color:#555;letter-spacing:.02em">Rated <b style="color:#1a1a1a">Excellent</b> on <b style="color:#00B67A">Trustpilot</b> · Based on verified reviews</span>
     </div>
   </${tpTag}>`;
-  if(hp==='top')p1Body=heroEl+trustpilotEl+titleEl+clientEl+flightsEl+overviewEl;
-  else if(hp==='below-title')p1Body=titleEl+heroEl+trustpilotEl+clientEl+flightsEl+overviewEl;
-  else if(hp==='below-client')p1Body=titleEl+clientEl+heroEl+trustpilotEl+flightsEl+overviewEl;
-  else p1Body=titleEl+clientEl+flightsEl+overviewEl+heroEl+trustpilotEl;
+  if(hp==='top')p1Body=heroEl+trustpilotEl+titleEl+clientEl+overviewEl;
+  else if(hp==='below-title')p1Body=titleEl+heroEl+trustpilotEl+clientEl+overviewEl;
+  else if(hp==='below-client')p1Body=titleEl+clientEl+heroEl+trustpilotEl+overviewEl;
+  else p1Body=titleEl+clientEl+overviewEl+heroEl+trustpilotEl;
   let p1=`<div class="page">${header}${p1Body}</div>`;
 
-  // page 2 — itinerary
+  // flights page (separate from cover)
+  let pFlights=flightsEl?`<div class="page">${flightsEl}</div>`:'';
+
+  // itinerary
   const dayHTML=current.days.map((d,i)=>`<div class="day">
     ${d.img?`<img class="img" src="${IMG.src(d.img)}">`:'<div class="img" style="display:flex;align-items:center;justify-content:center;color:#aaa;font-size:8pt">No image</div>'}
     <div class="body"><b>Day ${i+1} — ${esc(d.title)}</b><p>${nl(d.desc)}</p></div></div>`).join('');
@@ -1852,7 +1855,7 @@ function _render(){
     <div class="foot" style="margin-top:14px"><b>${esc(t.closing||'')}</b><br>Your journey starts safely with ${esc(b.name||'OWT Group')}<br>${esc(b.contact||'')}</div>
   </div>`;
 
-  $('preview').innerHTML=p1+p2+p3+pXfer+p4+p5;
+  $('preview').innerHTML=p1+pFlights+p2+p3+pXfer+p4+p5;
 }
 
 // ====== SAVE ======
