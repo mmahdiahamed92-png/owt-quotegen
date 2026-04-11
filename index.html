@@ -1776,10 +1776,7 @@ function _render(){
       :`<div class="agency">${esc(b.name)}</div>`}
     </div>
     <div class="qi"><b>QUOTATION</b>
-      Quote #: ${esc(current.quoteNo)}<br>
-      Date: ${fmt(current.quoteDate)}<br>
-      Valid Until: ${fmt(current.validity)}<br>
-      Agent: ${esc(current.agent)}
+      ${esc(current.quoteNo)}
     </div>
   </div>`;
 
@@ -1931,16 +1928,12 @@ function _render(){
   const totalRow=current.prices.find(p=>p.total);
   const totalAmt=totalRow?cur+esc(totalRow.amt):'';
   const trust=(b.trust||DEFAULT_TRUST);
-  const quoteSummaryEl=`<div class="quote-summary">
+  const quoteSummaryEl=`<div class="quote-summary" style="position:relative"><button class="prev-edit no-print" onclick="editField('quoteNo')" title="Edit quote details">✏️</button>
     <div class="qs-grid">
       <div class="qs-row"><div class="qs-label">Quote Ref</div><div class="qs-value">${esc(current.quoteNo||'—')}</div></div>
       <div class="qs-row"><div class="qs-label">Date</div><div class="qs-value">${fmt(current.quoteDate)}</div></div>
       <div class="qs-row"><div class="qs-label">Valid Until</div><div class="qs-value">${fmt(current.validity)}</div></div>
       <div class="qs-row"><div class="qs-label">Agent</div><div class="qs-value">${esc(current.agent||'—')}</div></div>
-      <div class="qs-row"><div class="qs-label">Travellers</div><div class="qs-value">${esc(current.travelers||'—')}</div></div>
-      <div class="qs-row"><div class="qs-label">Destination</div><div class="qs-value">${esc(current.dest||'—')}</div></div>
-      <div class="qs-row"><div class="qs-label">Departure</div><div class="qs-value">${esc(current.departureAirport||'—')}</div></div>
-      <div class="qs-row"><div class="qs-label">Travel Dates</div><div class="qs-value">${fmt(current.startDate)} – ${fmt(current.endDate)}</div></div>
     </div>
     ${totalAmt?`<div class="qs-price"><div class="qs-p-label">Total Package Price</div><div class="qs-p-amount">${totalAmt}</div></div>`:''}
     ${totalAmt?`<div class="qs-deposit">50% deposit required to confirm booking</div>`:''}
