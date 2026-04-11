@@ -1788,11 +1788,12 @@ function _render(){
     </table></div>`:''
   // Close itinerary page
   if(p2)p2=p2+'</div>';
-  // Combine flights + accommodation + transfers into one compact page
-  const detailsContent=[flightsEl,hotelsBlock,xferHTML].filter(Boolean).join('');
-  let p3=detailsContent?`<div class="page">${detailsContent}</div>`:'';
-  let pFlights='';
-  let pXfer='';
+  // Flights page
+  let pFlights=flightsEl?`<div class="page">${flightsEl}</div>`:'';
+  // Accommodation page
+  let p3=hotelsBlock?`<div class="page">${hotelsBlock}</div>`:'';
+  // Transfers page
+  let pXfer=xferHTML?`<div class="page">${xferHTML}</div>`:'';
 
   // page 4 — pricing + incl/excl + terms
   const priceRows=current.prices.map(pr=>`<tr class="${pr.total?'total':''}"><td>${esc(pr.label)}</td><td style="text-align:right">${cur}${esc(pr.amt)}</td></tr>`).join('');
@@ -1853,7 +1854,7 @@ function _render(){
     <div class="foot" style="margin-top:14px"><b>${esc(t.closing||'')}</b><br>Your journey starts safely with ${esc(b.name||'OWT Group')}<br>${esc(b.contact||'')}</div>
   </div>`;
 
-  $('preview').innerHTML=p1+p2+p3+p4+p5;
+  $('preview').innerHTML=p1+pFlights+p2+p3+pXfer+p4+p5;
 }
 
 // ====== SAVE ======
