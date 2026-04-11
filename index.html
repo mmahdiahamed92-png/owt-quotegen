@@ -1234,7 +1234,13 @@ const DEFAULT_BRANDS=[
   {id:'b4',code:'OWT',name:'One World Travels UK',tagline:'One World, Endless Possibilities',contact:'+44 20 0000 0004 · hello@oneworldtravels.co.uk',logo:'',terms:'50% advance payment to confirm booking\nBalance due 30 days before departure'},
   {id:'b5',code:'OWTT',name:'One World Travels & Tours UK',tagline:'Travels & Tours Reimagined',contact:'+44 20 0000 0005',logo:'',terms:'Standard OWT terms apply'},
   {id:'b6',code:'FCT',name:'First Class Tours UK',tagline:'Travel in First Class',contact:'+44 20 0000 0006',logo:'',terms:'Standard OWT terms apply'},
-  {id:'b7',code:'RR',name:'Royal Routes UK',tagline:'Routes Fit for Royalty',contact:'+44 20 0000 0007',logo:'',terms:'Standard OWT terms apply'}
+  {id:'b7',code:'RR',name:'Royal Routes UK',tagline:'Routes Fit for Royalty',contact:'+44 20 0000 0007',logo:'',terms:'Standard OWT terms apply'},
+  {id:'b8',code:'ELUX',name:'ELUX Travels',tagline:'Luxury Beyond Borders',contact:'+44 20 0000 0008 · hello@eluxtravels.co.uk',logo:'',terms:'10% advance payment to confirm booking\nBalance due 30 days before departure'},
+  {id:'b9',code:'TMT',name:'The Maldives Tour',tagline:'Paradise Awaits',contact:'+44 20 0000 0009 · hello@themaldives.tour',logo:'',terms:'10% advance payment to confirm booking\nBalance due 30 days before departure'},
+  {id:'b10',code:'FLU',name:'Fly Liberty UK',tagline:'Fly Free, Fly Liberty',contact:'+44 20 0000 0010 · hello@flyliberty.co.uk',logo:'',terms:'10% advance payment to confirm booking\nBalance due 30 days before departure'},
+  {id:'b11',code:'TGU',name:'Travel Gates UK',tagline:'Your Gateway to the World',contact:'+44 20 0000 0011 · hello@travelgates.co.uk',logo:'',terms:'10% advance payment to confirm booking\nBalance due 30 days before departure'},
+  {id:'b12',code:'THU',name:'Tour Help UK',tagline:'Helping You Tour the World',contact:'+44 20 0000 0012 · hello@tourhelp.co.uk',logo:'',terms:'10% advance payment to confirm booking\nBalance due 30 days before departure'},
+  {id:'b13',code:'OWUSA',name:'One World Travels USA',tagline:'One World, American Dreams',contact:'+1 800 000 0013 · hello@oneworldtravels.us',logo:'',terms:'10% advance payment to confirm booking\nBalance due 30 days before departure'}
 ];
 const DEFAULT_INCL='Return flights\nHotel accommodation\nAll applicable taxes';
 const DEFAULT_EXCL='Visa fees\nTravel insurance\nPersonal expenses\nMeals not mentioned in inclusions\nAnything not mentioned in inclusions';
@@ -1971,7 +1977,7 @@ function _render(){
       <div class="qs-row"><div class="qs-label">Agent</div><div class="qs-value">${esc(current.agent||'—')}</div></div>
     </div>
     ${totalAmt?`<div class="qs-price"><div class="qs-p-label">Total Package Price</div><div class="qs-p-amount">${totalAmt}</div></div>`:''}
-    ${totalAmt?`<div class="qs-deposit">50% deposit required to confirm booking</div>`:''}
+    ${totalAmt?`<div class="qs-deposit">${esc((current.terms||'').split('\n').find(l=>/deposit|advance|payment/i.test(l))||'10% advance payment to confirm booking')}</div>`:''}
     <div class="qs-badges">
       ${trust.atol?`<div class="qs-badge"><div class="qs-b-label">ATOL</div><div class="qs-b-value">${esc(trust.atol)}</div></div>`:''}
       ${trust.abta?`<div class="qs-badge"><div class="qs-b-label">ABTA</div><div class="qs-b-value">${esc(trust.abta)}</div></div>`:''}
@@ -2332,15 +2338,38 @@ function generatePDF(){
 async function shareQuoteLink(){
   if(!current){alert('Open a quote first');return}
   if(!SB.user){alert('Please log in to share quotes');return}
+  // Show loading modal immediately
+  const modal=$('modal');
+  modal.classList.add('open');
+  $('modalTitle').textContent='Preparing Quote Link...';
+  $('modalBody').innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">⏳</div><p style="color:var(--tx2)">Uploading images and generating link...</p></div>';
   try{
+    // Deep clone to avoid mutating originals
+    const qClone=JSON.parse(JSON.stringify(current));
+    const bClone=JSON.parse(JSON.stringify(brands.find(x=>x.id===current.brandId)||{}));
+    // Resolve all idb:// refs to public URLs
+    async function resolveImages(obj){
+      if(!obj||typeof obj!=='object')return;
+      for(const key of Object.keys(obj)){
+        if(typeof obj[key]==='string'&&obj[key].startsWith('idb://')){
+          const base64=await IMG.get(obj[key]);
+          if(base64&&SB.user){
+            try{obj[key]=await SB.uploadImage(base64)}catch{obj[key]=base64}
+          }else if(base64){obj[key]=base64}
+        }else if(typeof obj[key]==='object'&&obj[key]!==null){
+          await resolveImages(obj[key]);
+        }
+      }
+    }
+    await resolveImages(qClone);
+    await resolveImages(bClone);
     const token='q_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
-    const b=brands.find(x=>x.id===current.brandId)||{};
     const clientPhone=((current.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,'');
-    const expiresAt=current.validity?new Date(current.validity+'T23:59:59').toISOString():null;
+    const expiresAt=qClone.validity?new Date(qClone.validity+'T23:59:59').toISOString():null;
     const{error}=await SB.client.from('qg_shared_quotes').upsert({
       token:token,
-      quote_data:current,
-      brand_data:b,
+      quote_data:qClone,
+      brand_data:bClone,
       expires_at:expiresAt,
       views:0
     });
@@ -2353,8 +2382,6 @@ async function shareQuoteLink(){
     const waMsg=`Hi${clientName?' '+clientName:''},\n\nYour personalised travel quote for *${dest}* is ready to view:\n\n${shareUrl}\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n${current.agent||b.name||''}`;
     const emailSubj=encodeURIComponent('Your Travel Quote — '+dest);
     const emailBody=encodeURIComponent('Hi'+(clientName?' '+clientName:'')+',\n\nYour personalised travel quote is ready to view:\n\n'+shareUrl+'\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n'+(current.agent||''));
-    const modal=$('modal');
-    modal.classList.add('open');
     $('modalTitle').textContent='Quote Link Ready';
     $('modalBody').innerHTML=`
       <div style="text-align:center;padding:10px 0">
@@ -2373,6 +2400,7 @@ async function shareQuoteLink(){
         <p style="color:var(--tx3);font-size:11px;margin-top:8px">${expiresAt?'Expires: '+new Date(expiresAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No expiry set'} · Views will be tracked</p>
       </div>`;
   }catch(e){
+    closeModal();
     alert('Failed to generate share link: '+(e.message||e));
   }
 }
@@ -3520,22 +3548,57 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       <small>${x.location?'📍 '+esc(x.location)+' · ':''}${esc(x.duration||'')}</small>
     </div>`).join('');
 
-    // Flights
+    // Flights (outbound + internal + return)
+    const intFlightsHTML=(q.internalFlights||[]).filter(f=>f.from||f.to).map(f=>`<div class="qv-card">
+      <div style="font-size:11px;color:#D4AF6A;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">INTERNAL${f.airline?' · '+esc(f.airline):''}</div>
+      <b>${esc(f.from||'—')} → ${esc(f.to||'—')}</b>
+      <small>${fmtD(f.date)}${f.time?' · '+esc(f.time):''}${f.no?' · '+esc(f.no):''}</small>
+    </div>`).join('');
     const flightsHTML=q.flightsInc?`
       <div class="qv-card">
         <div style="font-size:11px;color:#D4AF6A;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">OUTBOUND</div>
         <b>${esc(q.flightOutFrom||'—')} → ${esc(q.flightOutTo||'—')}</b>
-        <small>${fmtD(q.flightOutDate)}${q.flightOutTime?' · '+esc(q.flightOutTime):''}${q.flightOutNo?' · '+esc(q.flightOutNo):''}</small>
+        <small>${fmtD(q.flightOutDate)}${q.flightOutTime?' · '+esc(q.flightOutTime):''}${q.flightOutNo?' · '+esc(q.flightOutNo):''}${q.flightOutDuration?' · '+esc(q.flightOutDuration):''}</small>
       </div>
+      ${intFlightsHTML}
       <div class="qv-card">
         <div style="font-size:11px;color:#D4AF6A;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">RETURN</div>
         <b>${esc(q.flightRetFrom||'—')} → ${esc(q.flightRetTo||'—')}</b>
-        <small>${fmtD(q.flightRetDate)}${q.flightRetTime?' · '+esc(q.flightRetTime):''}${q.flightRetNo?' · '+esc(q.flightRetNo):''}</small>
-      </div>`:'';
+        <small>${fmtD(q.flightRetDate)}${q.flightRetTime?' · '+esc(q.flightRetTime):''}${q.flightRetNo?' · '+esc(q.flightRetNo):''}${q.flightRetDuration?' · '+esc(q.flightRetDuration):''}</small>
+      </div>
+      ${q.flightAirline?`<div style="text-align:center;font-size:11px;color:#888;margin-top:6px"><b style="color:#1a1a1a">${esc(q.flightAirline)}</b> · ${esc(q.flightClass||'Economy')} Class</div>`:''}`:'';
 
-    // Inclusions / Exclusions
+    // Transfers
+    const transfersHTML=(q.transfers||[]).filter(t=>t.type||t.from).map(t=>`<div class="qv-card">
+      <b>${esc(t.type?t.type.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Transfer')}</b>
+      <small>${t.from?esc(t.from)+' → '+esc(t.to||''):''}${t.date?' · '+fmtD(t.date):''}${t.time?' · '+esc(t.time):''}</small>
+      ${t.operator?`<small style="display:block;margin-top:2px">${esc(t.operator)}${t.notes?' · '+esc(t.notes):''}</small>`:''}
+    </div>`).join('');
+
+    // Days / Itinerary
+    const daysHTML=(q.days||[]).filter(d=>d.title).map((d,i)=>`<div class="qv-card" style="border-left:3px solid #D4AF6A">
+      ${d.img?`<img src="${d.img}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px">`:''}
+      <div style="font-size:10px;color:#D4AF6A;font-weight:700;letter-spacing:.12em">DAY ${i+1}</div>
+      <b>${esc(d.title)}</b>
+      ${d.desc?`<small>${esc(d.desc)}</small>`:''}
+    </div>`).join('');
+
+    // Price breakdown rows
+    const priceRows=(q.prices||[]).filter(p=>!p.total&&p.label&&p.amt).map(p=>`<div class="qv-row"><span class="qv-label">${esc(p.label)}</span><span class="qv-val">${cur}${esc(p.amt)}</span></div>`).join('');
+
+    // Inclusions / Exclusions / Terms
     const inclHTML=(q.incl||'').split('\n').filter(Boolean).map(l=>`<li>${esc(l)}</li>`).join('');
     const exclHTML=(q.excl||'').split('\n').filter(Boolean).map(l=>`<li>${esc(l)}</li>`).join('');
+    const termsHTML=(q.terms||'').split('\n').filter(Boolean).map(l=>`<li>${esc(l)}</li>`).join('');
+
+    // Deposit text from brand terms or default
+    const depositText=(b.terms||'').split('\n').find(l=>/deposit|advance|payment/i.test(l))||'10% advance payment to confirm booking';
+
+    // Trust/protection content
+    const trustContent=trust.intro||trust.partner?`<div class="qv-sect"><div class="qv-sect-title">Your Protection</div>
+      ${trust.intro?`<div style="font-size:12px;color:#555;line-height:1.7;margin-bottom:8px">${esc(trust.intro)}</div>`:''}
+      ${trust.partner?`<div style="font-size:12px;color:#555;line-height:1.7">${esc(trust.partner)}</div>`:''}
+    </div>`:'';
 
     document.getElementById('quoteViewer').innerHTML=`
       ${q.heroSrc?`<img class="qv-hero" src="${q.heroSrc}">`:`<div class="qv-hero-ph">${esc(q.dest||'Your Journey')}</div>`}
@@ -3550,6 +3613,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 
         <div class="qv-sect">
           <div class="qv-sect-title">Trip Details</div>
+          <div class="qv-row"><span class="qv-label">Prepared For</span><span class="qv-val">${esc(q.clientName||'—')}</span></div>
           <div class="qv-row"><span class="qv-label">Travellers</span><span class="qv-val">${esc(q.travelers||'—')}</span></div>
           <div class="qv-row"><span class="qv-label">Destination</span><span class="qv-val">${esc(q.dest||'—')}</span></div>
           <div class="qv-row"><span class="qv-label">Departure</span><span class="qv-val">${esc(q.departureAirport||'—')}</span></div>
@@ -3558,16 +3622,21 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
           <div class="qv-row"><span class="qv-label">Agent</span><span class="qv-val">${esc(q.agent||'—')}</span></div>
         </div>
 
+        ${daysHTML?`<div class="qv-sect"><div class="qv-sect-title">Your Journey</div>${daysHTML}</div>`:''}
         ${flightsHTML?`<div class="qv-sect"><div class="qv-sect-title">Flights</div>${flightsHTML}</div>`:''}
         ${hotelsHTML?`<div class="qv-sect"><div class="qv-sect-title">Accommodation</div>${hotelsHTML}</div>`:''}
         ${excHTML?`<div class="qv-sect"><div class="qv-sect-title">Excursions</div>${excHTML}</div>`:''}
+        ${transfersHTML?`<div class="qv-sect"><div class="qv-sect-title">Transfers</div>${transfersHTML}</div>`:''}
 
+        ${priceRows?`<div class="qv-sect"><div class="qv-sect-title">Price Breakdown</div>${priceRows}</div>`:''}
         ${totalAmt?`<div class="qv-price-block"><div class="qv-pl">Total Package Price</div><div class="qv-pa">${totalAmt}</div></div>`:''}
-        ${totalAmt?`<div class="qv-deposit">50% deposit required to confirm booking</div>`:''}
+        ${totalAmt?`<div class="qv-deposit">${esc(depositText)}</div>`:''}
 
         ${inclHTML?`<div class="qv-sect"><div class="qv-sect-title">Inclusions</div><ul class="qv-list">${inclHTML}</ul></div>`:''}
         ${exclHTML?`<div class="qv-sect"><div class="qv-sect-title">Exclusions</div><ul class="qv-list">${exclHTML}</ul></div>`:''}
+        ${termsHTML?`<div class="qv-sect"><div class="qv-sect-title">Terms & Conditions</div><ul class="qv-list">${termsHTML}</ul></div>`:''}
 
+        ${trustContent}
         <div class="qv-trust">
           ${trust.atol?`<div class="qv-trust-badge"><div class="qv-tb-l">ATOL</div><div class="qv-tb-v">${esc(trust.atol)}</div></div>`:''}
           ${trust.abta?`<div class="qv-trust-badge"><div class="qv-tb-l">ABTA</div><div class="qv-tb-v">${esc(trust.abta)}</div></div>`:''}
