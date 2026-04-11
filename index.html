@@ -426,6 +426,47 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
   #loginGate .login-brand{font-size:42px}
 }
 
+/* QUOTE VIEWER MODE (mobile-first client view) */
+body.viewer-mode{background:#f8f6f1;margin:0;padding:0}
+body.viewer-mode .nav,body.viewer-mode .editor,body.viewer-mode .editor-toolbar,body.viewer-mode #loginGate,body.viewer-mode .credit,body.viewer-mode .view{display:none!important}
+body.viewer-mode #quoteViewer{display:block!important}
+#quoteViewer{display:none;font-family:'Satoshi',sans-serif;max-width:480px;margin:0 auto;padding:0 0 80px;background:#fff;min-height:100vh}
+.qv-hero{width:100%;height:260px;object-fit:cover;display:block}
+.qv-hero-ph{width:100%;height:200px;background:linear-gradient(135deg,#D4AF6A,#A8854A);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:600}
+.qv-body{padding:20px 18px}
+.qv-brand{text-align:center;margin-bottom:16px}
+.qv-brand img{height:48px;width:auto;margin-bottom:6px}
+.qv-brand .qv-bname{font-size:14px;color:#888;letter-spacing:.1em;text-transform:uppercase}
+.qv-title{font-family:'Satoshi',sans-serif;font-size:28px;font-weight:700;color:#1a1a1a;text-align:center;margin:0 0 4px;line-height:1.15;letter-spacing:-.02em}
+.qv-sub{text-align:center;font-size:14px;color:#999;margin-bottom:16px}
+.qv-expiry{text-align:center;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#8B6B3A;font-weight:600}
+.qv-sect{margin-bottom:20px}
+.qv-sect-title{font-size:11px;color:#D4AF6A;letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee8d5}
+.qv-card{background:#fafaf7;border:1px solid #eee8d5;border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.qv-card b{color:#1a1a1a;font-size:14px;display:block;margin-bottom:2px}
+.qv-card small{color:#888;font-size:12px}
+.qv-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0ebe0;font-size:13px}
+.qv-row:last-child{border-bottom:0}
+.qv-row .qv-label{color:#999;font-weight:500}
+.qv-row .qv-val{color:#1a1a1a;font-weight:600;text-align:right}
+.qv-price-block{background:linear-gradient(135deg,#1a1a1a,#2a2520);border-radius:14px;padding:20px;text-align:center;margin:16px 0}
+.qv-price-block .qv-pl{font-size:10px;color:#D4AF6A;text-transform:uppercase;letter-spacing:.2em;margin-bottom:6px}
+.qv-price-block .qv-pa{font-size:32px;color:#fff;font-weight:700;letter-spacing:-.02em}
+.qv-deposit{text-align:center;background:rgba(212,175,106,.08);border:1px solid rgba(212,175,106,.2);border-radius:10px;padding:10px;font-size:12px;color:#8B6B3A;font-weight:600;margin-bottom:16px}
+.qv-trust{display:flex;gap:8px;margin-bottom:16px}
+.qv-trust-badge{flex:1;text-align:center;padding:10px 6px;border:1px solid #eee8d5;border-radius:10px;background:#fafaf7}
+.qv-trust-badge .qv-tb-l{font-size:9px;color:#8B6B3A;font-weight:700;letter-spacing:.12em}
+.qv-trust-badge .qv-tb-v{font-size:16px;color:#1a1a1a;font-weight:700;margin-top:2px}
+.qv-list{margin:0;padding:0;list-style:none;font-size:13px;color:#555;line-height:1.7}
+.qv-list li{padding:4px 0 4px 16px;position:relative}
+.qv-list li:before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:#D4AF6A}
+.qv-cta-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;padding:10px 12px;display:flex;gap:8px;z-index:100;max-width:480px;margin:0 auto;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
+.qv-cta{flex:1;padding:12px 8px;border-radius:10px;text-align:center;font-size:11px;font-weight:700;text-decoration:none;letter-spacing:.04em;display:flex;flex-direction:column;align-items:center;gap:3px}
+.qv-cta.wa{background:#25D366;color:#fff}
+.qv-cta.call{background:#1a1a1a;color:#fff}
+.qv-cta.email{background:#D4AF6A;color:#0a0a0a}
+.qv-cta.book{background:linear-gradient(135deg,#D4AF6A,#A8854A);color:#fff}
+
 /* PRINT */
 @media print{
   .nav,.panel,.preview-toolbar,.modal-bg,.actions-bar{display:none!important}
@@ -916,6 +957,7 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
       <div class="actions-bar">
         <button class="btn" onclick="saveQuote()">💾 Save</button>
         <button class="btn ghost" onclick="downloadPDF()">📥 Download PDF</button>
+        <button class="btn ghost" onclick="shareQuoteLink()" style="border-color:var(--bd-gold);color:var(--gold)">🔗 Share Link</button>
         <button class="btn ghost" onclick="window.print()">🖨️ Print</button>
         <button class="btn ghost" onclick="sendWhatsApp()">📱 WhatsApp</button>
         <button class="btn ghost" onclick="sendEmail()">✉️ Email</button>
@@ -2281,6 +2323,42 @@ function generatePDF(){
     setTimeout(next,80);
   });
 }
+async function shareQuoteLink(){
+  if(!current){alert('Open a quote first');return}
+  if(!SB.user){alert('Please log in to share quotes');return}
+  try{
+    const token='q_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+    const b=brands.find(x=>x.id===current.brandId)||{};
+    const expiresAt=current.validity?new Date(current.validity+'T23:59:59').toISOString():null;
+    const{error}=await SB.client.from('qg_shared_quotes').upsert({
+      token:token,
+      quote_data:current,
+      brand_data:b,
+      expires_at:expiresAt,
+      views:0
+    });
+    if(error)throw error;
+    const shareUrl=window.location.origin+window.location.pathname+'?q='+token;
+    // Copy to clipboard
+    try{await navigator.clipboard.writeText(shareUrl)}catch{}
+    const modal=$('modal');
+    modal.classList.add('open');
+    $('modalTitle').textContent='Quote Link Ready';
+    $('modalBody').innerHTML=`
+      <div style="text-align:center;padding:10px 0">
+        <div style="font-size:42px;margin-bottom:12px">🔗</div>
+        <p style="color:var(--tx2);font-size:13px;margin:0 0 16px">Share this link with your client. They can view the quote on their phone — no PDF needed.</p>
+        <input id="shareLinkInput" value="${shareUrl}" readonly style="width:100%;text-align:center;font-size:12px;padding:12px;border-radius:10px;margin-bottom:12px;cursor:text" onclick="this.select()">
+        <div style="display:flex;gap:8px">
+          <button class="btn" style="flex:1" onclick="navigator.clipboard.writeText($('shareLinkInput').value);this.textContent='✓ Copied!'">📋 Copy Link</button>
+          <button class="btn ghost" style="flex:1" onclick="window.open('https://wa.me/?text='+encodeURIComponent('Here is your travel quote: '+$('shareLinkInput').value))">📱 Send via WhatsApp</button>
+        </div>
+        <p style="color:var(--tx3);font-size:11px;margin-top:12px">${expiresAt?'Expires: '+new Date(expiresAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No expiry set'} · Views will be tracked</p>
+      </div>`;
+  }catch(e){
+    alert('Failed to generate share link: '+(e.message||e));
+  }
+}
 function downloadPDF(){
   generatePDF().then(({blob,filename})=>{
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
@@ -3361,6 +3439,136 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   // refresh info when backup tab opened
   document.querySelectorAll('.adm-tab').forEach(t=>t.addEventListener('click',()=>{if(t.getAttribute('data-adm')==='backup')renderBackupInfo()}));
   renderBackupInfo();
+})();
+</script>
+
+<!-- QUOTE VIEWER (client-facing mobile page) -->
+<div id="quoteViewer"></div>
+<script>
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const shareToken=params.get('q');
+  if(!shareToken)return;
+
+  // Switch to viewer mode
+  document.body.classList.add('viewer-mode');
+
+  const SB_V=window.supabase?window.supabase.createClient(SB_URL,SB_KEY):null;
+  if(!SB_V){document.getElementById('quoteViewer').innerHTML='<div style="padding:40px;text-align:center;color:#888">Unable to load quote.</div>';return}
+
+  async function loadQuote(){
+    const{data,error}=await SB_V.from('qg_shared_quotes').select('*').eq('token',shareToken).single();
+    if(error||!data){document.getElementById('quoteViewer').innerHTML='<div style="padding:60px 20px;text-align:center"><h2 style="color:#1a1a1a;margin:0 0 8px">Quote Not Found</h2><p style="color:#888;font-size:14px">This quote link may have expired or is invalid.</p></div>';return}
+    // Increment view count
+    SB_V.from('qg_shared_quotes').update({views:(data.views||0)+1}).eq('token',shareToken);
+    renderViewer(data.quote_data,data.brand_data,data.expires_at);
+  }
+
+  function fmtD(d){if(!d)return'';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}catch{return d}}
+  function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+  function stars(n){return '★'.repeat(+n||0)+'☆'.repeat(5-(+n||0))}
+
+  function renderViewer(q,b,expiresAt){
+    const cur=({GBP:'£',EUR:'€',USD:'$'})[q.curr]||q.curr+' ';
+    const total=q.prices?.find(p=>p.total);
+    const totalAmt=total?cur+(total.amt||''):'';
+    const trust=b.trust||{};
+    const waList=(b.whatsapp||[]).map(w=>typeof w==='string'?{number:w,link:''}:w).filter(w=>w.number);
+    const waClean=n=>(n||'').replace(/[^\d]/g,'');
+    const firstWA=waList[0];
+    const waHref=firstWA?(firstWA.link||'https://wa.me/'+waClean(firstWA.number)):'';
+    const phoneHref=b.phone?'tel:'+b.phone.replace(/[^\d+]/g,''):'';
+    const emailHref=b.email?'mailto:'+b.email:'';
+
+    // Expiry
+    let expiryHTML='';
+    if(expiresAt||q.validity){
+      const exp=new Date(expiresAt||q.validity);
+      const now=new Date();
+      const days=Math.ceil((exp-now)/(864e5));
+      if(days>0)expiryHTML=`<div class="qv-expiry">⏰ This quote is valid for <b>${days} day${days>1?'s':''}</b> — expires ${fmtD(expiresAt||q.validity)}</div>`;
+      else expiryHTML=`<div class="qv-expiry" style="color:#FF453A;border-color:rgba(255,69,58,.2);background:rgba(255,69,58,.06)">This quote has expired</div>`;
+    }
+
+    // Hotels
+    const hotelsHTML=(q.hotels||[]).map(h=>`<div class="qv-card">
+      ${h.img?`<img src="${h.img}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px">`:''}
+      <b>${esc(h.name||'')}</b>
+      <small>${h.stars?stars(h.stars)+' · ':''}📍 ${esc(h.city||'')} · ${esc(h.nights||'')} Night${h.nights==='1'?'':'s'}${h.board?' · '+esc(h.board):''}</small>
+    </div>`).join('');
+
+    // Excursions
+    const excHTML=(q.excursions||[]).filter(x=>x.name).map(x=>`<div class="qv-card">
+      ${x.img?`<img src="${x.img}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px">`:''}
+      <b>${esc(x.name)}</b>
+      <small>${x.location?'📍 '+esc(x.location)+' · ':''}${esc(x.duration||'')}</small>
+    </div>`).join('');
+
+    // Flights
+    const flightsHTML=q.flightsInc?`
+      <div class="qv-card">
+        <div style="font-size:11px;color:#D4AF6A;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">OUTBOUND</div>
+        <b>${esc(q.flightOutFrom||'—')} → ${esc(q.flightOutTo||'—')}</b>
+        <small>${fmtD(q.flightOutDate)}${q.flightOutTime?' · '+esc(q.flightOutTime):''}${q.flightOutNo?' · '+esc(q.flightOutNo):''}</small>
+      </div>
+      <div class="qv-card">
+        <div style="font-size:11px;color:#D4AF6A;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">RETURN</div>
+        <b>${esc(q.flightRetFrom||'—')} → ${esc(q.flightRetTo||'—')}</b>
+        <small>${fmtD(q.flightRetDate)}${q.flightRetTime?' · '+esc(q.flightRetTime):''}${q.flightRetNo?' · '+esc(q.flightRetNo):''}</small>
+      </div>`:'';
+
+    // Inclusions / Exclusions
+    const inclHTML=(q.incl||'').split('\n').filter(Boolean).map(l=>`<li>${esc(l)}</li>`).join('');
+    const exclHTML=(q.excl||'').split('\n').filter(Boolean).map(l=>`<li>${esc(l)}</li>`).join('');
+
+    document.getElementById('quoteViewer').innerHTML=`
+      ${q.heroSrc?`<img class="qv-hero" src="${q.heroSrc}">`:`<div class="qv-hero-ph">${esc(q.dest||'Your Journey')}</div>`}
+      <div class="qv-body">
+        <div class="qv-brand">
+          ${b.logo?`<img src="${b.logo}"><br>`:''}
+          <div class="qv-bname">${esc(b.name||'')}</div>
+        </div>
+        <div class="qv-title">${esc(q.tourTitle||'Your Bespoke Tour')}</div>
+        <div class="qv-sub">${esc(q.tourSub||'')}</div>
+        ${expiryHTML}
+
+        <div class="qv-sect">
+          <div class="qv-sect-title">Trip Details</div>
+          <div class="qv-row"><span class="qv-label">Travellers</span><span class="qv-val">${esc(q.travelers||'—')}</span></div>
+          <div class="qv-row"><span class="qv-label">Destination</span><span class="qv-val">${esc(q.dest||'—')}</span></div>
+          <div class="qv-row"><span class="qv-label">Departure</span><span class="qv-val">${esc(q.departureAirport||'—')}</span></div>
+          <div class="qv-row"><span class="qv-label">Dates</span><span class="qv-val">${fmtD(q.startDate)} – ${fmtD(q.endDate)}</span></div>
+          <div class="qv-row"><span class="qv-label">Quote Ref</span><span class="qv-val">${esc(q.quoteNo||'—')}</span></div>
+          <div class="qv-row"><span class="qv-label">Agent</span><span class="qv-val">${esc(q.agent||'—')}</span></div>
+        </div>
+
+        ${flightsHTML?`<div class="qv-sect"><div class="qv-sect-title">Flights</div>${flightsHTML}</div>`:''}
+        ${hotelsHTML?`<div class="qv-sect"><div class="qv-sect-title">Accommodation</div>${hotelsHTML}</div>`:''}
+        ${excHTML?`<div class="qv-sect"><div class="qv-sect-title">Excursions</div>${excHTML}</div>`:''}
+
+        ${totalAmt?`<div class="qv-price-block"><div class="qv-pl">Total Package Price</div><div class="qv-pa">${totalAmt}</div></div>`:''}
+        ${totalAmt?`<div class="qv-deposit">50% deposit required to confirm booking</div>`:''}
+
+        ${inclHTML?`<div class="qv-sect"><div class="qv-sect-title">Inclusions</div><ul class="qv-list">${inclHTML}</ul></div>`:''}
+        ${exclHTML?`<div class="qv-sect"><div class="qv-sect-title">Exclusions</div><ul class="qv-list">${exclHTML}</ul></div>`:''}
+
+        <div class="qv-trust">
+          ${trust.atol?`<div class="qv-trust-badge"><div class="qv-tb-l">ATOL</div><div class="qv-tb-v">${esc(trust.atol)}</div></div>`:''}
+          ${trust.abta?`<div class="qv-trust-badge"><div class="qv-tb-l">ABTA</div><div class="qv-tb-v">${esc(trust.abta)}</div></div>`:''}
+          ${trust.iata?`<div class="qv-trust-badge"><div class="qv-tb-l">IATA</div><div class="qv-tb-v">${esc(trust.iata)}</div></div>`:''}
+        </div>
+      </div>
+
+      <div class="qv-cta-bar">
+        ${waHref?`<a href="${waHref}" target="_blank" class="qv-cta wa"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>WhatsApp</a>`:''}
+        ${phoneHref?`<a href="${phoneHref}" class="qv-cta call"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>Call</a>`:''}
+        ${emailHref?`<a href="${emailHref}" class="qv-cta email"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0a0a0a"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>Email</a>`:''}
+        <a href="#" onclick="alert('Please contact your agent to proceed with booking.');return false" class="qv-cta book"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>Book</a>
+      </div>
+    `;
+    document.title=(q.tourTitle||'Your Quote')+' — '+(b.name||'');
+  }
+  loadQuote();
 })();
 </script>
 </body>
