@@ -3290,25 +3290,14 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     if(!email.includes('@')){alert('Enter a valid email address');return}
     if(pass.length<6){alert('Password must be at least 6 characters');return}
     try{
-      // Save current admin session before signup
-      const{data:currentSession}=await SB.client.auth.getSession();
-      const adminToken=currentSession?.session?.refresh_token;
-      // Create the new user
-      const{error}=await SB.client.auth.signUp({email,password:pass,options:{data:{name}}});
+      // Create user via database function (doesn't affect current session)
+      const{data,error}=await SB.client.rpc('create_agent',{agent_email:email,agent_password:pass,agent_name:name});
       if(error)throw error;
-      // Restore admin session
-      if(adminToken){
-        await SB.client.auth.refreshSession({refresh_token:adminToken});
-        const{data:restored}=await SB.client.auth.getSession();
-        if(restored?.session)SB.user=restored.session.user;
-      }
       logAct('agent.registered',email);
       alert('✅ Agent registered: '+email+'\n\nThey can now log in with this email and password.');
       document.getElementById('admNewUser').value='';document.getElementById('admNewPass').value='';document.getElementById('admNewRole').value='';
     }catch(e){
       alert('Registration failed: '+(e.message||e));
-      // Try to restore session if it got disrupted
-      const s=await SB.getSession();if(!s)location.reload();
     }
   });
 
