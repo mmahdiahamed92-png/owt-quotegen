@@ -242,18 +242,25 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 
 /* Your Journey Timeline */
 .page .itin-summary{background:#fafaf7;border:1px solid #eee8d5;border-radius:14px;padding:18px 22px;margin-top:10px}
-.page .itin-list{position:relative;padding-left:32px}
-.page .itin-list:before{content:'';position:absolute;left:13px;top:16px;bottom:16px;width:2px;background:linear-gradient(180deg,#D4AF6A,#eaddc0)}
-.page .itin-item{display:table;width:100%;padding:8px 0;page-break-inside:avoid}
+.page .itin-list{position:relative;padding-left:36px}
+.page .itin-list:before{content:'';position:absolute;left:15px;top:18px;bottom:18px;width:2px;background:linear-gradient(180deg,#D4AF6A,#eaddc0)}
+.page .itin-item{display:table;width:100%;padding:14px 0;page-break-inside:avoid}
 .page .itin-item .itin-left{display:table-cell;vertical-align:middle;width:auto}
-.page .itin-item .itin-right{display:table-cell;vertical-align:middle;text-align:right;width:120px}
-.page .itin-icon{width:26px;height:26px;border-radius:50%;background:#1a1a1a;display:inline-block;vertical-align:middle;text-align:center;line-height:26px;margin-left:-32px;margin-right:10px;position:relative;z-index:1}
-.page .itin-icon svg{width:13px;height:13px;vertical-align:middle;margin-top:-1px}
+.page .itin-item .itin-right{display:table-cell;vertical-align:middle;text-align:right;width:130px}
+.page .itin-icon{width:32px;height:32px;border-radius:50%;background:#1a1a1a;display:inline-block;vertical-align:middle;text-align:center;line-height:32px;margin-left:-36px;margin-right:12px;position:relative;z-index:1}
+.page .itin-icon svg{width:16px;height:16px;vertical-align:middle;margin-top:-1px}
 .page .itin-title{display:inline-block;vertical-align:middle}
-.page .itin-title .it-name{font-size:11pt;font-weight:600;color:#1a1a1a;letter-spacing:-.01em}
-.page .itin-title .it-type{font-size:8pt;color:#1a1a1a;font-weight:600;letter-spacing:.03em}
+.page .itin-title .it-name{font-size:12pt;font-weight:600;color:#1a1a1a;letter-spacing:-.01em}
+.page .itin-title .it-type{font-size:7.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-top:1px}
+.page .itin-title .it-detail{font-size:8pt;color:#999;font-weight:400;margin-top:2px}
 .page .itin-date{font-size:9pt;color:#555;font-weight:500}
+.page .itin-time{font-size:7.5pt;color:#bbb;margin-top:2px;text-align:right}
 .page .itin-divider{border:0;border-top:1px solid #f0ebe0;margin:0}
+.page .itin-glance{background:#fafaf7;border:1px solid #eee8d5;border-radius:12px;padding:14px 16px;margin-top:12px}
+.page .itin-glance-title{font-size:7.5pt;color:#D4AF6A;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
+.page .itin-glance-row{display:table;width:100%}
+.page .itin-glance-row .ig-l{display:table-cell;padding:3px 8px 3px 0;font-size:7.5pt;color:#999;text-transform:uppercase;letter-spacing:.08em;font-weight:600;width:30%}
+.page .itin-glance-row .ig-v{display:table-cell;padding:3px 0;font-size:9pt;color:#1a1a1a;font-weight:500}
 
 /* Quote Summary Block */
 .page .quote-summary{background:#fafaf7;border:1px solid #eee8d5;border-radius:12px;padding:14px 16px;margin-top:8px}
@@ -2008,26 +2015,27 @@ function _render(){
 
   // Your Journey — auto-generated timeline
   const itinItems=[];
-  const svgS=(d)=>`<svg width="14" height="14" viewBox="0 0 24 24" fill="#D4AF6A">${d}</svg>`;
+  const svgS=(d)=>`<svg width="18" height="18" viewBox="0 0 24 24" fill="#D4AF6A">${d}</svg>`;
   const planeS=svgS('<path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>');
   const hotelS=svgS('<path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/>');
   const pinS=svgS('<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>');
   const carS=svgS('<path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>');
+  const stripCode=s=>(s||'—').replace(/\s*\([A-Z]{3}\)/,'');
   if(current.flightsInc&&(current.flightOutFrom||current.flightOutTo))
-    itinItems.push({icon:planeS,name:(current.flightOutFrom||'—').replace(/\s*\([A-Z]{3}\)/,'')+' → '+(current.flightOutTo||'—').replace(/\s*\([A-Z]{3}\)/,''),type:'Outbound Flight',date:current.flightOutDate});
+    itinItems.push({icon:planeS,name:stripCode(current.flightOutFrom)+' → '+stripCode(current.flightOutTo),type:'Outbound Flight',typeLabel:'OUTBOUND FLIGHT',detail:[current.flightAirline,current.flightClass].filter(Boolean).join(' · '),time:current.flightOutTime||'',date:current.flightOutDate});
   (current.hotels||[]).forEach(h=>{if(h.name){
-    let hDate=h.checkin||'';
-    itinItems.push({icon:hotelS,name:h.name,type:'Hotel'+(h.city?' · '+h.city:'')+(h.nights?' · '+h.nights+' Night'+(h.nights==='1'?'':'s'):''),date:hDate});
+    itinItems.push({icon:hotelS,name:h.name,type:'Hotel'+(h.city?' · '+h.city:''),typeLabel:['HOTEL',h.nights?h.nights+' NIGHT'+(h.nights==='1'?'':'S'):'',h.board||''].filter(Boolean).join(' · '),detail:[h.stars?stars(+h.stars):'',h.city||''].filter(Boolean).join(' · '),date:h.checkin||''});
   }});
-  (current.excursions||[]).forEach(x=>{if(x.name)itinItems.push({icon:pinS,name:x.name,type:'Excursion'+(x.location?' · '+x.location:''),date:x.date})});
+  (current.excursions||[]).forEach(x=>{if(x.name)itinItems.push({icon:pinS,name:x.name,type:'Excursion',typeLabel:'EXCURSION'+(x.location?' · '+x.location.toUpperCase():''),detail:x.duration||'',time:'',date:x.date})});
   (current.internalFlights||[]).filter(f=>f.from||f.to).forEach(f=>{
-    itinItems.push({icon:planeS,name:(f.from||'—').replace(/\s*\([A-Z]{3}\)/,'')+' → '+(f.to||'—').replace(/\s*\([A-Z]{3}\)/,''),type:'Internal Flight'+(f.airline?' · '+f.airline:''),date:f.date});
+    itinItems.push({icon:planeS,name:stripCode(f.from)+' → '+stripCode(f.to),type:'Internal Flight',typeLabel:'INTERNAL FLIGHT'+(f.airline?' · '+f.airline.toUpperCase():''),detail:f.airline||'',time:f.time||'',date:f.date});
   });
   (current.transfers||[]).filter(t=>t.from||t.to).forEach(t=>{
-    itinItems.push({icon:carS,name:(t.from||'')+' → '+(t.to||''),type:'Transfer',date:t.date});
+    const tName=(t.type||'transfer').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    itinItems.push({icon:carS,name:(t.from||'')+' → '+(t.to||''),type:'Transfer',typeLabel:tName.toUpperCase(),detail:[t.operator,t.notes].filter(Boolean).join(' · '),time:t.time||'',date:t.date});
   });
   if(current.flightsInc&&(current.flightRetFrom||current.flightRetTo))
-    itinItems.push({icon:planeS,name:(current.flightRetFrom||'—').replace(/\s*\([A-Z]{3}\)/,'')+' → '+(current.flightRetTo||'—').replace(/\s*\([A-Z]{3}\)/,''),type:'Return Flight',date:current.flightRetDate});
+    itinItems.push({icon:planeS,name:stripCode(current.flightRetFrom)+' → '+stripCode(current.flightRetTo),type:'Return Flight',typeLabel:'RETURN FLIGHT',detail:[current.flightAirline,current.flightClass].filter(Boolean).join(' · '),time:current.flightRetTime||'',date:current.flightRetDate});
   const pItin=itinItems.length?pgWrap(`<div class="sect">
     <div style="text-align:center;margin-bottom:10px">
       <div style="margin-bottom:6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 10H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg></div>
@@ -2037,11 +2045,27 @@ function _render(){
       ${itinItems.map((it,idx)=>`<div class="itin-item">
         <div class="itin-left">
           <div class="itin-icon">${it.icon}</div>
-          <div class="itin-title"><div class="it-name">${esc(it.name)}</div><div class="it-type">${it.type}</div></div>
+          <div class="itin-title">
+            <div class="it-name">${esc(it.name)}</div>
+            <div class="it-type">${it.typeLabel||it.type}</div>
+            ${it.detail?'<div class="it-detail">'+esc(it.detail)+'</div>':''}
+          </div>
         </div>
-        <div class="itin-right"><div class="itin-date">${it.date?(it.date.includes('|')?fmt(it.date.split('|')[0])+' – '+fmt(it.date.split('|')[1]):fmt(it.date)):''}</div></div>
+        <div class="itin-right">
+          <div class="itin-date">${it.date?fmt(it.date):''}</div>
+          ${it.time?'<div class="itin-time">'+esc(it.time)+'</div>':''}
+        </div>
       </div>${idx<itinItems.length-1?'<hr class="itin-divider">':''}`).join('')}
     </div></div>
+    ${itinItems.length<8?`<div class="itin-glance"><div class="itin-glance-title">Trip at a Glance</div>
+      <div class="itin-glance-row"><div class="ig-l">Destination</div><div class="ig-v">${esc(current.dest||'—')}</div></div>
+      <div class="itin-glance-row"><div class="ig-l">Duration</div><div class="ig-v">${fmt(current.startDate)} – ${fmt(current.endDate)}</div></div>
+      <div class="itin-glance-row"><div class="ig-l">Travellers</div><div class="ig-v">${esc(current.travelers||'—')}</div></div>
+      <div class="itin-glance-row"><div class="ig-l">Departure</div><div class="ig-v">${esc(current.departureAirport||'—')}</div></div>
+    </div>`:''}
+    ${itinItems.length<5&&current.incl?`<div class="itin-glance" style="margin-top:8px"><div class="itin-glance-title">Package Includes</div>
+      ${(current.incl||'').split('\\n').filter(Boolean).slice(0,6).map(l=>'<div style="font-size:8.5pt;color:#555;padding:2px 0 2px 14px;position:relative"><span style="position:absolute;left:0;top:8px;width:4px;height:4px;border-radius:50%;background:#D4AF6A;display:block"></span>'+esc(l)+'</div>').join('')}
+    </div>`:''}
   </div>`):'';
 
   // hotels
