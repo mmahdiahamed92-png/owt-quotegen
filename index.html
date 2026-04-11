@@ -1708,31 +1708,53 @@ function _render(){
       <b>Destinations:</b> ${esc(current.dest||'')}
     </div>`;
   const flightsEl=current.flightsInc?(function(){
-    const card=(label,color,from,to,date,time,no,name,airline)=>`
-      <div style="border:1px solid #eaddc0;border-radius:12px;padding:14px 16px;margin-bottom:10px;background:${color}">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-size:8pt;color:#8B6B3A;font-weight:700;letter-spacing:.14em;text-transform:uppercase">${label}</span>
-          ${no?`<span style="font-size:8.5pt;color:#555;background:#f5f0e6;padding:3px 10px;border-radius:100px;font-weight:600">${esc(no)}</span>`:''}
+    const dot='<div style="width:8px;height:8px;border-radius:50%;background:#D4AF6A;flex-shrink:0"></div>';
+    const line='<div style="flex:1;height:1px;background:linear-gradient(90deg,#D4AF6A,#eaddc0)"></div>';
+    const plane='<svg width="22" height="22" viewBox="0 0 24 24" fill="#D4AF6A" style="flex-shrink:0;transform:rotate(45deg)"><path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
+    const extractCode=s=>{const m=(s||'').match(/\(([A-Z]{3})\)/);return m?m[1]:''};
+    const card=(label,icon,from,to,date,time,no,name,airline)=>{
+      const fromCode=extractCode(from);const toCode=extractCode(to);
+      const fromCity=(from||'—').replace(/\s*\([A-Z]{3}\)\s*/,'');
+      const toCity=(to||'—').replace(/\s*\([A-Z]{3}\)\s*/,'');
+      return `
+      <div style="background:linear-gradient(135deg,#fdfcfa,#f8f5ef);border:1px solid #e8dcc4;border-radius:16px;padding:0;margin-bottom:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.04)">
+        <div style="background:linear-gradient(135deg,#1a1a1a,#2a2520);padding:10px 18px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:7.5pt;color:#D4AF6A;font-weight:700;letter-spacing:.2em;text-transform:uppercase">${icon} ${label}</span>
+          ${no?`<span style="font-size:8pt;color:#fff;background:rgba(212,175,106,.2);padding:3px 12px;border-radius:100px;font-weight:600;letter-spacing:.06em;border:1px solid rgba(212,175,106,.3)">${esc(no)}</span>`:''}
         </div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <div style="text-align:center"><div style="font-size:12pt;font-weight:700;color:#1a1a1a">${esc(from||'—')}</div></div>
-          <div style="flex:1;text-align:center;color:#D4AF6A;font-size:14pt">✈ →</div>
-          <div style="text-align:center"><div style="font-size:12pt;font-weight:700;color:#1a1a1a">${esc(to||'—')}</div></div>
-        </div>
-        ${name?`<div style="text-align:center;font-size:8.5pt;color:#888;font-style:italic;margin-bottom:4px">${esc(name)}</div>`:''}
-        <div style="display:flex;justify-content:center;gap:16px;font-size:8.5pt;color:#555;margin-top:4px">
-          ${date?`<span>📅 ${esc(date)}</span>`:''}
-          ${time?`<span>🕐 ${esc(time)}</span>`:''}
-          ${airline?`<span>✈ ${esc(airline)}</span>`:''}
+        <div style="padding:18px 20px 14px">
+          <div style="display:flex;align-items:center;gap:0;margin-bottom:8px">
+            <div style="flex:1;text-align:center">
+              <div style="font-size:22pt;font-weight:700;color:#1a1a1a;letter-spacing:.04em;line-height:1">${esc(fromCode||fromCity)}</div>
+              ${fromCode?`<div style="font-size:7.5pt;color:#888;margin-top:4px;letter-spacing:.02em">${esc(fromCity)}</div>`:''}
+            </div>
+            <div style="flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:0 12px">
+              ${dot}${line}${plane}${line}${dot}
+            </div>
+            <div style="flex:1;text-align:center">
+              <div style="font-size:22pt;font-weight:700;color:#1a1a1a;letter-spacing:.04em;line-height:1">${esc(toCode||toCity)}</div>
+              ${toCode?`<div style="font-size:7.5pt;color:#888;margin-top:4px;letter-spacing:.02em">${esc(toCity)}</div>`:''}
+            </div>
+          </div>
+          ${name?`<div style="text-align:center;font-size:8pt;color:#A8854A;margin-bottom:6px;font-weight:500">${esc(name)}</div>`:''}
+          <div style="display:flex;justify-content:center;gap:20px;padding-top:8px;border-top:1px solid #eee8d5">
+            ${date?`<div style="text-align:center"><div style="font-size:6.5pt;color:#aaa;text-transform:uppercase;letter-spacing:.12em;margin-bottom:2px">Date</div><div style="font-size:9pt;color:#1a1a1a;font-weight:600">${esc(date)}</div></div>`:''}
+            ${time?`<div style="text-align:center"><div style="font-size:6.5pt;color:#aaa;text-transform:uppercase;letter-spacing:.12em;margin-bottom:2px">Time</div><div style="font-size:9pt;color:#1a1a1a;font-weight:600">${esc(time)}</div></div>`:''}
+            ${airline?`<div style="text-align:center"><div style="font-size:6.5pt;color:#aaa;text-transform:uppercase;letter-spacing:.12em;margin-bottom:2px">Airline</div><div style="font-size:9pt;color:#1a1a1a;font-weight:600">${esc(airline)}</div></div>`:''}
+          </div>
         </div>
       </div>`;
+    };
     const al=current.flightAirline||'Airline TBC';
     const internals=(current.internalFlights||[]).filter(f=>f.from||f.to);
-    return `<div class="sect"><h2>Flight Details</h2>
-      <div style="font-size:9.5pt;color:#555;margin-bottom:12px"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(current.flightClass||'Economy')} Class</div>
-      ${card('Outbound Flight','#fafaf7',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName,'')}
-      ${internals.map((f,i)=>card('Internal Flight'+(f.airline?' · '+esc(f.airline):''),'#f9f9fc',f.from,f.to,f.date,f.time,f.no,f.name,f.airline)).join('')}
-      ${card('Return Flight','#fafaf7',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName,'')}
+    return `<div class="sect"><h2 style="border-bottom-color:#D4AF6A">Flight Details</h2>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:linear-gradient(135deg,rgba(212,175,106,.08),rgba(212,175,106,.03));border-radius:10px;border:1px solid rgba(212,175,106,.15)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+        <div><b style="font-size:10pt;color:#1a1a1a">${esc(al)}</b><span style="color:#888;font-size:9pt"> · ${esc(current.flightClass||'Economy')} Class</span></div>
+      </div>
+      ${card('Outbound','✈',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName,'')}
+      ${internals.map((f,i)=>card('Domestic'+(f.airline?' · '+f.airline:''),'↔',f.from,f.to,f.date,f.time,f.no,f.name,f.airline)).join('')}
+      ${card('Return','✈',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName,'')}
     </div>`;
   })():'';
   const overviewText=(current.overview||DEFAULT_OVERVIEW).replace(/\{brand\}/g,b.name||'');
