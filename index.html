@@ -1708,24 +1708,31 @@ function _render(){
       <b>Destinations:</b> ${esc(current.dest||'')}
     </div>`;
   const flightsEl=current.flightsInc?(function(){
-    const row=(label,from,to,date,time,no,name)=>`
-      <tr>
-        <td style="padding:8px 10px;font-size:9pt;color:#8B6B3A;font-weight:600;letter-spacing:.08em;text-transform:uppercase;vertical-align:top">${label}</td>
-        <td style="padding:8px 10px;font-size:10pt;color:#1a1a1a"><b>${esc(from||'—')}</b> → <b>${esc(to||'—')}</b>${name?`<br><span style="font-size:8.5pt;color:#888;font-style:italic">${esc(name)}</span>`:''}</td>
-        <td style="padding:8px 10px;font-size:9pt;color:#555;vertical-align:top">${esc(date||'')}${time?'<br>'+esc(time):''}</td>
-        <td style="padding:8px 10px;font-size:9pt;color:#555;vertical-align:top">${esc(no||'')}</td>
-      </tr>`;
-    return `<div class="sect"><h2>Flights</h2>
-      <div style="font-size:9pt;color:#555;margin-bottom:8px"><b>${esc(current.flightAirline||'Airline TBC')}</b> · ${esc(current.flightClass||'Economy')} Class</div>
-      <table style="width:100%;border-collapse:collapse;border:1px solid #eaddc0;border-radius:8px;overflow:hidden">
-        <tr style="background:rgba(212,175,106,.06)"><th style="padding:6px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Leg</th><th style="padding:6px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Route</th><th style="padding:6px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Date / Time</th><th style="padding:6px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Flight #</th></tr>
-        ${row('Outbound',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName)}
-        ${(current.internalFlights||[]).filter(f=>f.from||f.to).map((f,i)=>{
-          const lbl=f.airline?'Internal · '+esc(f.airline):'Internal '+(i+1);
-          return row(lbl,f.from,f.to,f.date,f.time,f.no,f.name);
-        }).join('')}
-        ${row('Return',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName)}
-      </table>
+    const card=(label,color,from,to,date,time,no,name,airline)=>`
+      <div style="border:1px solid #eaddc0;border-radius:12px;padding:14px 16px;margin-bottom:10px;background:${color}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:8pt;color:#8B6B3A;font-weight:700;letter-spacing:.14em;text-transform:uppercase">${label}</span>
+          ${no?`<span style="font-size:8.5pt;color:#555;background:#f5f0e6;padding:3px 10px;border-radius:100px;font-weight:600">${esc(no)}</span>`:''}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div style="text-align:center"><div style="font-size:12pt;font-weight:700;color:#1a1a1a">${esc(from||'—')}</div></div>
+          <div style="flex:1;text-align:center;color:#D4AF6A;font-size:14pt">✈ →</div>
+          <div style="text-align:center"><div style="font-size:12pt;font-weight:700;color:#1a1a1a">${esc(to||'—')}</div></div>
+        </div>
+        ${name?`<div style="text-align:center;font-size:8.5pt;color:#888;font-style:italic;margin-bottom:4px">${esc(name)}</div>`:''}
+        <div style="display:flex;justify-content:center;gap:16px;font-size:8.5pt;color:#555;margin-top:4px">
+          ${date?`<span>📅 ${esc(date)}</span>`:''}
+          ${time?`<span>🕐 ${esc(time)}</span>`:''}
+          ${airline?`<span>✈ ${esc(airline)}</span>`:''}
+        </div>
+      </div>`;
+    const al=current.flightAirline||'Airline TBC';
+    const internals=(current.internalFlights||[]).filter(f=>f.from||f.to);
+    return `<div class="sect"><h2>Flight Details</h2>
+      <div style="font-size:9.5pt;color:#555;margin-bottom:12px"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(current.flightClass||'Economy')} Class</div>
+      ${card('Outbound Flight','#fafaf7',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName,'')}
+      ${internals.map((f,i)=>card('Internal Flight'+(f.airline?' · '+esc(f.airline):''),'#f9f9fc',f.from,f.to,f.date,f.time,f.no,f.name,f.airline)).join('')}
+      ${card('Return Flight','#fafaf7',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName,'')}
     </div>`;
   })():'';
   const overviewText=(current.overview||DEFAULT_OVERVIEW).replace(/\{brand\}/g,b.name||'');
