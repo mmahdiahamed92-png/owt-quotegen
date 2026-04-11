@@ -2335,6 +2335,7 @@ async function shareQuoteLink(){
   try{
     const token='q_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
     const b=brands.find(x=>x.id===current.brandId)||{};
+    const clientPhone=((current.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,'');
     const expiresAt=current.validity?new Date(current.validity+'T23:59:59').toISOString():null;
     const{error}=await SB.client.from('qg_shared_quotes').upsert({
       token:token,
@@ -2347,19 +2348,29 @@ async function shareQuoteLink(){
     const shareUrl=window.location.origin+window.location.pathname+'?q='+token;
     // Copy to clipboard
     try{await navigator.clipboard.writeText(shareUrl)}catch{}
+    const clientName=current.clientName||'';
+    const dest=current.tourTitle||current.dest||'your trip';
+    const waMsg=`Hi${clientName?' '+clientName:''},\n\nYour personalised travel quote for *${dest}* is ready to view:\n\n${shareUrl}\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n${current.agent||b.name||''}`;
+    const emailSubj=encodeURIComponent('Your Travel Quote — '+dest);
+    const emailBody=encodeURIComponent('Hi'+(clientName?' '+clientName:'')+',\n\nYour personalised travel quote is ready to view:\n\n'+shareUrl+'\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n'+(current.agent||''));
     const modal=$('modal');
     modal.classList.add('open');
     $('modalTitle').textContent='Quote Link Ready';
     $('modalBody').innerHTML=`
       <div style="text-align:center;padding:10px 0">
         <div style="font-size:42px;margin-bottom:12px">🔗</div>
-        <p style="color:var(--tx2);font-size:13px;margin:0 0 16px">Share this link with your client. They can view the quote on their phone — no PDF needed.</p>
-        <input id="shareLinkInput" value="${shareUrl}" readonly style="width:100%;text-align:center;font-size:12px;padding:12px;border-radius:10px;margin-bottom:12px;cursor:text" onclick="this.select()">
-        <div style="display:flex;gap:8px">
-          <button class="btn" style="flex:1" onclick="navigator.clipboard.writeText($('shareLinkInput').value);this.textContent='✓ Copied!'">📋 Copy Link</button>
-          <button class="btn ghost" style="flex:1" onclick="window.open('https://wa.me/?text='+encodeURIComponent('Here is your travel quote: '+$('shareLinkInput').value))">📱 Send via WhatsApp</button>
+        <p style="color:var(--tx2);font-size:13px;margin:0 0 16px">Share this link with your client. They can view the quote on their phone.</p>
+        <div style="background:var(--bg-tertiary);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px;word-break:break-all">
+          <a href="${shareUrl}" target="_blank" style="color:var(--gold);font-size:12px;text-decoration:underline">${shareUrl}</a>
         </div>
-        <p style="color:var(--tx3);font-size:11px;margin-top:12px">${expiresAt?'Expires: '+new Date(expiresAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No expiry set'} · Views will be tracked</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" style="flex:1;min-width:120px" onclick="navigator.clipboard.writeText('${shareUrl}');this.textContent='✓ Copied!'">📋 Copy Link</button>
+          <button class="btn ghost" style="flex:1;min-width:120px;border-color:#25D366;color:#25D366" onclick="window.open('https://wa.me/${clientPhone}?text='+encodeURIComponent(document.getElementById('__waMsg').value))">📱 WhatsApp</button>
+          <button class="btn ghost" style="flex:1;min-width:120px" onclick="window.location.href='mailto:${current.clientContact&&current.clientContact.includes('@')?current.clientContact:''}?subject=${emailSubj}&body=${emailBody}'">✉️ Email</button>
+        </div>
+        <textarea id="__waMsg" style="width:100%;margin-top:12px;font-size:11px;min-height:80px;resize:vertical">${waMsg.replace(/"/g,'&quot;')}</textarea>
+        <p style="color:var(--tx3);font-size:10px;margin-top:6px">Edit the message above before sending via WhatsApp</p>
+        <p style="color:var(--tx3);font-size:11px;margin-top:8px">${expiresAt?'Expires: '+new Date(expiresAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No expiry set'} · Views will be tracked</p>
       </div>`;
   }catch(e){
     alert('Failed to generate share link: '+(e.message||e));
