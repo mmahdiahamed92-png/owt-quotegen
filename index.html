@@ -249,7 +249,7 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page ul.list li{margin-bottom:6px;padding-left:18px;position:relative}
 .page ul.list li:before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--gold)}
 .page .twocol{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-.page .foot{margin-top:16px;padding-top:12px;border-top:1px solid #eaeaea;font-size:8.5pt;color:#888;text-align:center;line-height:1.8;font-weight:400}
+.page .foot{margin-top:auto;padding-top:12px;border-top:1px solid #eaeaea;font-size:8.5pt;color:#888;text-align:center;line-height:1.8;font-weight:400}
 .page .foot b{color:#1a1a1a;font-family:var(--fh);font-size:11pt;font-weight:600;letter-spacing:-.01em}
 
 /* LIBRARY MODAL — liquid glass */
@@ -1924,7 +1924,7 @@ function _render(){
 
   // page 4 — pricing + incl/excl + terms
   const priceRows=current.prices.map(pr=>`<tr class="${pr.total?'total':''}"><td>${esc(pr.label)}</td><td style="text-align:right">${cur}${esc(pr.amt)}</td></tr>`).join('');
-  let p4=`<div class="page">
+  let p4=`<div class="page" style="display:flex;flex-direction:column;min-height:270mm">
     <div class="sect"><h2>Pricing Breakdown</h2>
       <table class="price"><tr><th>Description</th><th style="text-align:right">Amount (${current.curr})</th></tr>${priceRows}</table>
     </div>
