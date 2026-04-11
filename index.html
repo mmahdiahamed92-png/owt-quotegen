@@ -663,6 +663,7 @@ body.viewer-mode #quoteViewer{display:block!important}
       <button class="adm-tab active" data-adm="users">Users</button>
       <button class="adm-tab" data-adm="quotes">Quotes</button>
       <button class="adm-tab" data-adm="templates">Pricing / Templates</button>
+      <button class="adm-tab" data-adm="imglib">Image Library</button>
       <button class="adm-tab" data-adm="backup">Backup / Restore</button>
       <button class="adm-tab" data-adm="log">Activity Log</button>
     </div>
@@ -710,6 +711,16 @@ body.viewer-mode #quoteViewer{display:block!important}
         <button class="adm-btn" id="admSaveTplBtn">Save Templates</button>
         <button class="adm-btn ghost" id="admResetTplBtn">Reset to Defaults</button>
       </div>
+    </div>
+
+    <div class="adm-panel" id="adm-imglib">
+      <h3 style="margin:0 0 12px;color:#F5F5F7">Image Library</h3>
+      <p style="color:#A1A1A6;font-size:12px;margin:0 0 12px">Shared images across all agents. <span id="admImgCount"></span></p>
+      <div class="form-row" style="border:0;padding:0;margin:0 0 12px">
+        <input id="admImgSearch" placeholder="Search images..." oninput="renderAdmImgLib()" style="flex:1">
+        <button class="adm-btn ghost" onclick="IMGLIB.pullCloud().then(()=>renderAdmImgLib())">🔄 Sync</button>
+      </div>
+      <div id="admImgGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-height:500px;overflow-y:auto"></div>
     </div>
 
     <div class="adm-panel" id="adm-backup">
@@ -888,7 +899,12 @@ body.viewer-mode #quoteViewer{display:block!important}
       <div id="titleFontPreview" style="margin-top:6px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;color:var(--gold);font-size:20px;min-height:48px;display:flex;align-items:center;transition:font-family .3s"></div>
       <label>Subtitle</label><input id="tourSub" placeholder="7 Nights / 8 Days">
       <label>Destinations</label><input id="dest" placeholder="Athens, Santorini, Mykonos">
-      <label>Hero / Cover Image</label><input type="file" id="heroFile" accept="image/*">
+      <label>Hero / Cover Image</label>
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <button class="btn ghost sm" onclick="openImageLibrary('hero')">📷 Library</button>
+        <button class="btn ghost sm" onclick="$('heroFile').click()">📁 Upload</button>
+        <input type="file" id="heroFile" accept="image/*" style="display:none">
+      </div>
       <div id="heroPreview"></div>
       <div class="row">
         <div><label>Hero Position</label>
@@ -1699,7 +1715,11 @@ function renderItems(){
           ${['Room Only','Bed & Breakfast','Half Board','Full Board','All Inclusive'].map(b=>`<option ${h.board==b?'selected':''}>${b}</option>`).join('')}
         </select>
       </div>
-      <input type="file" accept="image/*" onchange="fileToData(this.files[0],(s,dim)=>{current.hotels[${i}].img=s;current.hotels[${i}].dims=dim;saveHotelToStore(current.hotels[${i}]);renderItems();render();autoSave()})">
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <button class="btn ghost sm" onclick="openImageLibrary('hotel',${i})">📷 Library</button>
+        <button class="btn ghost sm" onclick="this.nextElementSibling.click()">📁 Upload</button>
+        <input type="file" accept="image/*" style="display:none" onchange="fileToData(this.files[0],(s,dim)=>{current.hotels[${i}].img=s;current.hotels[${i}].dims=dim;saveHotelToStore(current.hotels[${i}]);renderItems();render();autoSave()})">
+      </div>
       ${h.img?`<img src="${IMG.src(h.img)}" class="thumb">`:''}
     </div>`).join('');
   // internal flights
@@ -1737,7 +1757,11 @@ function renderItems(){
       <label>Highlights (one per line)</label>
       <textarea rows="3" placeholder="Snorkelling in crystal waters\nBeachside Thai lunch\nMaya Bay visit\nSpeedboat transfers included" oninput="current.excursions[${i}].highlights=this.value;render();autoSave()">${esc(x.highlights)}</textarea>
       <label>Excursion Image</label>
-      <input type="file" accept="image/*" onchange="fileToData(this.files[0],(s,dim)=>{current.excursions[${i}].img=s;current.excursions[${i}].dims=dim;renderItems();render();autoSave()})">
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <button class="btn ghost sm" onclick="openImageLibrary('excursion',${i})">📷 Library</button>
+        <button class="btn ghost sm" onclick="this.nextElementSibling.click()">📁 Upload</button>
+        <input type="file" accept="image/*" style="display:none" onchange="fileToData(this.files[0],(s,dim)=>{current.excursions[${i}].img=s;current.excursions[${i}].dims=dim;renderItems();render();autoSave()})">
+      </div>
       ${x.img?`<img src="${IMG.src(x.img)}" class="thumb">`:''}
     </div>`).join('');
   // transfers
@@ -2428,6 +2452,165 @@ async function shareQuoteLink(){
     alert('Failed to generate share link: '+(e.message||e));
   }
 }
+/* ============================================================
+   SHARED IMAGE LIBRARY
+   ============================================================ */
+const IMGLIB={
+  LS_KEY:'kk_image_library',
+  _lib:null,
+  get lib(){if(!this._lib)this._lib=load(this.LS_KEY,[]);return this._lib},
+  save(){save(this.LS_KEY,this.lib)},
+  genThumb(base64,cb){
+    const im=new Image();im.onload=()=>{const c=document.createElement('canvas');const w=200;const h=Math.round(im.naturalHeight*(w/im.naturalWidth));c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);cb(c.toDataURL('image/jpeg',0.6))};im.src=base64;
+  },
+  async add(src,name,category,tags,dims){
+    const id='img_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+    const entry={id,name:name||'',category:category||'other',tags:(tags||'').split(',').map(s=>s.trim()).filter(Boolean),src,thumbnail:'',uploadedBy:load(LS.agent,''),uploadedAt:new Date().toISOString(),usedCount:0,dims:dims||{}};
+    // Generate thumbnail
+    const resolved=src.startsWith('idb://')?await IMG.get(src):src;
+    if(resolved&&resolved.startsWith('data:')){
+      await new Promise(r=>{this.genThumb(resolved,t=>{entry.thumbnail=t;r()})});
+    }else{entry.thumbnail=resolved||src}
+    this.lib.push(entry);this.save();
+    // Sync to Supabase
+    if(SB.user){try{
+      let cloudSrc=src;
+      if(resolved&&resolved.startsWith('data:'))cloudSrc=await SB.uploadImage(resolved);
+      await SB.client.from('qg_image_library').upsert({id,name:entry.name,category:entry.category,tags:entry.tags,src:cloudSrc,thumbnail:entry.thumbnail.startsWith('data:')?'':entry.thumbnail,uploaded_by:entry.uploadedBy,uploaded_at:entry.uploadedAt,used_count:0,dims:entry.dims});
+    }catch(e){console.warn('IMGLIB sync:',e)}}
+    return entry;
+  },
+  async pullCloud(){
+    if(!SB.user)return;
+    try{
+      const{data}=await SB.client.from('qg_image_library').select('*').order('uploaded_at',{ascending:false});
+      if(data&&data.length){
+        const localIds=new Set(this.lib.map(e=>e.id));
+        data.forEach(d=>{if(!localIds.has(d.id))this.lib.push({id:d.id,name:d.name,category:d.category,tags:d.tags||[],src:d.src,thumbnail:d.thumbnail||d.src,uploadedBy:d.uploaded_by,uploadedAt:d.uploaded_at,usedCount:d.used_count||0,dims:d.dims||{}})});
+        this.save();
+      }
+    }catch(e){console.warn('IMGLIB pull:',e)}
+  },
+  async del(id){
+    this._lib=this.lib.filter(e=>e.id!==id);this.save();
+    if(SB.user)try{await SB.client.from('qg_image_library').delete().eq('id',id)}catch{}
+  },
+  search(query,cat){
+    const q=(query||'').toLowerCase();
+    return this.lib.filter(e=>{
+      if(cat&&cat!=='all'&&e.category!==cat)return false;
+      if(!q)return true;
+      return(e.name||'').toLowerCase().includes(q)||(e.tags||[]).some(t=>t.toLowerCase().includes(q));
+    }).sort((a,b)=>(b.usedCount||0)-(a.usedCount||0));
+  },
+  incrementUse(id){const e=this.lib.find(x=>x.id===id);if(e){e.usedCount=(e.usedCount||0)+1;this.save()}}
+};
+
+let _imgLibTarget=null,_imgLibIndex=null;
+function openImageLibrary(target,index){
+  _imgLibTarget=target;_imgLibIndex=index;
+  IMGLIB.pullCloud();
+  const m=$('modal');m.classList.add('open');
+  $('modalTitle').textContent='Image Library';
+  renderImageLibraryModal('library');
+}
+function renderImageLibraryModal(tab){
+  const isLib=tab==='library';
+  $('modalBody').innerHTML=`
+    <div style="display:flex;gap:4px;margin-bottom:12px;background:rgba(255,255,255,.04);padding:4px;border-radius:10px;border:1px solid var(--bd)">
+      <button class="nav tab${isLib?' active':''}" onclick="renderImageLibraryModal('library')" style="flex:1;font-size:12px">📚 Library</button>
+      <button class="nav tab${isLib?'':' active'}" onclick="renderImageLibraryModal('upload')" style="flex:1;font-size:12px">📁 Upload New</button>
+    </div>
+    ${isLib?renderImgLibGrid():renderImgLibUpload()}`;
+}
+function renderImgLibGrid(){
+  const cats=['all','hotel','hero','excursion','transfer','other'];
+  return `
+    <input id="imgLibSearch" placeholder="Search by name or tag..." oninput="refreshImgGrid()" style="margin-bottom:8px">
+    <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
+      ${cats.map(c=>`<button class="btn ghost sm imglib-cat${c==='all'?' active':''}" data-cat="${c}" onclick="document.querySelectorAll('.imglib-cat').forEach(b=>b.classList.remove('active'));this.classList.add('active');refreshImgGrid()" style="padding:4px 10px;font-size:10px;text-transform:capitalize">${c}</button>`).join('')}
+    </div>
+    <div id="imgLibGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:400px;overflow-y:auto">${buildImgGrid('','all')}</div>
+    ${IMGLIB.lib.length===0?'<p style="text-align:center;color:var(--tx3);padding:20px;font-size:12px">No images yet. Upload your first image!</p>':''}`;
+}
+function buildImgGrid(q,cat){
+  return IMGLIB.search(q,cat).map(e=>`<div onclick="selectLibImage('${e.id}')" style="cursor:pointer;border:1px solid var(--bd);border-radius:10px;overflow:hidden;transition:all .2s;position:relative" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--bd)'">
+    <img src="${IMG.src(e.thumbnail||e.src)}" style="width:100%;height:80px;object-fit:cover;display:block" loading="lazy">
+    <div style="padding:6px 8px"><div style="font-size:10px;color:var(--tx);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.name||'Untitled')}</div><div style="font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em">${esc(e.category)}</div></div>
+  </div>`).join('');
+}
+function refreshImgGrid(){
+  const q=($('imgLibSearch')?.value||'').trim();
+  const cat=document.querySelector('.imglib-cat.active')?.getAttribute('data-cat')||'all';
+  const g=$('imgLibGrid');if(g)g.innerHTML=buildImgGrid(q,cat);
+}
+async function selectLibImage(id){
+  const entry=IMGLIB.lib.find(e=>e.id===id);if(!entry)return;
+  IMGLIB.incrementUse(id);
+  const src=entry.src;
+  applyImageToTarget(src,entry.dims);
+  closeModal();
+}
+function applyImageToTarget(src,dims){
+  if(_imgLibTarget==='hero'){
+    current.heroSrc=src;current.heroDims=dims||null;
+    $('heroPreview').innerHTML=`<img src="${IMG.src(src)}" class="thumb">`;render();autoSave();
+  }else if(_imgLibTarget==='hotel'&&_imgLibIndex!=null){
+    current.hotels[_imgLibIndex].img=src;current.hotels[_imgLibIndex].dims=dims||null;
+    renderItems();render();autoSave();
+  }else if(_imgLibTarget==='excursion'&&_imgLibIndex!=null){
+    current.excursions[_imgLibIndex].img=src;current.excursions[_imgLibIndex].dims=dims||null;
+    renderItems();render();autoSave();
+  }
+}
+function renderImgLibUpload(){
+  return `
+    <div style="border:2px dashed var(--bd-h);border-radius:12px;padding:30px;text-align:center;margin-bottom:12px;cursor:pointer" onclick="$('imgLibFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--gold)'" ondragleave="this.style.borderColor='var(--bd-h)'" ondrop="event.preventDefault();this.style.borderColor='var(--bd-h)';handleLibFileDrop(event.dataTransfer.files[0])">
+      <div style="font-size:28px;margin-bottom:8px">📷</div>
+      <div style="color:var(--tx2);font-size:12px">Click or drag image here</div>
+      <input type="file" id="imgLibFileInput" accept="image/*" style="display:none" onchange="handleLibFileDrop(this.files[0])">
+    </div>
+    <label>Image Name</label><input id="imgLibName" placeholder="e.g. Disney Hotel New York - pool view">
+    <div class="row" style="margin-top:8px">
+      <div><label>Category</label><select id="imgLibCat"><option value="hotel">Hotel</option><option value="hero">Hero / Destination</option><option value="excursion">Excursion</option><option value="transfer">Transfer</option><option value="other">Other</option></select></div>
+      <div><label>Tags (comma separated)</label><input id="imgLibTags" placeholder="disney, paris, pool"></div>
+    </div>
+    <div id="imgLibPreview" style="margin-top:10px"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn" style="flex:1" id="imgLibUseBtn" disabled onclick="uploadLibImage(true)">Upload & Use</button>
+      <button class="btn ghost" style="flex:1" id="imgLibSaveBtn" disabled onclick="uploadLibImage(false)">Save to Library Only</button>
+    </div>`;
+}
+let _libPendingSrc=null,_libPendingDims=null;
+function handleLibFileDrop(f){
+  if(!f)return;
+  fileToData(f,(src,dims)=>{
+    _libPendingSrc=src;_libPendingDims=dims;
+    $('imgLibPreview').innerHTML=`<img src="${IMG.src(src)}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px">`;
+    $('imgLibUseBtn').disabled=false;$('imgLibSaveBtn').disabled=false;
+    // Auto-fill name from context
+    if(!$('imgLibName').value){
+      if(_imgLibTarget==='hotel'&&current.hotels[_imgLibIndex])$('imgLibName').value=current.hotels[_imgLibIndex].name||'';
+      else if(_imgLibTarget==='excursion'&&current.excursions[_imgLibIndex])$('imgLibName').value=current.excursions[_imgLibIndex].name||'';
+      else if(_imgLibTarget==='hero')$('imgLibName').value='Hero - '+(current.dest||current.tourTitle||'');
+    }
+    // Auto-set category
+    if(_imgLibTarget==='hotel')$('imgLibCat').value='hotel';
+    else if(_imgLibTarget==='hero')$('imgLibCat').value='hero';
+    else if(_imgLibTarget==='excursion')$('imgLibCat').value='excursion';
+  });
+}
+async function uploadLibImage(useIt){
+  if(!_libPendingSrc)return;
+  const name=$('imgLibName').value.trim();
+  const cat=$('imgLibCat').value;
+  const tags=$('imgLibTags').value;
+  await IMGLIB.add(_libPendingSrc,name,cat,tags,_libPendingDims);
+  if(useIt){applyImageToTarget(_libPendingSrc,_libPendingDims);closeModal()}
+  else{alert('✅ Image saved to library');renderImageLibraryModal('library')}
+  _libPendingSrc=null;_libPendingDims=null;
+}
+
 function downloadPDF(){
   generatePDF().then(({blob,filename})=>{
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
@@ -3326,6 +3509,22 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   });
 
   // ---- QUOTES (admin view) ----
+  function renderAdmImgLib(){
+    const q=($('admImgSearch')?.value||'').trim();
+    const items=IMGLIB.search(q,'all');
+    $('admImgCount').textContent=items.length+' images';
+    $('admImgGrid').innerHTML=items.map(e=>`<div style="border:1px solid var(--bd);border-radius:10px;overflow:hidden;position:relative">
+      <img src="${IMG.src(e.thumbnail||e.src)}" style="width:100%;height:70px;object-fit:cover;display:block" loading="lazy">
+      <div style="padding:6px 8px">
+        <div style="font-size:9px;color:var(--tx);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.name||'Untitled')}</div>
+        <div style="font-size:7px;color:var(--tx3);text-transform:uppercase">${esc(e.category)} · used ${e.usedCount||0}x</div>
+      </div>
+      <button onclick="if(confirm('Delete this image?')){IMGLIB.del('${e.id}');renderAdmImgLib()}" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:0;border-radius:50%;width:20px;height:20px;font-size:10px;cursor:pointer;line-height:20px;text-align:center">×</button>
+    </div>`).join('')||'<p style="grid-column:1/-1;text-align:center;color:var(--tx3);font-size:12px;padding:20px">No images in library</p>';
+  }
+  // Hook into admin tab switching for imglib
+  document.querySelectorAll('.adm-tab').forEach(t=>t.addEventListener('click',()=>{if(t.getAttribute('data-adm')==='imglib')renderAdmImgLib()}));
+
   function renderAdmQuotes(){
     const tb=document.getElementById('admQuotesTbody');if(!tb)return;
     const q=(document.getElementById('admQSearch').value||'').toLowerCase();
