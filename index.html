@@ -2357,7 +2357,7 @@ async function shareQuoteLink(){
       views:0
     });
     if(error)throw error;
-    const shareUrl=window.location.origin+window.location.pathname+'?q='+token;
+    const shareUrl=window.location.origin+window.location.pathname+'#'+token;
     // Copy to clipboard
     try{await navigator.clipboard.writeText(shareUrl)}catch{}
     const clientName=current.clientName||'';
@@ -3475,8 +3475,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 <div id="quoteViewer"></div>
 <script>
 (function(){
-  const params=new URLSearchParams(window.location.search);
-  const shareToken=params.get('q');
+  const shareToken=(window.location.hash||'').replace('#','');
   if(!shareToken)return;
 
   // Switch to viewer mode
