@@ -2009,16 +2009,15 @@ function _render(){
           </div>
         </div>`;
       };
+      var bagItems=[].concat(current.baggageCabin||[]).concat(current.baggageChecked||[]).concat(current.baggageCustom?[current.baggageCustom]:[]).filter(Boolean);
+      var bagEl=bagItems.length?'<div style="text-align:center;margin-top:10px;padding:10px 16px;background:#fafaf7;border:1px solid #eee8d5;border-radius:10px"><div style="font-size:7pt;color:#8B6B3A;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="#D4AF6A" style="vertical-align:-2px;margin-right:4px"><path d="M17 6h-2V3c0-.55-.45-1-1-1h-4c-.55 0-1 .45-1 1v3H7c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2 0 .55.45 1 1 1s1-.45 1-1h6c0 .55.45 1 1 1s1-.45 1-1c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 3h4v3h-4V3zm7 16H7V8h10v11z"/></svg>BAGGAGE ALLOWANCE</div><div style="font-size:8pt;color:#555">'+bagItems.map(function(b){return esc(b)}).join(' · ')+'</div></div>':'';
       return `<div class="sect" style="text-align:center">
         <div style="margin-bottom:8px"><svg width="30" height="30" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></div>
         <div class="fl-hero-title">Flights</div>
         <div class="fl-hero-sub"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(cls)} Class</div>
         ${heroCard('Outbound',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName,current.flightOutDuration)}
         ${heroCard('Return',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName,current.flightRetDuration)}
-        ${(()=>{const bi=[...(current.baggageCabin||[]),...(current.baggageChecked||[]),current.baggageCustom].filter(Boolean);return bi.length?`<div style="text-align:center;margin-top:10px;padding:10px 16px;background:#fafaf7;border:1px solid #eee8d5;border-radius:10px">
-          <div style="font-size:7pt;color:#8B6B3A;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="#D4AF6A" style="vertical-align:-2px;margin-right:4px"><path d="M17 6h-2V3c0-.55-.45-1-1-1h-4c-.55 0-1 .45-1 1v3H7c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2 0 .55.45 1 1 1s1-.45 1-1h6c0 .55.45 1 1 1s1-.45 1-1c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 3h4v3h-4V3zm7 16H7V8h10v11z"/></svg>BAGGAGE ALLOWANCE</div>
-          <div style="font-size:8pt;color:#555">${bi.map(b=>esc(b)).join(' · ')}</div>
-        </div>`:''})()}
+        ${bagEl}
         <div class="fl-hero-note">Flight numbers and times may be subject to change upon final confirmation.</div>
       </div>`;
     }
@@ -3856,11 +3855,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
         <small>${fmtD(q.flightRetDate)}${q.flightRetTime?' · '+esc(q.flightRetTime):''}${q.flightRetNo?' · '+esc(q.flightRetNo):''}${q.flightRetDuration?' · '+esc(q.flightRetDuration):''}</small>
       </div>
       ${q.flightAirline?`<div style="text-align:center;font-size:11px;color:#888;margin-top:6px"><b style="color:#1a1a1a">${esc(q.flightAirline)}</b> · ${esc(q.flightClass||'Economy')} Class</div>`:''}
-      ${(()=>{const bi=[...(q.baggageCabin||[]),...(q.baggageChecked||[]),q.baggageCustom].filter(Boolean);return bi.length?`<div class="qv-card" style="border-left:3px solid #D4AF6A;margin-top:8px">
-        <div style="font-size:10px;color:#D4AF6A;font-weight:700;letter-spacing:.12em;margin-bottom:4px">BAGGAGE ALLOWANCE</div>
-        ${bi.map(b=>'<small style="display:block;margin-bottom:2px">✓ '+esc(b)+'</small>').join('')}
-      </div>`:''})()}`:'';
-
+      `+(function(){var bi=[].concat(q.baggageCabin||[]).concat(q.baggageChecked||[]).concat(q.baggageCustom?[q.baggageCustom]:[]).filter(Boolean);return bi.length?'<div class="qv-card" style="border-left:3px solid #D4AF6A;margin-top:8px"><div style="font-size:10px;color:#D4AF6A;font-weight:700;letter-spacing:.12em;margin-bottom:4px">BAGGAGE ALLOWANCE</div>'+bi.map(function(b){return '<small style="display:block;margin-bottom:2px">✓ '+esc(b)+'</small>'}).join('')+'</div>':''})()+``:'';
     // Transfers
     const transfersHTML=(q.transfers||[]).filter(t=>t.type||t.from).map(t=>`<div class="qv-card">
       <b>${esc(t.type?t.type.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Transfer')}</b>
