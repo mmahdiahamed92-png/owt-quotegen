@@ -2021,14 +2021,23 @@ function _render(){
   const tpTag=tpUrl?'a':'div';
   const tpHref=tpUrl?` href="${esc(tpUrl)}" target="_blank" rel="noopener noreferrer"`:'';
   const tpCursor=tpUrl?'cursor:pointer;text-decoration:none':'';
+  const tpScore=b.trustpilotScore||4.9;
+  const tpStarCount=b.trustpilotStars||5;
+  const fullStars=Math.floor(tpStarCount);
+  const halfStar=tpStarCount%1>=0.5;
+  const emptyStars=5-fullStars-(halfStar?1:0);
+  const starFull='<svg width="18" height="18" viewBox="0 0 24 24"><polygon points="12,2 15.1,8.3 22,9.2 17,14 18.2,21 12,17.7 5.8,21 7,14 2,9.2 8.9,8.3" fill="#00B67A"/></svg>';
+  const starHalf='<svg width="18" height="18" viewBox="0 0 24 24"><defs><linearGradient id="hg"><stop offset="50%" stop-color="#00B67A"/><stop offset="50%" stop-color="#ddd"/></linearGradient></defs><polygon points="12,2 15.1,8.3 22,9.2 17,14 18.2,21 12,17.7 5.8,21 7,14 2,9.2 8.9,8.3" fill="url(#hg)"/></svg>';
+  const starEmpty='<svg width="18" height="18" viewBox="0 0 24 24"><polygon points="12,2 15.1,8.3 22,9.2 17,14 18.2,21 12,17.7 5.8,21 7,14 2,9.2 8.9,8.3" fill="#ddd"/></svg>';
+  const tpRating=tpScore>=4.5?'Excellent':tpScore>=4?'Great':tpScore>=3.5?'Good':tpScore>=2.5?'Average':'Poor';
   const trustpilotEl=`<${tpTag}${tpHref} style="display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0 6px;padding:10px 16px;background:linear-gradient(135deg,#f7f5f0,#faf8f3);border:1px solid #eaddc0;border-radius:10px;${tpCursor}">
     <svg width="26" height="26" viewBox="0 0 256 256" fill="none"><path d="M128 0L165.3 89.4H256L183.4 144.7L206.6 234L128 178.7L49.4 234L72.6 144.7L0 89.4H90.7L128 0Z" fill="#00B67A"/><path d="M183.4 165.3L173 144.7L128 178.7L183.4 165.3Z" fill="#005128"/></svg>
     <div style="display:flex;flex-direction:column;gap:1px">
       <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-family:var(--fb);font-size:16pt;font-weight:700;color:#1a1a1a;letter-spacing:-.02em">4.9</span>
-        <span style="display:flex;gap:1px">${'<svg width="18" height="18" viewBox="0 0 24 24"><polygon points="12,2 15.1,8.3 22,9.2 17,14 18.2,21 12,17.7 5.8,21 7,14 2,9.2 8.9,8.3" fill="#00B67A"/></svg>'.repeat(5)}</span>
+        <span style="font-family:var(--fb);font-size:16pt;font-weight:700;color:#1a1a1a;letter-spacing:-.02em">${tpScore}</span>
+        <span style="display:flex;gap:1px">${starFull.repeat(fullStars)}${halfStar?starHalf:''}${starEmpty.repeat(emptyStars)}</span>
       </div>
-      <span style="font-size:8pt;color:#555;letter-spacing:.02em">Rated <b style="color:#1a1a1a">Excellent</b> on <b style="color:#00B67A">Trustpilot</b> · Based on verified reviews</span>
+      <span style="font-size:8pt;color:#555;letter-spacing:.02em">Rated <b style="color:#1a1a1a">${tpRating}</b> on <b style="color:#00B67A">Trustpilot</b> · Based on verified reviews</span>
     </div>
   </${tpTag}>`;
   if(hp==='top')p1Body=heroEl+trustpilotEl+titleEl+overviewEl;
@@ -2906,6 +2915,13 @@ function editBrand(id){
       <svg width="16" height="16" viewBox="0 0 256 256" fill="none" style="flex-shrink:0"><path d="M128 0L165.3 89.4H256L183.4 144.7L206.6 234L128 178.7L49.4 234L72.6 144.7L0 89.4H90.7L128 0Z" fill="#00B67A"/></svg>
       <input id="ebTrustpilot" value="${esc(b.trustpilotUrl||'')}" placeholder="https://www.trustpilot.com/review/yourcompany.com" style="flex:1">
     </div>
+    <div class="row" style="margin-top:6px">
+      <div><label>Trustpilot Score</label><input id="ebTpScore" type="number" step="0.1" min="0" max="5" value="${b.trustpilotScore||''}" placeholder="e.g. 4.9"></div>
+      <div><label>Star Rating (1-5)</label><select id="ebTpStars">
+        <option value="">— Select —</option>
+        ${[5,4.5,4,3.5,3,2.5,2,1.5,1].map(n=>`<option value="${n}" ${(b.trustpilotStars||'')==n?'selected':''}>${n} star${n!==1?'s':''}</option>`).join('')}
+      </select></div>
+    </div>
     <label>Contact Line (legacy — shown in header)</label><input id="ebContact" value="${esc(b.contact)}">
 
     <div style="margin-top:14px;padding:14px 16px;background:rgba(37,211,102,.06);border:1px solid rgba(37,211,102,.2);border-radius:var(--r)">
@@ -3014,6 +3030,8 @@ function saveBrandEdit(id){
   b.email=($('ebEmail')?.value||'').trim();
   b.website=($('ebWebsite')?.value||'').trim();
   b.trustpilotUrl=($('ebTrustpilot')?.value||'').trim();
+  b.trustpilotScore=parseFloat($('ebTpScore')?.value)||'';
+  b.trustpilotStars=parseFloat($('ebTpStars')?.value)||'';
   b.address=($('ebAddress')?.value||'').trim();
   const waNums=[...document.querySelectorAll('.eb-wa-num')];
   const waLinks=[...document.querySelectorAll('.eb-wa-link')];
