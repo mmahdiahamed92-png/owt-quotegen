@@ -177,11 +177,23 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .sect:last-child{margin-bottom:0}
 .page .sect h2{font-family:var(--fh);font-size:17pt;color:#1a1a1a;padding-bottom:8px;margin:0 0 12px;font-weight:500;letter-spacing:-.025em;border-bottom:1px solid #eaeaea;font-variation-settings:"opsz" 144,"SOFT" 30}
 
-.page .day{display:flex;gap:14px;margin-bottom:14px;page-break-inside:avoid;align-items:flex-start}
-.page .day .img{width:42mm;height:42mm;object-fit:cover;border-radius:18px;flex-shrink:0;background:#f0e8d0;box-shadow:0 4px 12px rgba(0,0,0,.08)}
-.page .day .body{padding-top:2px}
-.page .day .body b{color:#1a1a1a;font-family:var(--fh);font-size:13pt;font-weight:500;letter-spacing:-.02em;font-variation-settings:"opsz" 36,"SOFT" 30}
-.page .day .body p{margin:5px 0 0;font-size:9pt;line-height:1.6;color:#555;letter-spacing:-.005em}
+/* Premium Itinerary Day Cards */
+.page .day{page-break-inside:avoid;margin-bottom:16px;border-radius:14px;overflow:hidden;border:1px solid #eee8d5;box-shadow:0 2px 16px rgba(0,0,0,.05);background:#fff}
+.page .day.even{direction:rtl}.page .day.even>*{direction:ltr}
+.page .day-inner{display:flex;gap:0;align-items:stretch}
+.page .day .img-wrap{width:48%;flex-shrink:0;position:relative;overflow:hidden;min-height:52mm;background:linear-gradient(135deg,#f0e8d0,#e8dcc0)}
+.page .day .img-wrap img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
+.page .day .day-badge{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);color:#D4AF6A;font-size:7pt;font-weight:700;letter-spacing:.2em;text-transform:uppercase;padding:5px 12px;border-radius:100px;z-index:2;border:1px solid rgba(212,175,106,.3)}
+.page .day.even .day-badge{left:auto;right:12px}
+.page .day .day-content{flex:1;padding:18px 20px;display:flex;flex-direction:column;justify-content:center}
+.page .day .day-title{font-family:var(--fh);font-size:14pt;font-weight:600;color:#1a1a1a;letter-spacing:-.02em;margin:0 0 6px;line-height:1.2}
+.page .day .day-summary{font-size:9pt;color:#888;margin:0 0 8px;line-height:1.5;font-style:italic}
+.page .day .day-highlights{margin:0;padding:0;list-style:none;font-size:8.5pt;color:#555;line-height:1.7}
+.page .day .day-highlights li{padding:3px 0 3px 16px;position:relative}
+.page .day .day-highlights li:before{content:'';position:absolute;left:0;top:9px;width:6px;height:6px;border-radius:50%;background:#D4AF6A}
+.page .day .day-tip{margin-top:8px;padding:6px 10px;background:linear-gradient(135deg,rgba(212,175,106,.08),rgba(212,175,106,.03));border-left:3px solid #D4AF6A;border-radius:0 6px 6px 0;font-size:8pt;color:#8B6B3A;font-weight:500}
+.page .day .no-img-ph{width:48%;min-height:52mm;background:linear-gradient(135deg,rgba(212,175,106,.15),rgba(212,175,106,.06));display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.page .day .no-img-ph span{color:#c4a860;font-size:9pt;font-weight:500}
 
 .page .hotelgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .page .hotel{border:1px solid #eee;border-radius:16px;overflow:hidden;page-break-inside:avoid;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.04)}
@@ -300,8 +312,10 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
   .page .hdr .qi{text-align:left}
   .page .hotelgrid{grid-template-columns:1fr}
   .page .twocol{grid-template-columns:1fr;gap:8px}
-  .page .day{flex-direction:column}
-  .page .day .img{width:100%;height:35mm}
+  .page .day .day-inner{flex-direction:column}
+  .page .day.even{direction:ltr}
+  .page .day .img-wrap,.page .day .no-img-ph{width:100%;min-height:35mm}
+  .page .day .day-content{padding:12px 14px}
   .page .clientbox{font-size:8.5pt;padding:12px 14px}
   .dash{padding:16px 14px}
   .dash h1{font-size:24px}
@@ -1756,11 +1770,32 @@ function _render(){
   else p1Body=titleEl+clientEl+overviewEl+heroEl+trustpilotEl;
   let p1=`<div class="page">${header}${p1Body}</div>`;
 
-  // itinerary
-  const dayHTML=current.days.map((d,i)=>`<div class="day">
-    ${d.img?`<img class="img" src="${IMG.src(d.img)}">`:'<div class="img" style="display:flex;align-items:center;justify-content:center;color:#aaa;font-size:8pt">No image</div>'}
-    <div class="body"><b>Day ${i+1} — ${esc(d.title)}</b><p>${nl(d.desc)}</p></div></div>`).join('');
-  let p2=current.days.length?`<div class="page"><div class="sect"><h2>Day-by-Day Itinerary</h2>${dayHTML}</div>`:'';
+  // itinerary — premium editorial layout
+  const dayHTML=current.days.map((d,i)=>{
+    const even=i%2===1;
+    const lines=(d.desc||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    // First line = summary, rest = highlights, last line starting with ★/tip/! = tip
+    let summary='',highlights=[],tip='';
+    if(lines.length===1){summary=lines[0]}
+    else if(lines.length>1){
+      summary=lines[0];
+      highlights=lines.slice(1);
+      const lastLine=highlights[highlights.length-1]||'';
+      if(/^[★✦!💡tip]/i.test(lastLine)){tip=lastLine.replace(/^[★✦!💡]\s*/,'').replace(/^tip[:\s]*/i,'');highlights.pop()}
+    }
+    const imgEl=d.img
+      ?`<div class="img-wrap"><div class="day-badge">Day ${i+1}</div><img src="${IMG.src(d.img)}"></div>`
+      :`<div class="no-img-ph"><div class="day-badge">Day ${i+1}</div><span>${esc(d.title||'Day '+(i+1))}</span></div>`;
+    const contentEl=`<div class="day-content">
+      <div class="day-title">${esc(d.title||'Day '+(i+1))}</div>
+      ${summary?`<div class="day-summary">${esc(summary)}</div>`:''}
+      ${highlights.length?`<ul class="day-highlights">${highlights.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>`:''}
+      ${tip?`<div class="day-tip">★ ${esc(tip)}</div>`:''}
+    </div>`;
+    const inner=even?contentEl+imgEl:imgEl+contentEl;
+    return `<div class="day${even?' even':''}"><div class="day-inner">${inner}</div></div>`;
+  }).join('');
+  let p2=current.days.length?`<div class="page"><div class="sect"><h2>Your Journey, Day by Day</h2>${dayHTML}</div>`:'';
 
   // hotels
   const hotelHTML=current.hotels.map(h=>`<div class="hotel">
