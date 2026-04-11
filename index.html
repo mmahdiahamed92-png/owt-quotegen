@@ -153,9 +153,8 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .preview-toolbar span{color:var(--gold)}
 
 /* PDF PAGE — white client-facing, premium */
-.page{width:210mm;min-height:auto;height:auto;background:#fff;color:#1a1a1a;margin:0 auto 12px;padding:14mm 16mm;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);font-family:var(--fb);font-size:10pt;position:relative;letter-spacing:-.005em;border-radius:2px;overflow:visible;display:block}
+.page{width:210mm;min-height:auto;height:auto;background:#fff;color:#1a1a1a;margin:0 auto 12px;padding:14mm 16mm;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);font-family:var(--fb);font-size:10pt;position:relative;letter-spacing:-.005em;border-radius:2px;overflow:visible;display:block;box-sizing:border-box}
 .page:empty{display:none}
-.page *{max-width:100%;box-sizing:border-box}
 .page .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid #eaddc0}
 .page .hdr .agency{font-family:var(--fh);font-size:24pt;color:#1a1a1a;font-weight:500;line-height:1.02;letter-spacing:-.025em;font-variation-settings:"opsz" 144,"SOFT" 30}
 .page .hdr .agency small{display:block;font-family:var(--fb);font-size:8.5pt;color:#888;font-weight:400;margin-top:6px;letter-spacing:.02em}
@@ -168,7 +167,6 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .title p{margin:12px 0 0;color:#888;font-size:11pt;font-weight:300;letter-spacing:.02em;font-family:var(--fa);font-style:italic}
 .page .hero{width:100%;max-width:100%;height:auto;max-height:130mm;min-height:50mm;object-fit:cover;border-radius:4px;margin-bottom:14px;display:block}
 .page .hero-ph{width:100%;height:80mm;background:linear-gradient(135deg,#C9A84C,#A88B3D);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--fh);font-size:20pt;border-radius:4px;margin-bottom:14px}
-.page .hotel img{width:100%;height:auto;max-height:50mm;min-height:30mm;object-fit:cover;background:#f0e8d0;display:block}
 
 .page .clientbox{background:#fafaf7;border:1px solid #eee8d5;padding:14px 18px;border-radius:14px;margin-bottom:14px;font-size:9.5pt;line-height:1.75;color:#444}
 .page .clientbox b{color:#1a1a1a;font-weight:600;letter-spacing:.02em;text-transform:uppercase;font-size:8pt;display:inline-block;margin-right:4px}
@@ -196,42 +194,22 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .day .no-img-ph{width:48%;min-height:52mm;background:linear-gradient(135deg,rgba(212,175,106,.15),rgba(212,175,106,.06));display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
 .page .day .no-img-ph span{color:#c4a860;font-size:9pt;font-weight:500}
 
-/* Premium Flight Cards */
-.page .flight-card{border:1px solid #eaddc0;border-radius:14px;overflow:hidden;margin-bottom:10px;page-break-inside:avoid;box-shadow:0 2px 10px rgba(0,0,0,.04)}
-.page .flight-header{background:linear-gradient(135deg,#1a1a1a,#2a2520);padding:8px 16px;display:flex;justify-content:space-between;align-items:center}
-.page .flight-header .fl-label{font-size:7.5pt;color:#D4AF6A;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
-.page .flight-header .fl-number{font-size:7.5pt;color:#fff;background:rgba(212,175,106,.2);padding:3px 10px;border-radius:100px;font-weight:600;border:1px solid rgba(212,175,106,.3)}
-.page .flight-body{padding:12px 16px;background:#fafaf7;display:flex;align-items:center;gap:8px}
-.page .flight-airport{flex:1;text-align:center}
-.page .flight-airport .code{font-size:16pt;font-weight:700;color:#1a1a1a;letter-spacing:.04em;line-height:1}
-.page .flight-airport .city{font-size:7pt;color:#999;margin-top:2px}
-.page .flight-route{flex:0 0 auto;display:flex;align-items:center;gap:4px;color:#D4AF6A;padding:0 4px}
-.page .flight-route .fl-dot{width:5px;height:5px;border-radius:50%;background:#D4AF6A}
-.page .flight-route .fl-line{width:20px;height:1px;background:linear-gradient(90deg,#D4AF6A,#eaddc0)}
-.page .flight-route .fl-plane{font-size:11pt}
-.page .flight-meta{display:flex;justify-content:center;gap:16px;padding:6px 16px 8px;border-top:1px solid #eee8d5}
-.page .flight-meta div{text-align:center}
-.page .flight-meta .fm-label{text-transform:uppercase;letter-spacing:.1em;color:#bbb;font-size:6.5pt;margin-bottom:1px}
-.page .flight-meta .fm-value{color:#1a1a1a;font-weight:600;font-size:8pt}
+/* Flights — simple stable table */
+.page .flights-table{width:100%;border-collapse:collapse;border:1px solid #eaddc0;border-radius:8px}
+.page .flights-table th{background:rgba(212,175,106,.06);padding:8px 12px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.page .flights-table td{padding:10px 12px;border-top:1px solid #f0ebe0;font-size:9pt;color:#333;vertical-align:top}
+.page .flights-table .fl-leg{color:#8B6B3A;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:8pt}
+.page .flights-table .fl-route b{color:#1a1a1a;font-size:10pt}
+.page .flights-table .fl-route .fl-name{display:block;font-size:8pt;color:#999;font-style:italic;margin-top:2px}
 
-/* Premium Hotel Cards */
-.page .hotelgrid{display:flex;flex-direction:column;gap:14px}
-.page .hotel{border:1px solid #eee8d5;border-radius:16px;overflow:hidden;page-break-inside:avoid;background:#fff;box-shadow:0 3px 16px rgba(0,0,0,.05)}
-.page .hotel-inner{display:flex;align-items:stretch}
-.page .hotel-img{width:44%;flex-shrink:0;position:relative;overflow:hidden;min-height:44mm;background:linear-gradient(135deg,#f0e8d0,#e8dcc0)}
-.page .hotel-img img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
-.page .hotel-img .h-badge{position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);color:#fff;font-size:7.5pt;font-weight:700;padding:4px 10px;border-radius:100px;border:1px solid rgba(212,175,106,.3)}
-.page .hotel-img .h-badge span{color:#D4AF6A}
-.page .hotel-detail{flex:1;padding:14px 16px;display:flex;flex-direction:column;justify-content:center}
-.page .hotel-detail .h-name{font-family:var(--fh);font-size:13pt;font-weight:600;color:#1a1a1a;letter-spacing:-.02em;margin:0 0 2px;line-height:1.2}
-.page .hotel-detail .h-stars{color:#D4AF6A;font-size:8pt;letter-spacing:2px;margin-bottom:3px}
-.page .hotel-detail .h-loc{font-size:7.5pt;color:#999;margin-bottom:6px}
-.page .hotel-detail .h-board{display:inline-block;font-size:6.5pt;color:#8B6B3A;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);padding:2px 8px;border-radius:100px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
-.page .hotel-detail .h-highlights{margin:0;padding:0;list-style:none;font-size:7.5pt;color:#555;line-height:1.6}
-.page .hotel-detail .h-highlights li{padding:1px 0 1px 12px;position:relative}
-.page .hotel-detail .h-highlights li:before{content:'';position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:#D4AF6A}
-.page .hotel-no-img{width:44%;min-height:44mm;background:linear-gradient(135deg,rgba(212,175,106,.12),rgba(212,175,106,.05));display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
-.page .hotel-no-img span{color:#c4a860;font-size:9pt;font-weight:500}
+/* Hotels — simple stable cards, no absolute positioning */
+.page .hotelgrid{display:block}
+.page .hotel{border:1px solid #eee8d5;border-radius:12px;margin-bottom:12px;page-break-inside:avoid;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.page .hotel img{width:100%;height:auto;max-height:48mm;object-fit:cover;display:block;border-radius:12px 12px 0 0}
+.page .hotel .h-info{padding:12px 14px}
+.page .hotel .h-info b{font-family:var(--fh);font-size:12pt;color:#1a1a1a;font-weight:600;display:block;margin-bottom:2px}
+.page .hotel .h-info .stars{color:#D4AF6A;font-size:8pt;letter-spacing:2px;margin-bottom:4px}
+.page .hotel .h-info small{display:block;color:#888;font-size:8.5pt;line-height:1.6}
 
 .page table.price{width:100%;border-collapse:separate;border-spacing:0;font-size:10pt;border:1px solid #eee;border-radius:14px;overflow:hidden}
 .page table.price th{background:#1a1a1a;color:#fff;padding:13px 16px;text-align:left;font-weight:500;letter-spacing:.04em;font-size:9.5pt;text-transform:uppercase}
@@ -340,9 +318,7 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
   .page .title p{font-size:9pt}
   .page .hdr{flex-direction:column;gap:10px}
   .page .hdr .qi{text-align:left}
-  .page .hotel-inner{flex-direction:column!important}
-  .page .hotel{direction:ltr!important}
-  .page .hotel-img,.page .hotel-no-img{width:100%;min-height:32mm}
+  .page .hotel img{max-height:35mm}
   .page .twocol{grid-template-columns:1fr;gap:8px}
   .page .day .day-inner{flex-direction:column}
   .page .day.even .day-inner{flex-direction:column}
@@ -1754,36 +1730,22 @@ function _render(){
       <b>Destinations:</b> ${esc(current.dest||'')}
     </div>`;
   const flightsEl=current.flightsInc?(function(){
-    const xCode=s=>{const m=(s||'').match(/\(([A-Z]{3})\)/);return m?m[1]:''};
-    const xCity=s=>(s||'—').replace(/\s*\([A-Z]{3}\)\s*/,'');
-    const card=(label,from,to,date,time,no,name,airline)=>{
-      const fc=xCode(from),tc=xCode(to);
-      return `<div class="flight-card">
-        <div class="flight-header">
-          <span class="fl-label">${label}</span>
-          ${no?`<span class="fl-number">${esc(no)}</span>`:''}
-        </div>
-        <div class="flight-body">
-          <div class="flight-airport"><div class="code">${esc(fc||xCity(from))}</div>${fc?`<div class="city">${esc(xCity(from))}</div>`:''}</div>
-          <div class="flight-route"><span class="fl-dot"></span><span class="fl-line"></span><span class="fl-plane">✈</span><span class="fl-line"></span><span class="fl-dot"></span></div>
-          <div class="flight-airport"><div class="code">${esc(tc||xCity(to))}</div>${tc?`<div class="city">${esc(xCity(to))}</div>`:''}</div>
-        </div>
-        <div class="flight-meta">
-          ${date?`<div><div class="fm-label">Date</div><div class="fm-value">${esc(date)}</div></div>`:''}
-          ${time?`<div><div class="fm-label">Departure</div><div class="fm-value">${esc(time)}</div></div>`:''}
-          ${airline?`<div><div class="fm-label">Airline</div><div class="fm-value">${esc(airline)}</div></div>`:''}
-          ${name?`<div><div class="fm-label">Route</div><div class="fm-value">${esc(name)}</div></div>`:''}
-        </div>
-      </div>`;
-    };
+    const row=(leg,from,to,date,time,no,name)=>`<tr>
+      <td class="fl-leg">${leg}</td>
+      <td class="fl-route"><b>${esc(from||'—')}</b> → <b>${esc(to||'—')}</b>${name?`<span class="fl-name">${esc(name)}</span>`:''}</td>
+      <td>${esc(date||'—')}${time?'<br>'+esc(time):''}</td>
+      <td>${esc(no||'—')}</td></tr>`;
     const al=current.flightAirline||'Airline TBC';
     const cls=current.flightClass||'Economy';
     const internals=(current.internalFlights||[]).filter(f=>f.from||f.to);
     return `<div class="sect"><h2>Flight Details</h2>
-      <div style="font-size:9pt;color:#555;margin-bottom:10px"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(cls)} Class</div>
-      ${card('Outbound',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName,'')}
-      ${internals.map((f,i)=>card('Domestic'+(f.airline?' · '+f.airline:''),f.from,f.to,f.date,f.time,f.no,f.name,f.airline)).join('')}
-      ${card('Return',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName,'')}
+      <div style="font-size:9pt;color:#555;margin-bottom:8px"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(cls)} Class</div>
+      <table class="flights-table">
+        <tr><th>Leg</th><th>Route</th><th>Date / Time</th><th>Flight #</th></tr>
+        ${row('Outbound',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName)}
+        ${internals.map((f,i)=>row(f.airline?'Internal · '+esc(f.airline):'Internal '+(i+1),f.from,f.to,f.date,f.time,f.no,f.name)).join('')}
+        ${row('Return',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName)}
+      </table>
     </div>`;
   })():'';
   const overviewText=(current.overview||DEFAULT_OVERVIEW).replace(/\{brand\}/g,b.name||'');
@@ -1840,45 +1802,27 @@ function _render(){
   let p2=current.days.length?`<div class="page"><div class="sect"><h2>Your Journey, Day by Day</h2>${dayHTML}</div>`:'';
 
   // hotels
-  const hotelHTML=current.hotels.map((h,hi)=>{
-    const even=hi%2===1;
-    const imgEl=h.img
-      ?`<div class="hotel-img"><img src="${IMG.src(h.img)}"><div class="h-badge"><span>${esc(h.nights)}</span> Night${h.nights==='1'?'':'s'}</div></div>`
-      :`<div class="hotel-no-img"><div class="h-badge" style="position:absolute;bottom:8px;left:8px"><span>${esc(h.nights)}</span> Night${h.nights==='1'?'':'s'}</div><span>${esc(h.name||'Hotel')}</span></div>`;
-    const detailEl=`<div class="hotel-detail">
-      <div class="h-name">${esc(h.name)}</div>
-      ${h.stars?`<div class="h-stars">${stars(h.stars)}</div>`:''}
-      <div class="h-loc">📍 ${esc(h.city||'')}</div>
-      ${h.board?`<div class="h-board">${esc(h.board)}</div>`:''}
-      <ul class="h-highlights">
-        ${h.city?`<li>Located in the heart of ${esc(h.city)}</li>`:''}
-        ${h.stars>=4?'<li>Premium amenities & facilities</li>':''}
-        ${h.board?`<li>${esc(h.board)} included</li>`:''}
-        ${h.nights?`<li>${esc(h.nights)} night${h.nights==='1'?'':'s'} stay</li>`:''}
-      </ul>
-    </div>`;
-    const inner=even?detailEl+imgEl:imgEl+detailEl;
-    return `<div class="hotel"><div class="hotel-inner"${even?' style="flex-direction:row-reverse"':''}>${inner}</div></div>`;
-  }).join('');
-  const hotelsBlock=current.hotels.length?`<div class="sect"><h2>Your Accommodation</h2><div class="hotelgrid">${hotelHTML}</div></div>`:'';
+  const hotelHTML=current.hotels.map(h=>`<div class="hotel">
+    ${h.img?`<img src="${IMG.src(h.img)}">`:''}
+    <div class="h-info">
+      <b>${esc(h.name)}</b>
+      ${h.stars?`<div class="stars">${stars(h.stars)}</div>`:''}
+      <small>📍 ${esc(h.city)} · <b style="color:#1a1a1a;font-weight:700">${esc(h.nights)} Night${h.nights==='1'?'':'s'}</b>${h.board?' · '+esc(h.board):''}</small>
+    </div></div>`).join('');
+  const hotelsBlock=current.hotels.length?`<div class="sect"><h2>Accommodation</h2><div class="hotelgrid">${hotelHTML}</div></div>`:'';
 
   // transfers section (appended to hotels page or standalone)
   const xfers=(current.transfers||[]).filter(t=>t.type||t.from||t.to);
   const TICONS={private_car:'🚗',shared_shuttle:'🚐',coach:'🚌',minivan:'🚙',limousine:'🚘',ferry:'⛴️',speedboat:'🚤',yacht:'⛵',train:'🚆',metro:'🚇',domestic_flight:'✈️',seaplane:'🛩️',helicopter:'🚁',tuk_tuk:'🛺',cable_car:'🚡',other:'📝'};
   const TNAMES={private_car:'Private Car',shared_shuttle:'Shared Shuttle',coach:'Coach / Bus',minivan:'Minivan',limousine:'Limousine / VIP',ferry:'Ferry',speedboat:'Speedboat',yacht:'Yacht / Catamaran',train:'Train / Rail',metro:'Metro / Subway',domestic_flight:'Domestic Flight',seaplane:'Seaplane',helicopter:'Helicopter',tuk_tuk:'Tuk Tuk',cable_car:'Cable Car',other:'Other'};
   const xferHTML=xfers.length?`<div class="sect"><h2>Transfers</h2>
-    <table style="width:100%;border-collapse:collapse;border:1px solid #eaddc0;border-radius:8px;overflow:hidden">
-      <tr style="background:rgba(212,175,106,.06)">
-        <th style="padding:7px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Mode</th>
-        <th style="padding:7px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Route</th>
-        <th style="padding:7px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Date / Time</th>
-        <th style="padding:7px 10px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase">Details</th>
-      </tr>
+    <table class="flights-table">
+      <tr><th>Mode</th><th>Route</th><th>Date / Time</th><th>Details</th></tr>
       ${xfers.map(t=>`<tr>
-        <td style="padding:8px 10px;font-size:10pt;color:#1a1a1a">${TICONS[t.type]||'📦'} <b>${esc(TNAMES[t.type]||t.type||'—')}</b></td>
-        <td style="padding:8px 10px;font-size:9.5pt;color:#1a1a1a">${esc(t.from||'—')} → ${esc(t.to||'—')}</td>
-        <td style="padding:8px 10px;font-size:9pt;color:#555">${t.date?fmt(t.date):'—'}${t.time?'<br>'+esc(t.time):''}</td>
-        <td style="padding:8px 10px;font-size:8.5pt;color:#555">${t.operator?esc(t.operator):''}${t.operator&&t.notes?' · ':''}${t.notes?'<i>'+esc(t.notes)+'</i>':''}</td>
+        <td><b>${TICONS[t.type]||''} ${esc(TNAMES[t.type]||t.type||'—')}</b></td>
+        <td>${esc(t.from||'—')} → ${esc(t.to||'—')}</td>
+        <td>${t.date?fmt(t.date):'—'}${t.time?' · '+esc(t.time):''}</td>
+        <td>${t.operator?esc(t.operator):'—'}${t.notes?' · '+esc(t.notes):''}</td>
       </tr>`).join('')}
     </table></div>`:''
   // Close itinerary page
@@ -2025,8 +1969,8 @@ function generatePDF(){
     overlay.innerHTML='<div>Generating PDF…</div><div id="__pdfProg" style="font-size:11px;color:#A1A1A6;letter-spacing:.1em">Page 0 / '+pages.length+'</div>';
     document.body.appendChild(overlay);
 
-    const pageWmm=210;
-    let pdf=null;
+    const pageWmm=210,pageHmm=297;
+    const pdf=new (window.jspdf?.jsPDF||window.jsPDF)({unit:'mm',format:'a4',orientation:'portrait',compress:true});
 
     const prevEl=$('preview');
     const prevTransform=prevEl.style.transform;
@@ -2048,14 +1992,11 @@ function generatePDF(){
       html2canvas(el,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false}).then(canvas=>{
         hidden.forEach(([n,d])=>n.style.display=d);
         const img=canvas.toDataURL('image/jpeg',0.95);
-        // Exact content height — no clamping, no distortion
-        const contentHmm=Math.round(pageWmm*(canvas.height/canvas.width));
-        if(i===0){
-          pdf=new (window.jspdf?.jsPDF||window.jsPDF)({unit:'mm',format:[pageWmm,contentHmm],orientation:'portrait',compress:true});
-        }else{
-          pdf.addPage([pageWmm,contentHmm],'portrait');
-        }
-        pdf.addImage(img,'JPEG',0,0,pageWmm,contentHmm);
+        const ratio=canvas.height/canvas.width;
+        const hmm=pageWmm*ratio;
+        if(i>0)pdf.addPage();
+        // Place image at top of A4, natural height (no stretching)
+        pdf.addImage(img,'JPEG',0,0,pageWmm,Math.min(hmm,pageHmm));
         i++;
         setTimeout(next,30);
       }).catch(err=>{
