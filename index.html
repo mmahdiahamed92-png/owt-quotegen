@@ -823,13 +823,7 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
           </select>
         </div>
       </div>
-      <label>Hero Shape</label>
-      <select id="heroShape">
-        <option value="rect">Rectangle</option>
-        <option value="rounded">Rounded</option>
-        <option value="oval">Oval</option>
-        <option value="circle">Circle</option>
-      </select>
+      <input type="hidden" id="heroShape" value="rounded">
 
 
       <h3>Hotels <button class="btn ghost sm" onclick="addHotel()">+ Hotel</button></h3>
@@ -1310,7 +1304,7 @@ function blankQuote(){
     days:[],hotels:[],transfers:[],prices:[{label:'Per Person (Twin Sharing)',amt:'',total:false},{label:'Total Package Price',amt:'',total:true}],
     curr:'GBP',incl:DEFAULT_INCL,excl:DEFAULT_EXCL,terms:brands[0]?.terms||'',
     overview:DEFAULT_OVERVIEW,footMsg:DEFAULT_FOOTMSG,
-    heroPos:'below-title',heroFocus:'center',heroShape:'rect',
+    heroPos:'below-title',heroFocus:'center',heroShape:'rounded',
     createdAt:Date.now(),updatedAt:Date.now()
   };
 }
