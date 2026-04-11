@@ -1922,7 +1922,7 @@ function _render(){
       };
       return `<div class="sect" style="text-align:center">
         <div style="margin-bottom:8px"><svg width="30" height="30" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></div>
-        <div class="fl-hero-title">Flight Details</div>
+        <div class="fl-hero-title">Flights</div>
         <div class="fl-hero-sub"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(cls)} Class</div>
         ${heroCard('Outbound',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName,current.flightOutDuration)}
         ${heroCard('Return',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName,current.flightRetDuration)}
@@ -1938,7 +1938,7 @@ function _render(){
       <td>${esc(no||'—')}</td></tr>`;
     return `<div class="sect" style="text-align:center">
       <div style="margin-bottom:8px"><svg width="30" height="30" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></div>
-      <h2 style="border-bottom:none;text-align:center;margin-bottom:10px">Flight Details</h2>
+      <h2 style="border-bottom:none;text-align:center;margin-bottom:10px">Flights</h2>
       <div style="font-size:9pt;color:#555;margin-bottom:8px"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(cls)} Class</div>
       <table class="flights-table">
         <tr><th>Leg</th><th>Route</th><th>Date / Time</th><th>Flight #</th></tr>
