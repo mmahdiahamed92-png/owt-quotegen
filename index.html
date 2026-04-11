@@ -2022,10 +2022,7 @@ function _render(){
   if(current.flightsInc&&(current.flightOutFrom||current.flightOutTo))
     itinItems.push({icon:planeS,name:(current.flightOutFrom||'—').replace(/\s*\([A-Z]{3}\)/,'')+' → '+(current.flightOutTo||'—').replace(/\s*\([A-Z]{3}\)/,''),type:'Outbound Flight',date:current.flightOutDate});
   (current.hotels||[]).forEach(h=>{if(h.name){
-    let hDate='';
-    if(h.checkin&&h.checkout)hDate=h.checkin+'|'+h.checkout;
-    else if(h.checkin)hDate=h.checkin;
-    else if(h.checkout)hDate=h.checkout;
+    let hDate=h.checkin||'';
     itinItems.push({icon:hotelS,name:h.name,type:'Hotel'+(h.city?' · '+h.city:'')+(h.nights?' · '+h.nights+' Night'+(h.nights==='1'?'':'s'):''),date:hDate});
   }});
   (current.excursions||[]).forEach(x=>{if(x.name)itinItems.push({icon:pinS,name:x.name,type:'Excursion'+(x.location?' · '+x.location:''),date:x.date})});
