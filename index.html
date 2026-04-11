@@ -199,6 +199,10 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .fl-h-to .fl-h-code,.page .fl-h-to .fl-h-city{text-align:right}
 .page .fl-h-line{display:block;width:100%;height:1px;background:linear-gradient(90deg,#D4AF6A 50%,transparent 50%);background-size:8px 1px;margin-bottom:6px}
 .page .fl-h-icon{display:block;text-align:center;line-height:1}
+.page .fl-h-logo{display:block;text-align:center;margin-bottom:6px}
+.page .fl-h-logo img{height:18px;width:auto;max-width:60px;object-fit:contain;display:inline-block}
+.page .fl-h-logo .fl-al-badge{display:inline-block;font-size:6.5pt;color:#8B6B3A;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);padding:2px 8px;border-radius:100px;font-weight:600;letter-spacing:.04em}
+.page .fl-h-dur{display:block;text-align:center;margin-top:4px;font-size:7.5pt;color:#999;letter-spacing:.04em;font-weight:500}
 .page .fl-hero-meta{display:table;width:100%;border-top:1px solid #eee8d5;padding-top:12px}
 .page .fl-hero-meta .fl-hm{display:table-cell;text-align:center;width:25%}
 .page .fl-hero-meta .fl-hm-label{font-size:6.5pt;color:#bbb;text-transform:uppercase;letter-spacing:.12em;margin-bottom:2px}
@@ -792,6 +796,7 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
       </div>
       <label>Flight Number</label><input id="flightOutNo" placeholder="e.g. BA238">
       <label>Flight Name (optional)</label><input id="flightOutName" placeholder="e.g. London to Athens Direct">
+      <label>Duration (optional)</label><input id="flightOutDuration" placeholder="e.g. 2h 40m">
 
       <div style="font-size:10px;color:#D4AF6A;letter-spacing:.22em;text-transform:uppercase;margin-top:14px;margin-bottom:4px">Return</div>
       <div class="row">
@@ -804,6 +809,7 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
       </div>
       <label>Flight Number</label><input id="flightRetNo" placeholder="e.g. BA239">
       <label>Flight Name (optional)</label><input id="flightRetName" placeholder="e.g. Athens to London Direct">
+      <label>Duration (optional)</label><input id="flightRetDuration" placeholder="e.g. 2h 40m">
 
       <div style="font-size:10px;color:#D4AF6A;letter-spacing:.22em;text-transform:uppercase;margin-top:18px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
         Internal / Domestic Flights
@@ -1330,7 +1336,7 @@ function blankQuote(){
     clientName:'',clientContact:'',travelers:'2 Adults',departureAirport:'',
     flightsInc:false,flightAirline:'',flightClass:'Economy',
     flightOutFrom:'',flightOutTo:'',flightOutDate:'',flightOutTime:'',flightOutNo:'',
-    flightOutName:'',flightRetName:'',
+    flightOutName:'',flightOutDuration:'',flightRetName:'',flightRetDuration:'',
     flightRetFrom:'',flightRetTo:'',flightRetDate:'',flightRetTime:'',flightRetNo:'',
     internalFlights:[],
     tourTitle:'',tourSub:'',titleFont:'Satoshi',startDate:'',endDate:'',dest:'',heroSrc:'',
@@ -1413,7 +1419,7 @@ function onBrandChange(){
 }
 
 // ====== FORM <-> CURRENT ======
-const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
+const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
 
 // ====== INCLUSIONS / EXCLUSIONS CATALOGUE ======
 const INCL_CATALOGUE=[
@@ -1785,9 +1791,66 @@ function _render(){
     const xCode=s=>{const m=(s||'').match(/\(([A-Z]{3})\)/);return m?m[1]:''};
     const xCity=s=>(s||'—').replace(/\s*\([A-Z]{3}\)\s*/,'');
 
+    // Airline logo URL mapping
+    const airlineLogos={
+      'british airways':'https://logo.clearbit.com/britishairways.com',
+      'emirates':'https://logo.clearbit.com/emirates.com',
+      'qatar airways':'https://logo.clearbit.com/qatarairways.com',
+      'etihad airways':'https://logo.clearbit.com/etihad.com',
+      'singapore airlines':'https://logo.clearbit.com/singaporeair.com',
+      'cathay pacific':'https://logo.clearbit.com/cathaypacific.com',
+      'lufthansa':'https://logo.clearbit.com/lufthansa.com',
+      'air france':'https://logo.clearbit.com/airfrance.com',
+      'klm royal dutch airlines':'https://logo.clearbit.com/klm.com',
+      'turkish airlines':'https://logo.clearbit.com/turkishairlines.com',
+      'virgin atlantic':'https://logo.clearbit.com/virginatlantic.com',
+      'ryanair':'https://logo.clearbit.com/ryanair.com',
+      'easyjet':'https://logo.clearbit.com/easyjet.com',
+      'jet2':'https://logo.clearbit.com/jet2.com',
+      'tui airways':'https://logo.clearbit.com/tui.co.uk',
+      'wizz air uk':'https://logo.clearbit.com/wizzair.com',
+      'swiss international air lines':'https://logo.clearbit.com/swiss.com',
+      'austrian airlines':'https://logo.clearbit.com/austrian.com',
+      'scandinavian airlines (sas)':'https://logo.clearbit.com/flysas.com',
+      'finnair':'https://logo.clearbit.com/finnair.com',
+      'norwegian air':'https://logo.clearbit.com/norwegian.com',
+      'iberia':'https://logo.clearbit.com/iberia.com',
+      'tap air portugal':'https://logo.clearbit.com/flytap.com',
+      'aegean airlines':'https://logo.clearbit.com/aegeanair.com',
+      'american airlines':'https://logo.clearbit.com/aa.com',
+      'delta air lines':'https://logo.clearbit.com/delta.com',
+      'united airlines':'https://logo.clearbit.com/united.com',
+      'air canada':'https://logo.clearbit.com/aircanada.com',
+      'qantas':'https://logo.clearbit.com/qantas.com',
+      'air new zealand':'https://logo.clearbit.com/airnewzealand.com',
+      'thai airways':'https://logo.clearbit.com/thaiairways.com',
+      'malaysia airlines':'https://logo.clearbit.com/malaysiaairlines.com',
+      'garuda indonesia':'https://logo.clearbit.com/garuda-indonesia.com',
+      'philippine airlines':'https://logo.clearbit.com/philippineairlines.com',
+      'air india':'https://logo.clearbit.com/airindia.com',
+      'srilankan airlines':'https://logo.clearbit.com/srilankan.com',
+      'korean air':'https://logo.clearbit.com/koreanair.com',
+      'japan airlines':'https://logo.clearbit.com/jal.com',
+      'eva air':'https://logo.clearbit.com/evaair.com',
+      'gulf air':'https://logo.clearbit.com/gulfair.com',
+      'oman air':'https://logo.clearbit.com/omanair.com',
+      'royal jordanian':'https://logo.clearbit.com/rj.com',
+      'egyptair':'https://logo.clearbit.com/egyptair.com',
+      'ethiopian airlines':'https://logo.clearbit.com/ethiopianairlines.com',
+      'kenya airways':'https://logo.clearbit.com/kenya-airways.com',
+      'south african airways':'https://logo.clearbit.com/flysaa.com',
+      'royal air maroc':'https://logo.clearbit.com/royalairmaroc.com',
+      'latam airlines':'https://logo.clearbit.com/latam.com'
+    };
+    const getAirlineLogo=(name)=>{
+      if(!name)return null;
+      return airlineLogos[name.toLowerCase()]||null;
+    };
+    const logoUrl=getAirlineLogo(al);
+
     // HERO MODE: 2 sectors only
     if(totalSectors<=2){
-      const heroCard=(label,from,to,date,time,no,name)=>{
+      const heroCard=(label,from,to,date,time,no,name,duration)=>{
         const fc=xCode(from)||xCity(from),tc=xCode(to)||xCity(to);
         const fcity=xCode(from)?xCity(from):'',tcity=xCode(to)?xCity(to):'';
         return `<div class="fl-hero-card">
@@ -1798,8 +1861,11 @@ function _render(){
               ${fcity?`<div class="fl-h-city">${esc(fcity)}</div>`:''}
             </div>
             <div class="fl-h-mid">
+              ${logoUrl?`<div class="fl-h-logo"><img src="${logoUrl}" alt="${esc(al)}" onerror="this.parentNode.innerHTML='<span class=fl-al-badge>${esc(al)}</span>'"></div>`
+                :(al&&al!=='Airline TBC'?`<div class="fl-h-logo"><span class="fl-al-badge">${esc(al)}</span></div>`:'')}
               <div class="fl-h-line"></div>
               <div class="fl-h-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></div>
+              ${duration?`<div class="fl-h-dur">${esc(duration)}</div>`:''}
             </div>
             <div class="fl-h-to">
               <div class="fl-h-code">${esc(tc)}</div>
@@ -1817,8 +1883,8 @@ function _render(){
       return `<div class="sect">
         <div class="fl-hero-title">Flight Details</div>
         <div class="fl-hero-sub"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(cls)} Class</div>
-        ${heroCard('Outbound',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName)}
-        ${heroCard('Return',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName)}
+        ${heroCard('Outbound',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName,current.flightOutDuration)}
+        ${heroCard('Return',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName,current.flightRetDuration)}
         <div class="fl-hero-note">Flight numbers and times may be subject to change upon final confirmation.</div>
       </div>`;
     }
