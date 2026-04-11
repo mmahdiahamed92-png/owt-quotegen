@@ -887,6 +887,35 @@ body.viewer-mode #quoteViewer{display:block!important}
       <label>Flight Name (optional)</label><input id="flightRetName" placeholder="e.g. Athens to London Direct">
       <label>Duration (optional)</label><input id="flightRetDuration" placeholder="e.g. 2h 40m">
 
+      <div id="baggageSection" style="display:none">
+        <div style="font-size:10px;color:#D4AF6A;letter-spacing:.22em;text-transform:uppercase;margin-top:18px;margin-bottom:8px">Baggage Allowance</div>
+        <div class="row">
+          <div>
+            <label>Cabin Baggage</label>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+              <label class="chk" style="font-size:11px"><input type="checkbox" data-bag="cabin" value="1 x Personal Item (under seat)" onchange="syncBaggage()"> Personal Item</label>
+              <label class="chk" style="font-size:11px"><input type="checkbox" data-bag="cabin" value="1 x Cabin Bag (10kg)" onchange="syncBaggage()"> Cabin Bag (10kg)</label>
+              <label class="chk" style="font-size:11px"><input type="checkbox" data-bag="cabin" value="1 x Cabin Bag (7kg)" onchange="syncBaggage()"> Cabin Bag (7kg)</label>
+              <label class="chk" style="font-size:11px"><input type="checkbox" data-bag="cabin" value="No cabin baggage included" onchange="syncBaggage(this,'cabin')"> No cabin baggage</label>
+            </div>
+          </div>
+          <div>
+            <label>Checked Baggage</label>
+            <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+              <label class="chk" style="font-size:11px"><input type="checkbox" data-bag="checked" value="15kg checked bag" onchange="syncBaggage()"> 15kg</label>
+              <label class="chk" style="font-size:11px"><input type="checkbox" data-bag="checked" value="20kg checked bag" onchange="syncBaggage()"> 20kg</label>
+              <label class="chk" style="font-size:11px"><input type="checkbox" data-bag="checked" value="23kg checked bag" onchange="syncBaggage()"> 23kg</label>
+              <label class="chk" style="font-size:11px"><input type="checkbox" data-bag="checked" value="25kg checked bag" onchange="syncBaggage()"> 25kg</label>
+              <label class="chk" style="font-size:11px"><input type="checkbox" data-bag="checked" value="30kg checked bag" onchange="syncBaggage()"> 30kg</label>
+              <label class="chk" style="font-size:11px"><input type="checkbox" data-bag="checked" value="40kg checked bag" onchange="syncBaggage()"> 40kg</label>
+              <label class="chk" style="font-size:11px"><input type="checkbox" data-bag="checked" value="No checked baggage included" onchange="syncBaggage(this,'checked')"> No checked baggage</label>
+            </div>
+          </div>
+        </div>
+        <label>Custom baggage note (optional)</label>
+        <input id="baggageCustom" placeholder="e.g. 2 x 23kg bags per person, golf equipment included" oninput="syncBaggage()">
+      </div>
+
       <div style="font-size:10px;color:#D4AF6A;letter-spacing:.22em;text-transform:uppercase;margin-top:18px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
         Internal / Domestic Flights
         <button class="btn ghost sm" onclick="addInternalFlight()" style="font-size:10px;padding:4px 12px">+ Add Flight</button>
@@ -1410,6 +1439,7 @@ function blankQuote(){
     flightsInc:false,flightAirline:'',flightClass:'Economy',
     flightOutFrom:'',flightOutTo:'',flightOutDate:'',flightOutTime:'',flightOutNo:'',
     flightOutName:'',flightOutDuration:'',flightRetName:'',flightRetDuration:'',
+    baggageCabin:[],baggageChecked:[],baggageCustom:'',
     flightRetFrom:'',flightRetTo:'',flightRetDate:'',flightRetTime:'',flightRetNo:'',
     internalFlights:[],
     tourTitle:'',tourSub:'',titleFont:'Cinzel',startDate:'',endDate:'',dest:'',heroSrc:'',
@@ -1492,7 +1522,7 @@ function onBrandChange(){
 }
 
 // ====== FORM <-> CURRENT ======
-const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
+const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','baggageCustom','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
 
 // ====== INCLUSIONS / EXCLUSIONS CATALOGUE ======
 const INCL_CATALOGUE=[
@@ -1657,6 +1687,7 @@ function loadCurrentToForm(){
   $('heroPreview').innerHTML=current.heroSrc?`<img src="${IMG.src(current.heroSrc)}" class="thumb">`:'';
   if(typeof loadPaxFromTravelers==='function')loadPaxFromTravelers();
   if(typeof loadAirlineFromCurrent==='function')loadAirlineFromCurrent();
+  if(typeof loadBaggageFromCurrent==='function')loadBaggageFromCurrent();
   if(typeof loadInclExclFromCurrent==='function')loadInclExclFromCurrent();
   if(typeof updateTitlePreview==='function')updateTitlePreview();
   // warm image cache then render
@@ -1679,6 +1710,27 @@ function syncFormToCurrent(){
 function addDay(){if(!current)return;current.days.push({title:'',desc:'',img:''});renderItems();render();autoSave()}
 function addHotel(){if(!current)return;current.hotels.push({name:'',city:'',nights:'',stars:'',board:'',img:''});renderItems();render();autoSave()}
 function addPrice(){if(!current)return;current.prices.push({label:'',amt:'',total:false});renderItems();render();autoSave()}
+function syncBaggage(el,group){
+  if(!current)return;
+  // Mutual exclusion: "No X baggage" deselects others in same group
+  if(el&&el.checked&&el.value.startsWith('No ')){
+    document.querySelectorAll('input[data-bag="'+group+'"]:checked').forEach(cb=>{if(cb!==el)cb.checked=false});
+  }else if(el&&el.checked&&group){
+    document.querySelectorAll('input[data-bag="'+group+'"]').forEach(cb=>{if(cb.value.startsWith('No '))cb.checked=false});
+  }
+  current.baggageCabin=[...document.querySelectorAll('input[data-bag="cabin"]:checked')].map(c=>c.value);
+  current.baggageChecked=[...document.querySelectorAll('input[data-bag="checked"]:checked')].map(c=>c.value);
+  current.baggageCustom=$('baggageCustom')?.value||'';
+  render();autoSave();
+}
+function loadBaggageFromCurrent(){
+  if(!current)return;
+  const sec=document.getElementById('baggageSection');
+  if(sec)sec.style.display=current.flightsInc?'block':'none';
+  document.querySelectorAll('input[data-bag="cabin"]').forEach(cb=>{cb.checked=(current.baggageCabin||[]).includes(cb.value)});
+  document.querySelectorAll('input[data-bag="checked"]').forEach(cb=>{cb.checked=(current.baggageChecked||[]).includes(cb.value)});
+  if($('baggageCustom'))$('baggageCustom').value=current.baggageCustom||'';
+}
 function addInternalFlight(){if(!current)return;current.internalFlights=(current.internalFlights||[]);current.internalFlights.push({from:'',to:'',date:'',time:'',no:'',name:'',airline:''});renderItems();render();autoSave();if(!current.flightsInc){current.flightsInc=true;$('flightsInc').checked=true}}
 function delInternalFlight(i){current.internalFlights.splice(i,1);renderItems();render();autoSave()}
 function addExcursion(){if(!current)return;current.excursions=(current.excursions||[]);current.excursions.push({name:'',location:'',duration:'',date:'',desc:'',highlights:'',img:''});renderItems();render();autoSave()}
@@ -1963,6 +2015,10 @@ function _render(){
         <div class="fl-hero-sub"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(cls)} Class</div>
         ${heroCard('Outbound',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName,current.flightOutDuration)}
         ${heroCard('Return',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName,current.flightRetDuration)}
+        ${(()=>{const bi=[...(current.baggageCabin||[]),...(current.baggageChecked||[]),current.baggageCustom].filter(Boolean);return bi.length?`<div style="text-align:center;margin-top:10px;padding:10px 16px;background:#fafaf7;border:1px solid #eee8d5;border-radius:10px">
+          <div style="font-size:7pt;color:#8B6B3A;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="#D4AF6A" style="vertical-align:-2px;margin-right:4px"><path d="M17 6h-2V3c0-.55-.45-1-1-1h-4c-.55 0-1 .45-1 1v3H7c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2 0 .55.45 1 1 1s1-.45 1-1h6c0 .55.45 1 1 1s1-.45 1-1c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 3h4v3h-4V3zm7 16H7V8h10v11z"/></svg>BAGGAGE ALLOWANCE</div>
+          <div style="font-size:8pt;color:#555">${bi.map(b=>esc(b)).join(' · ')}</div>
+        </div>`:''})()}
         <div class="fl-hero-note">Flight numbers and times may be subject to change upon final confirmation.</div>
       </div>`;
     }
@@ -2055,7 +2111,8 @@ function _render(){
   const carS=svgS('<path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>');
   const stripCode=s=>(s||'—').replace(/\s*\([A-Z]{3}\)/,'');
   if(current.flightsInc&&(current.flightOutFrom||current.flightOutTo))
-    itinItems.push({icon:planeS,name:stripCode(current.flightOutFrom)+' → '+stripCode(current.flightOutTo),type:'Outbound Flight',typeLabel:'OUTBOUND FLIGHT',detail:[current.flightAirline,current.flightClass].filter(Boolean).join(' · '),time:current.flightOutTime||'',date:current.flightOutDate});
+    const shortBag=[(current.baggageChecked||[])[0],(current.baggageCabin||[])[0]].filter(Boolean).join(' + ');
+    itinItems.push({icon:planeS,name:stripCode(current.flightOutFrom)+' → '+stripCode(current.flightOutTo),type:'Outbound Flight',typeLabel:'OUTBOUND FLIGHT',detail:[current.flightAirline,current.flightClass,shortBag?'🧳 '+shortBag:''].filter(Boolean).join(' · '),time:current.flightOutTime||'',date:current.flightOutDate});
   (current.hotels||[]).forEach(h=>{if(h.name){
     itinItems.push({icon:hotelS,name:h.name,type:'Hotel'+(h.city?' · '+h.city:''),typeLabel:['HOTEL',h.nights?h.nights+' NIGHT'+(h.nights==='1'?'':'S'):'',h.board||''].filter(Boolean).join(' · '),detail:[h.stars?stars(+h.stars):'',h.city||''].filter(Boolean).join(' · '),date:h.checkin||''});
   }});
@@ -3314,6 +3371,8 @@ const AIRPORTS=[
     }
   });
 });
+// Toggle baggage section with flights checkbox
+$('flightsInc')?.addEventListener('change',()=>{const s=document.getElementById('baggageSection');if(s)s.style.display=$('flightsInc').checked?'block':'none'});
 
 // ====== AIRLINES DATALIST ======
 (function populateAirlines(){
@@ -3796,7 +3855,11 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
         <b>${esc(q.flightRetFrom||'—')} → ${esc(q.flightRetTo||'—')}</b>
         <small>${fmtD(q.flightRetDate)}${q.flightRetTime?' · '+esc(q.flightRetTime):''}${q.flightRetNo?' · '+esc(q.flightRetNo):''}${q.flightRetDuration?' · '+esc(q.flightRetDuration):''}</small>
       </div>
-      ${q.flightAirline?`<div style="text-align:center;font-size:11px;color:#888;margin-top:6px"><b style="color:#1a1a1a">${esc(q.flightAirline)}</b> · ${esc(q.flightClass||'Economy')} Class</div>`:''}`:'';
+      ${q.flightAirline?`<div style="text-align:center;font-size:11px;color:#888;margin-top:6px"><b style="color:#1a1a1a">${esc(q.flightAirline)}</b> · ${esc(q.flightClass||'Economy')} Class</div>`:''}
+      ${(()=>{const bi=[...(q.baggageCabin||[]),...(q.baggageChecked||[]),q.baggageCustom].filter(Boolean);return bi.length?`<div class="qv-card" style="border-left:3px solid #D4AF6A;margin-top:8px">
+        <div style="font-size:10px;color:#D4AF6A;font-weight:700;letter-spacing:.12em;margin-bottom:4px">BAGGAGE ALLOWANCE</div>
+        ${bi.map(b=>'<small style="display:block;margin-bottom:2px">✓ '+esc(b)+'</small>').join('')}
+      </div>`:''})()}`:'';
 
     // Transfers
     const transfersHTML=(q.transfers||[]).filter(t=>t.type||t.from).map(t=>`<div class="qv-card">
