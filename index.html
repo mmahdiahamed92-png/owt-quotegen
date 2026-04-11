@@ -221,6 +221,21 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .hotel .h-highlights li{padding:2px 0 2px 14px;position:relative}
 .page .hotel .h-highlights li:before{content:'';position:absolute;left:0;top:7px;width:4px;height:4px;border-radius:50%;background:#D4AF6A}
 
+/* Excursion Cards */
+.page .excursion{border:1px solid #eee8d5;border-radius:12px;margin-bottom:14px;page-break-inside:avoid;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.page .excursion table.exc-layout{width:100%;border-collapse:collapse}
+.page .excursion .exc-img-cell{width:38%;vertical-align:top;padding:0}
+.page .excursion .exc-img-cell img{width:100%;height:auto;max-height:46mm;object-fit:cover;display:block;border-radius:12px 0 0 12px}
+.page .excursion .exc-detail{vertical-align:top;padding:14px 16px}
+.page .excursion .exc-name{font-family:var(--fh);font-size:13pt;font-weight:600;color:#1a1a1a;letter-spacing:-.015em;margin:0 0 3px;line-height:1.2}
+.page .excursion .exc-loc{font-size:8pt;color:#999;margin-bottom:4px}
+.page .excursion .exc-meta{margin-bottom:6px}
+.page .excursion .exc-pill{display:inline-block;font-size:6.5pt;color:#8B6B3A;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);padding:3px 9px;border-radius:100px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-right:4px}
+.page .excursion .exc-desc{font-size:8.5pt;color:#555;line-height:1.6;margin-bottom:6px}
+.page .excursion .exc-highlights{margin:0;padding:0;list-style:none;font-size:8pt;color:#555;line-height:1.65}
+.page .excursion .exc-highlights li{padding:2px 0 2px 14px;position:relative}
+.page .excursion .exc-highlights li:before{content:'';position:absolute;left:0;top:7px;width:4px;height:4px;border-radius:50%;background:#D4AF6A}
+
 .page table.price{width:100%;border-collapse:separate;border-spacing:0;font-size:10pt;border:1px solid #eee;border-radius:14px;overflow:hidden}
 .page table.price th{background:#1a1a1a;color:#fff;padding:13px 16px;text-align:left;font-weight:500;letter-spacing:.04em;font-size:9.5pt;text-transform:uppercase}
 .page table.price td{padding:13px 16px;border-bottom:1px solid #f3f3f3;color:#333;font-weight:400}
@@ -829,6 +844,9 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
       <h3>Hotels <button class="btn ghost sm" onclick="addHotel()">+ Hotel</button></h3>
       <div id="hotels"></div>
 
+      <h3>Excursions <button class="btn ghost sm" onclick="addExcursion()">+ Excursion</button></h3>
+      <div id="excursions"></div>
+
       <h3>Transfers <button class="btn ghost sm" onclick="addTransfer()">+ Transfer</button></h3>
       <div id="transfers"></div>
 
@@ -1301,7 +1319,7 @@ function blankQuote(){
     flightRetFrom:'',flightRetTo:'',flightRetDate:'',flightRetTime:'',flightRetNo:'',
     internalFlights:[],
     tourTitle:'',tourSub:'',titleFont:'Satoshi',startDate:'',endDate:'',dest:'',heroSrc:'',
-    days:[],hotels:[],transfers:[],prices:[{label:'Per Person (Twin Sharing)',amt:'',total:false},{label:'Total Package Price',amt:'',total:true}],
+    days:[],hotels:[],excursions:[],transfers:[],prices:[{label:'Per Person (Twin Sharing)',amt:'',total:false},{label:'Total Package Price',amt:'',total:true}],
     curr:'GBP',incl:DEFAULT_INCL,excl:DEFAULT_EXCL,terms:brands[0]?.terms||'',
     overview:DEFAULT_OVERVIEW,footMsg:DEFAULT_FOOTMSG,
     heroPos:'below-title',heroFocus:'center',heroShape:'rounded',
@@ -1569,6 +1587,8 @@ function addHotel(){if(!current)return;current.hotels.push({name:'',city:'',nigh
 function addPrice(){if(!current)return;current.prices.push({label:'',amt:'',total:false});renderItems();render();autoSave()}
 function addInternalFlight(){if(!current)return;current.internalFlights=(current.internalFlights||[]);current.internalFlights.push({from:'',to:'',date:'',time:'',no:'',name:'',airline:''});renderItems();render();autoSave();if(!current.flightsInc){current.flightsInc=true;$('flightsInc').checked=true}}
 function delInternalFlight(i){current.internalFlights.splice(i,1);renderItems();render();autoSave()}
+function addExcursion(){if(!current)return;current.excursions=(current.excursions||[]);current.excursions.push({name:'',location:'',duration:'',date:'',desc:'',highlights:'',img:''});renderItems();render();autoSave()}
+function delExcursion(i){current.excursions.splice(i,1);renderItems();render();autoSave()}
 function addTransfer(){if(!current)return;current.transfers=(current.transfers||[]);current.transfers.push({type:'',from:'',to:'',date:'',time:'',operator:'',notes:''});renderItems();render();autoSave()}
 function delTransfer(i){current.transfers.splice(i,1);renderItems();render();autoSave()}
 function delDay(i){current.days.splice(i,1);renderItems();render();autoSave()}
@@ -1617,6 +1637,26 @@ function renderItems(){
         <div><label>Flight Number</label><input placeholder="e.g. TG209" value="${esc(f.no)}" oninput="current.internalFlights[${i}].no=this.value;render();autoSave()"></div>
         <div><label>Flight Name (optional)</label><input placeholder="e.g. Bangkok to Phuket" value="${esc(f.name)}" oninput="current.internalFlights[${i}].name=this.value;render();autoSave()"></div>
       </div>
+    </div>`).join('');
+  // excursions
+  $('excursions').innerHTML=(current.excursions||[]).map((x,i)=>`
+    <div class="item">
+      <div class="top"><b>Excursion ${i+1}</b><button class="del" onclick="delExcursion(${i})">DELETE</button></div>
+      <label>Excursion Name</label>
+      <input placeholder="e.g. Phi Phi Islands Speedboat Tour" value="${esc(x.name)}" oninput="current.excursions[${i}].name=this.value;render();autoSave()">
+      <div class="row">
+        <div><label>Location / Area</label><input placeholder="e.g. Phuket, Thailand" value="${esc(x.location)}" oninput="current.excursions[${i}].location=this.value;render();autoSave()"></div>
+        <div><label>Duration</label><input placeholder="e.g. Full Day, Half Day, 3 Hours" value="${esc(x.duration)}" oninput="current.excursions[${i}].duration=this.value;render();autoSave()"></div>
+      </div>
+      <label>Date (optional)</label>
+      <input type="date" value="${esc(x.date)}" onchange="current.excursions[${i}].date=this.value;render();autoSave()">
+      <label>Description</label>
+      <textarea rows="2" placeholder="Brief description of the experience..." oninput="current.excursions[${i}].desc=this.value;render();autoSave()">${esc(x.desc)}</textarea>
+      <label>Highlights (one per line)</label>
+      <textarea rows="3" placeholder="Snorkelling in crystal waters\nBeachside Thai lunch\nMaya Bay visit\nSpeedboat transfers included" oninput="current.excursions[${i}].highlights=this.value;render();autoSave()">${esc(x.highlights)}</textarea>
+      <label>Excursion Image</label>
+      <input type="file" accept="image/*" onchange="fileToData(this.files[0],(s,dim)=>{current.excursions[${i}].img=s;current.excursions[${i}].dims=dim;renderItems();render();autoSave()})">
+      ${x.img?`<img src="${IMG.src(x.img)}" class="thumb">`:''}
     </div>`).join('');
   // transfers
   const TRANSFER_TYPES=[
@@ -1835,6 +1875,25 @@ function _render(){
   }).join('');
   const hotelsBlock=current.hotels.length?`<div class="sect"><h2>Accommodation</h2><div class="hotelgrid">${hotelHTML}</div></div>`:'';
 
+  // excursions
+  const excHTML=(current.excursions||[]).filter(x=>x.name).map(x=>{
+    const hl=(x.highlights||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    return `<div class="excursion"><table class="exc-layout"><tr>
+      ${x.img?`<td class="exc-img-cell"><img src="${IMG.src(x.img)}"></td>`:''}
+      <td class="exc-detail"${x.img?'':' colspan="2"'}>
+        <div class="exc-name">${esc(x.name)}</div>
+        ${x.location?`<div class="exc-loc">📍 ${esc(x.location)}</div>`:''}
+        <div class="exc-meta">
+          ${x.duration?`<span class="exc-pill">${esc(x.duration)}</span>`:''}
+          ${x.date?`<span class="exc-pill">${fmt(x.date)}</span>`:''}
+        </div>
+        ${x.desc?`<div class="exc-desc">${esc(x.desc)}</div>`:''}
+        ${hl.length?`<ul class="exc-highlights">${hl.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>`:''}
+      </td>
+    </tr></table></div>`;
+  }).join('');
+  const excBlock=excHTML?`<div class="sect"><h2>Excursions & Experiences</h2>${excHTML}</div>`:'';
+
   // transfers section (appended to hotels page or standalone)
   const xfers=(current.transfers||[]).filter(t=>t.type||t.from||t.to);
   const svgIcon=(type)=>{
@@ -1888,6 +1947,7 @@ function _render(){
   const pgWrap=(content)=>`<div class="page" style="display:flex;flex-direction:column;min-height:270mm">${content}${pgFoot}</div>`;
   let pFlights=flightsEl?pgWrap(flightsEl):'';
   let p3=hotelsBlock?pgWrap(hotelsBlock):'';
+  let pExc=excBlock?pgWrap(excBlock):'';
   let pXfer=xferHTML?pgWrap(xferHTML):'';
 
   // page 4 — pricing + incl/excl + terms
@@ -1949,7 +2009,7 @@ function _render(){
     <div class="foot" style="margin-top:14px"><b>${esc(t.closing||'')}</b><br>Your journey starts safely with ${esc(b.name||'OWT Group')}<br>${esc(b.contact||'')}</div>
   </div>`;
 
-  $('preview').innerHTML=p1+pFlights+p3+pXfer+p4+p5;
+  $('preview').innerHTML=p1+pFlights+p3+pExc+pXfer+p4+p5;
 }
 
 // ====== SAVE ======
@@ -2200,6 +2260,7 @@ function confirmSaveLibrary(){
     days:JSON.parse(JSON.stringify(current.days||[])),
     hotels:JSON.parse(JSON.stringify(current.hotels||[])),
     transfers:JSON.parse(JSON.stringify(current.transfers||[])),
+    excursions:JSON.parse(JSON.stringify(current.excursions||[])),
     internalFlights:JSON.parse(JSON.stringify(current.internalFlights||[])),
     prices:JSON.parse(JSON.stringify(current.prices||[])),
     incl:current.incl||'',excl:current.excl||'',heroSrc:current.heroSrc||'',
@@ -2216,6 +2277,7 @@ function loadFromLibrary(id){
   current.days=JSON.parse(JSON.stringify(l.days));
   current.hotels=JSON.parse(JSON.stringify(l.hotels));
   current.transfers=JSON.parse(JSON.stringify(l.transfers||[]));
+  current.excursions=JSON.parse(JSON.stringify(l.excursions||[]));
   current.internalFlights=JSON.parse(JSON.stringify(l.internalFlights||[]));
   current.prices=JSON.parse(JSON.stringify(l.prices));
   current.incl=l.incl;current.excl=l.excl;
