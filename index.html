@@ -1916,11 +1916,11 @@ function _render(){
   // Close itinerary page
   if(p2)p2=p2+'</div>';
   // Flights page
-  let pFlights=flightsEl?`<div class="page">${flightsEl}</div>`:'';
-  // Accommodation page
-  let p3=hotelsBlock?`<div class="page">${hotelsBlock}</div>`:'';
-  // Transfers page
-  let pXfer=xferHTML?`<div class="page">${xferHTML}</div>`:'';
+  const pgFoot=`<div class="foot"><b>${esc(b.name)}</b><br>${esc(b.contact||'')}</div>`;
+  const pgWrap=(content)=>`<div class="page" style="display:flex;flex-direction:column;min-height:270mm">${content}${pgFoot}</div>`;
+  let pFlights=flightsEl?pgWrap(flightsEl):'';
+  let p3=hotelsBlock?pgWrap(hotelsBlock):'';
+  let pXfer=xferHTML?pgWrap(xferHTML):'';
 
   // page 4 — pricing + incl/excl + terms
   const priceRows=current.prices.map(pr=>`<tr class="${pr.total?'total':''}"><td>${esc(pr.label)}</td><td style="text-align:right">${cur}${esc(pr.amt)}</td></tr>`).join('');
