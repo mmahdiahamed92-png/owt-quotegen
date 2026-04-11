@@ -153,8 +153,9 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .preview-toolbar span{color:var(--gold)}
 
 /* PDF PAGE — white client-facing, premium */
-.page{width:210mm;min-height:auto;background:#fff;color:#1a1a1a;margin:0 auto 12px;padding:14mm 16mm;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);font-family:var(--fb);font-size:10pt;position:relative;letter-spacing:-.005em;border-radius:2px}
+.page{width:210mm;min-height:auto;height:auto;background:#fff;color:#1a1a1a;margin:0 auto 12px;padding:14mm 16mm;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05);font-family:var(--fb);font-size:10pt;position:relative;letter-spacing:-.005em;border-radius:2px;overflow:visible;display:block}
 .page:empty{display:none}
+.page *{max-width:100%;box-sizing:border-box}
 .page .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid #eaddc0}
 .page .hdr .agency{font-family:var(--fh);font-size:24pt;color:#1a1a1a;font-weight:500;line-height:1.02;letter-spacing:-.025em;font-variation-settings:"opsz" 144,"SOFT" 30}
 .page .hdr .agency small{display:block;font-family:var(--fb);font-size:8.5pt;color:#888;font-weight:400;margin-top:6px;letter-spacing:.02em}
@@ -179,7 +180,7 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 
 /* Premium Itinerary Day Cards */
 .page .day{page-break-inside:avoid;margin-bottom:16px;border-radius:14px;overflow:hidden;border:1px solid #eee8d5;box-shadow:0 2px 16px rgba(0,0,0,.05);background:#fff}
-.page .day.even{direction:rtl}.page .day.even>*{direction:ltr}
+.page .day.even .day-inner{flex-direction:row-reverse}
 .page .day-inner{display:flex;gap:0;align-items:stretch}
 .page .day .img-wrap{width:48%;flex-shrink:0;position:relative;overflow:hidden;min-height:52mm;background:linear-gradient(135deg,#f0e8d0,#e8dcc0)}
 .page .day .img-wrap img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
@@ -344,7 +345,7 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
   .page .hotel-img,.page .hotel-no-img{width:100%;min-height:32mm}
   .page .twocol{grid-template-columns:1fr;gap:8px}
   .page .day .day-inner{flex-direction:column}
-  .page .day.even{direction:ltr}
+  .page .day.even .day-inner{flex-direction:column}
   .page .day .img-wrap,.page .day .no-img-ph{width:100%;min-height:35mm}
   .page .day .day-content{padding:12px 14px}
   .page .clientbox{font-size:8.5pt;padding:12px 14px}
@@ -1857,7 +1858,7 @@ function _render(){
       </ul>
     </div>`;
     const inner=even?detailEl+imgEl:imgEl+detailEl;
-    return `<div class="hotel"${even?' style="direction:rtl"':''}><div class="hotel-inner"${even?' style="direction:ltr"':''}>${inner}</div></div>`;
+    return `<div class="hotel"><div class="hotel-inner"${even?' style="flex-direction:row-reverse"':''}>${inner}</div></div>`;
   }).join('');
   const hotelsBlock=current.hotels.length?`<div class="sect"><h2>Your Accommodation</h2><div class="hotelgrid">${hotelHTML}</div></div>`:'';
 
@@ -2025,8 +2026,6 @@ function generatePDF(){
     document.body.appendChild(overlay);
 
     const pageWmm=210;
-    const maxHmm=297; // cap at A4 max
-    const minHmm=80;  // minimum page height
     let pdf=null;
 
     const prevEl=$('preview');
@@ -2049,15 +2048,11 @@ function generatePDF(){
       html2canvas(el,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false}).then(canvas=>{
         hidden.forEach(([n,d])=>n.style.display=d);
         const img=canvas.toDataURL('image/jpeg',0.95);
-        const ratio=canvas.height/canvas.width;
-        // Calculate content height in mm, clamped between min and max
-        let contentHmm=Math.round(pageWmm*ratio);
-        contentHmm=Math.max(minHmm,Math.min(maxHmm,contentHmm));
+        // Exact content height — no clamping, no distortion
+        const contentHmm=Math.round(pageWmm*(canvas.height/canvas.width));
         if(i===0){
-          // First page: create PDF with this page's custom size
           pdf=new (window.jspdf?.jsPDF||window.jsPDF)({unit:'mm',format:[pageWmm,contentHmm],orientation:'portrait',compress:true});
         }else{
-          // Add page with custom height matching content
           pdf.addPage([pageWmm,contentHmm],'portrait');
         }
         pdf.addImage(img,'JPEG',0,0,pageWmm,contentHmm);
