@@ -194,13 +194,33 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .day .no-img-ph{width:48%;min-height:52mm;background:linear-gradient(135deg,rgba(212,175,106,.15),rgba(212,175,106,.06));display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
 .page .day .no-img-ph span{color:#c4a860;font-size:9pt;font-weight:500}
 
-/* Flights — simple stable table */
+/* Flights — compact table (for 3+ sectors) */
 .page .flights-table{width:100%;border-collapse:collapse;border:1px solid #eaddc0;border-radius:8px}
 .page .flights-table th{background:rgba(212,175,106,.06);padding:8px 12px;font-size:7.5pt;color:#8B6B3A;text-align:left;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
 .page .flights-table td{padding:10px 12px;border-top:1px solid #f0ebe0;font-size:9pt;color:#333;vertical-align:top}
 .page .flights-table .fl-leg{color:#8B6B3A;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:8pt}
 .page .flights-table .fl-route b{color:#1a1a1a;font-size:10pt}
 .page .flights-table .fl-route .fl-name{display:block;font-size:8pt;color:#999;font-style:italic;margin-top:2px}
+
+/* Flights — hero mode (for 2 sectors only) */
+.page .fl-hero-title{font-family:var(--fh);font-size:22pt;color:#1a1a1a;font-weight:500;text-align:center;margin:0 0 4px;letter-spacing:-.02em}
+.page .fl-hero-sub{text-align:center;font-size:9.5pt;color:#888;margin-bottom:28px}
+.page .fl-hero-card{border:1px solid #eaddc0;border-radius:14px;background:#fafaf7;padding:28px 24px 22px;margin-bottom:20px;page-break-inside:avoid}
+.page .fl-hero-label{font-size:7.5pt;color:#8B6B3A;font-weight:700;letter-spacing:.22em;text-transform:uppercase;margin-bottom:18px}
+.page .fl-hero-route{display:table;width:100%;margin-bottom:14px}
+.page .fl-hero-route .fl-h-from,.page .fl-hero-route .fl-h-to{display:table-cell;width:35%;vertical-align:middle}
+.page .fl-hero-route .fl-h-mid{display:table-cell;width:30%;text-align:center;vertical-align:middle;padding:0 8px}
+.page .fl-h-code{font-size:32pt;font-weight:700;color:#1a1a1a;letter-spacing:.06em;line-height:1}
+.page .fl-h-city{font-size:8pt;color:#999;margin-top:4px;letter-spacing:.01em}
+.page .fl-h-to{text-align:right}
+.page .fl-h-to .fl-h-code,.page .fl-h-to .fl-h-city{text-align:right}
+.page .fl-h-line{display:block;width:100%;height:20px;border-bottom:2px dashed #D4AF6A;margin-bottom:-10px}
+.page .fl-h-plane{display:block;font-size:18pt;color:#D4AF6A;margin-top:-2px}
+.page .fl-hero-meta{display:table;width:100%;border-top:1px solid #eee8d5;padding-top:12px}
+.page .fl-hero-meta .fl-hm{display:table-cell;text-align:center;width:25%}
+.page .fl-hero-meta .fl-hm-label{font-size:6.5pt;color:#bbb;text-transform:uppercase;letter-spacing:.12em;margin-bottom:2px}
+.page .fl-hero-meta .fl-hm-value{font-size:10pt;color:#1a1a1a;font-weight:600}
+.page .fl-hero-note{text-align:center;font-size:7.5pt;color:#bbb;font-style:italic;margin-top:16px;letter-spacing:.02em}
 
 /* Hotels — stable two-column table layout */
 .page .hotelgrid{display:block}
@@ -1738,14 +1758,57 @@ function _render(){
       <b>Destinations:</b> ${esc(current.dest||'')}
     </div>`;
   const flightsEl=current.flightsInc?(function(){
+    const al=current.flightAirline||'Airline TBC';
+    const cls=current.flightClass||'Economy';
+    const internals=(current.internalFlights||[]).filter(f=>f.from||f.to);
+    const totalSectors=2+internals.length;
+    const xCode=s=>{const m=(s||'').match(/\(([A-Z]{3})\)/);return m?m[1]:''};
+    const xCity=s=>(s||'—').replace(/\s*\([A-Z]{3}\)\s*/,'');
+
+    // HERO MODE: 2 sectors only
+    if(totalSectors<=2){
+      const heroCard=(label,from,to,date,time,no,name)=>{
+        const fc=xCode(from)||xCity(from),tc=xCode(to)||xCity(to);
+        const fcity=xCode(from)?xCity(from):'',tcity=xCode(to)?xCity(to):'';
+        return `<div class="fl-hero-card">
+          <div class="fl-hero-label">${label}</div>
+          <div class="fl-hero-route">
+            <div class="fl-h-from">
+              <div class="fl-h-code">${esc(fc)}</div>
+              ${fcity?`<div class="fl-h-city">${esc(fcity)}</div>`:''}
+            </div>
+            <div class="fl-h-mid">
+              <div class="fl-h-line"></div>
+              <div class="fl-h-plane">✈</div>
+            </div>
+            <div class="fl-h-to">
+              <div class="fl-h-code">${esc(tc)}</div>
+              ${tcity?`<div class="fl-h-city">${esc(tcity)}</div>`:''}
+            </div>
+          </div>
+          <div class="fl-hero-meta">
+            ${date?`<div class="fl-hm"><div class="fl-hm-label">Date</div><div class="fl-hm-value">${esc(date)}</div></div>`:''}
+            ${time?`<div class="fl-hm"><div class="fl-hm-label">Departure</div><div class="fl-hm-value">${esc(time)}</div></div>`:''}
+            ${no?`<div class="fl-hm"><div class="fl-hm-label">Flight</div><div class="fl-hm-value">${esc(no)}</div></div>`:''}
+            ${name?`<div class="fl-hm"><div class="fl-hm-label">Route</div><div class="fl-hm-value">${esc(name)}</div></div>`:''}
+          </div>
+        </div>`;
+      };
+      return `<div class="sect">
+        <div class="fl-hero-title">Flight Details</div>
+        <div class="fl-hero-sub"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(cls)} Class</div>
+        ${heroCard('Outbound',current.flightOutFrom,current.flightOutTo,current.flightOutDate,current.flightOutTime,current.flightOutNo,current.flightOutName)}
+        ${heroCard('Return',current.flightRetFrom,current.flightRetTo,current.flightRetDate,current.flightRetTime,current.flightRetNo,current.flightRetName)}
+        <div class="fl-hero-note">Flight numbers and times may be subject to change upon final confirmation.</div>
+      </div>`;
+    }
+
+    // COMPACT MODE: 3+ sectors
     const row=(leg,from,to,date,time,no,name)=>`<tr>
       <td class="fl-leg">${leg}</td>
       <td class="fl-route"><b>${esc(from||'—')}</b> → <b>${esc(to||'—')}</b>${name?`<span class="fl-name">${esc(name)}</span>`:''}</td>
       <td>${esc(date||'—')}${time?'<br>'+esc(time):''}</td>
       <td>${esc(no||'—')}</td></tr>`;
-    const al=current.flightAirline||'Airline TBC';
-    const cls=current.flightClass||'Economy';
-    const internals=(current.internalFlights||[]).filter(f=>f.from||f.to);
     return `<div class="sect"><h2>Flight Details</h2>
       <div style="font-size:9pt;color:#555;margin-bottom:8px"><b style="color:#1a1a1a">${esc(al)}</b> · ${esc(cls)} Class</div>
       <table class="flights-table">
