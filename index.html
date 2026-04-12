@@ -966,61 +966,13 @@ body.viewer-mode #quoteViewer{display:block!important}
       <input type="hidden" id="titleFont" value="Cinzel">
       <div id="titleFontPreview" style="margin-top:6px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;color:var(--gold);font-size:20px;min-height:48px;display:flex;align-items:center;transition:font-family .3s"></div>
       <label>Subtitle</label><input id="tourSub" placeholder="7 Nights / 8 Days">
+      <input type="hidden" id="subFont" value="Montserrat">
+      <input type="hidden" id="subSize" value="11pt">
+      <input type="hidden" id="subColor" value="#888">
+      <input type="hidden" id="subWeight" value="600">
+      <input type="hidden" id="subStyle" value="normal">
       <div class="row">
-        <div><label>Subtitle Font</label>
-          <select id="subFont" onchange="current.subFont=this.value;render();autoSave()">
-            <option value="Satoshi">Satoshi</option>
-            <option value="Cinzel">Cinzel</option>
-            <option value="Playfair Display">Playfair Display</option>
-            <option value="Cormorant Garamond">Cormorant Garamond</option>
-            <option value="Lora">Lora</option>
-            <option value="Raleway">Raleway</option>
-            <option value="Montserrat">Montserrat</option>
-            <option value="Carattere">Carattere</option>
-          </select>
-        </div>
-        <div><label>Subtitle Size</label>
-          <select id="subSize" onchange="current.subSize=this.value;render();autoSave()">
-            <option value="9pt">Small (9pt)</option>
-            <option value="11pt" selected>Normal (11pt)</option>
-            <option value="13pt">Medium (13pt)</option>
-            <option value="15pt">Large (15pt)</option>
-            <option value="18pt">Extra Large (18pt)</option>
-          </select>
-        </div>
-      </div>
-      <div class="row">
-        <div><label>Subtitle Colour</label>
-          <select id="subColor" onchange="current.subColor=this.value;render();autoSave()">
-            <option value="#888">Grey (default)</option>
-            <option value="#1a1a1a">Black</option>
-            <option value="#D4AF6A">Gold</option>
-            <option value="#A8854A">Dark Gold</option>
-            <option value="#555">Dark Grey</option>
-            <option value="#fff">White</option>
-            <option value="#2f9e44">Green</option>
-            <option value="#1a6fb5">Blue</option>
-            <option value="#c0392b">Red</option>
-          </select>
-        </div>
-        <div><label>Subtitle Weight</label>
-          <select id="subWeight" onchange="current.subWeight=this.value;render();autoSave()">
-            <option value="300">Light (300)</option>
-            <option value="400" selected>Regular (400)</option>
-            <option value="500">Medium (500)</option>
-            <option value="600">Semi Bold (600)</option>
-            <option value="700">Bold (700)</option>
-            <option value="900">Extra Bold (900)</option>
-          </select>
-        </div>
-      </div>
-      <div class="row">
-        <div><label>Subtitle Style</label>
-          <select id="subStyle" onchange="current.subStyle=this.value;render();autoSave()">
-            <option value="italic">Italic (default)</option>
-            <option value="normal">Normal</option>
-          </select>
-        </div>
+        <div></div>
         <div></div>
       </div>
       <label>Destinations</label>
@@ -1585,7 +1537,7 @@ function blankQuote(){
     flightOutName:'',flightOutDuration:'',flightOutArrival:'',flightRetName:'',flightRetDuration:'',flightRetArrival:'',
     baggageCabin:[],baggageChecked:[],baggageCustom:'',
     agentPhone:'',agentEmail:'',agentWhatsapp:'',agentMessage:'',
-    subFont:'Satoshi',subSize:'11pt',subColor:'#888',subWeight:'400',subStyle:'italic',
+    subFont:'Montserrat',subSize:'11pt',subColor:'#888',subWeight:'600',subStyle:'normal',
     depositAmount:'',depositDesc:'',instalmentCount:'',instalmentStartDate:'',instalments:[],originalPrice:'',quoteMessage:'',
     flightRetFrom:'',flightRetTo:'',flightRetDate:'',flightRetTime:'',flightRetNo:'',
     internalFlights:[],
