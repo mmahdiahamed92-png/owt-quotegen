@@ -500,7 +500,7 @@ body.viewer-mode #quoteViewer{display:block!important}
     <div class="lx-field"><label>Email</label><input id="loginUser" type="email" autocomplete="email" spellcheck="false" placeholder="agent@owtgroup.com"></div>
     <div class="lx-field"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
     <div id="loginErr"></div>
-    <button id="loginBtn" type="button"><span>Enter</span><em>→</em></button>
+    <button id="loginBtn" type="button" onclick="if(typeof tryLogin==='function')tryLogin();else alert('Page still loading, please wait...')"><span>Enter</span><em>→</em></button>
     <div class="login-hint">OWT Group Ltd · Agent Portal</div>
   </div>
 </div>
@@ -3520,6 +3520,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     }
     btn.disabled=false;
   }
+  window.tryLogin=tryLogin;
   btn.addEventListener('click',tryLogin);
   [userEl,passEl].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryLogin()}}));
 
@@ -3957,4 +3958,3 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 </script>
 </body>
 </html>
-<!-- cache-bust 1775952452 -->
