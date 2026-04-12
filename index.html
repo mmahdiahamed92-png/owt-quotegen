@@ -1200,6 +1200,7 @@ body.viewer-mode #quoteViewer{display:block!important}
     <div class="dash-actions">
       <input id="libSearch" placeholder="Search by destination, country, tag..." oninput="renderLibrary()">
     </div>
+    <div id="libDestButtons" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>
     <div id="libGrid" class="libgrid"></div>
   </div>
 </div>
@@ -3320,17 +3321,28 @@ function loadFromLibrary(id){
   current.heroSrc=l.heroSrc;current.tourTitle=l.tourTitle;current.tourSub=l.tourSub;current.dest=l.dest;
   loadCurrentToForm();closeModal();autoSave();
 }
+var _libDestFilter='all';
+function setLibDest(d){_libDestFilter=d;renderLibrary()}
 function renderLibrary(){
-  const s=($('libSearch').value||'').toLowerCase();
-  const list=library.filter(l=>!s||(l.name+l.country+(l.tags||[]).join(' ')+(l.dest||'')).toLowerCase().includes(s));
-  if(!list.length){$('libGrid').innerHTML='<div class="empty"><h3>Library is empty</h3><p>Save destinations from the quote editor to build your shared library.</p></div>';return}
-  // Group by destination name (first part of dest, or country, or name)
-  var groups={};
-  list.forEach(function(l){
+  var s=($('libSearch').value||'').toLowerCase();
+  // Build destination list for buttons
+  var allDests={};
+  library.forEach(function(l){var k=(l.dest||l.country||l.name||'Other').split(',')[0].trim();allDests[k]=(allDests[k]||0)+1});
+  var destKeys=Object.keys(allDests).sort();
+  var btns=$('libDestButtons');
+  if(btns)btns.innerHTML='<button class="btn sm'+ (_libDestFilter==='all'?' active':' ghost')+'" onclick="setLibDest(\'all\')" style="font-size:10px;padding:6px 14px;border-radius:100px">All ('+library.length+')</button>'
+    +destKeys.map(function(k){return '<button class="btn sm'+(_libDestFilter===k?' active':' ghost')+'" onclick="setLibDest(\''+k.replace(/'/g,"\\'")+'\')" style="font-size:10px;padding:6px 14px;border-radius:100px">'+esc(k)+' ('+allDests[k]+')</button>'}).join('');
+  // Filter
+  var list=library.filter(function(l){
     var key=(l.dest||l.country||l.name||'Other').split(',')[0].trim();
-    if(!groups[key])groups[key]=[];
-    groups[key].push(l);
+    if(_libDestFilter!=='all'&&key!==_libDestFilter)return false;
+    if(!s)return true;
+    return(l.name+l.country+(l.tags||[]).join(' ')+(l.dest||'')).toLowerCase().includes(s);
   });
+  if(!list.length){$('libGrid').innerHTML='<div class="empty"><h3>No packages found</h3><p>'+(_libDestFilter!=='all'?'No packages for this destination.':'Save destinations from the quote editor to build your shared library.')+'</p></div>';return}
+  // Group by destination
+  var groups={};
+  list.forEach(function(l){var key=(l.dest||l.country||l.name||'Other').split(',')[0].trim();if(!groups[key])groups[key]=[];groups[key].push(l)});
   var sortedKeys=Object.keys(groups).sort();
   $('libGrid').innerHTML=sortedKeys.map(function(key){
     return '<div style="margin-bottom:20px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--bd)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span style="font-size:13px;color:var(--gold);font-weight:600;letter-spacing:.04em">'+esc(key)+'</span><span style="font-size:10px;color:var(--tx3);margin-left:auto">'+groups[key].length+' package'+(groups[key].length>1?'s':'')+'</span></div>'
