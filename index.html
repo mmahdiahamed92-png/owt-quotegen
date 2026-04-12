@@ -3431,7 +3431,7 @@ function renderBrands(){
         <div style="position:absolute;top:12px;left:12px;padding:4px 10px;border-radius:100px;background:rgba(0,0,0,0.35);backdrop-filter:blur(8px);font-size:8px;color:#fff;font-weight:600;letter-spacing:.12em">${esc((b.code||'—').toUpperCase())}</div>
         <div style="position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:50%;background:#30D158;border:2px solid rgba(255,255,255,0.4)"></div>
         <div style="width:56px;height:56px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,0.3);overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.3);position:relative;z-index:2">
-          ${b.logo?'<img src="'+IMG.src(b.logo)+'" style="width:42px;height:42px;object-fit:contain">':'<span style="font-family:var(--fh);font-size:18px;font-weight:600;color:'+color+'">'+esc(initials)+'</span>'}
+          ${b.logo?'<img src="'+IMG.src(b.logo)+'" style="max-width:38px;max-height:38px;object-fit:contain">':'<span style="font-family:var(--fh);font-size:18px;font-weight:600;color:'+color+'">'+esc(initials)+'</span>'}
         </div>
       </div>
       <div style="padding:16px 18px;position:relative;z-index:2">
