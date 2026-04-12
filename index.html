@@ -1653,20 +1653,21 @@ function pickCompanyForNewQuote(){
   $('modalTitle').textContent='Select Company for New Quote';
   $('modalBody').innerHTML=`
     <p style="color:var(--tx2);margin:0 0 18px;font-size:13px;line-height:1.6">Choose which company this quote is being prepared for. The quote format, logo, branding and default terms will automatically update to match.</p>
-    <div class="brand-grid">
-      ${brands.map(b=>`<div class="brand-card" onclick="createQuoteForBrand('${b.id}')">
-        <div class="glow"></div>
-        <div class="top">
-          <span class="code-chip">${esc(b.code||'—')}</span>
-          ${b.logo?`<img src="${IMG.src(b.logo)}" class="logo">`:`<div class="logo-ph">${esc((b.name||'?').slice(0,2).toUpperCase())}</div>`}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+      ${brands.map(b=>{var c=b.brandColor||'#C4A55A';var c2=adjustColor(c,-20);var ini=(b.name||'BR').split(' ').map(function(w){return w[0]}).join('').substring(0,3).toUpperCase();return `<div class="brand-card" onclick="createQuoteForBrand('${b.id}')">
+        <div style="height:80px;background:linear-gradient(135deg,${c},${c2});display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(255,255,255,.1),transparent 70%)"></div>
+          <div style="position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:100px;background:rgba(0,0,0,0.3);font-size:8px;color:#fff;font-weight:600;letter-spacing:.1em">${esc((b.code||'—').toUpperCase())}</div>
+          <div style="width:48px;height:48px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.3);position:relative;z-index:2">
+            ${b.logo?'<img src="'+IMG.src(b.logo)+'" style="max-width:36px;max-height:36px;object-fit:contain">':'<span style="font-family:var(--fh);font-size:16px;font-weight:600;color:'+c+'">'+esc(ini)+'</span>'}
+          </div>
         </div>
-        <div class="body">
-          <div class="name">${esc(b.name||'Untitled')}</div>
-          <div class="tagline">${esc(b.tagline||'No tagline set')}</div>
-          <div class="contact">${esc(b.contact||'No contact details')}</div>
-          <button class="btn full" style="margin-top:6px">Use This Company →</button>
+        <div style="padding:14px 16px;text-align:center">
+          <div style="font-family:var(--fh);font-size:15px;font-weight:500;color:var(--tx);margin-bottom:3px">${esc(b.name||'Untitled')}</div>
+          <div style="font-size:10px;color:var(--tx2);font-style:italic;margin-bottom:10px">${esc(b.tagline||'')}</div>
+          <button class="btn full" style="background:linear-gradient(135deg,${c},${c2});color:#fff;border:none;padding:10px;border-radius:8px;font-size:11px;font-weight:600">Use This Company →</button>
         </div>
-      </div>`).join('')}
+      </div>`}).join('')}
     </div>`;
 }
 function editQuote(id){
