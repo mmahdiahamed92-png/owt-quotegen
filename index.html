@@ -3429,7 +3429,7 @@ function renderBrands(){
     var initials=(b.name||'BR').split(' ').map(function(w){return w[0]}).join('').substring(0,3).toUpperCase();
     var qCount=qCounts[b.id]||0;
     var waCount=(b.whatsapp||[]).filter(function(w){return typeof w==='string'?w:w.number}).length;
-    return `<div class="brand-card">
+    return `<div class="brand-card" draggable="true" data-brand-id="${b.id}" ondragstart="brandDragStart(event,'${b.id}')" ondragover="brandDragOver(event)" ondrop="brandDrop(event,'${b.id}')" ondragend="brandDragEnd(event)">
       <div style="position:relative;height:100px;background:linear-gradient(135deg,rgba(212,175,106,.12),rgba(20,20,28,.4));display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid var(--bd)">
         <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(212,175,106,.1),transparent 70%)"></div>
         <div style="position:absolute;top:12px;left:12px;padding:4px 10px;border-radius:100px;background:rgba(20,20,28,.6);border:1px solid var(--bd-gold);backdrop-filter:blur(8px);font-size:8px;color:var(--gold);font-weight:600;letter-spacing:.12em">${esc((b.code||'—').toUpperCase())}</div>
@@ -3470,6 +3470,20 @@ function renderBrands(){
   const addCard=`<div class="brand-add" onclick="addBrand()"><div style="font-size:42px;font-weight:300;line-height:1;font-family:var(--fb)">+</div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.18em;font-weight:600">Add Company</div></div>`;
   $('brandList').innerHTML=`<div class="brand-grid">${cards}${addCard}</div>`;
 }
+var _dragBrandId=null;
+function brandDragStart(e,id){_dragBrandId=id;e.dataTransfer.effectAllowed='move';e.currentTarget.style.opacity='0.4'}
+function brandDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';var card=e.currentTarget;card.style.borderColor='var(--gold)'}
+function brandDrop(e,targetId){
+  e.preventDefault();e.currentTarget.style.borderColor='';
+  if(!_dragBrandId||_dragBrandId===targetId)return;
+  var fromIdx=brands.findIndex(function(b){return b.id===_dragBrandId});
+  var toIdx=brands.findIndex(function(b){return b.id===targetId});
+  if(fromIdx<0||toIdx<0)return;
+  var item=brands.splice(fromIdx,1)[0];
+  brands.splice(toIdx,0,item);
+  saveBrands();renderBrands();
+}
+function brandDragEnd(e){_dragBrandId=null;e.currentTarget.style.opacity='';e.currentTarget.style.borderColor=''}
 function editBrand(id){
   const b=brands.find(x=>x.id===id);if(!b)return;
   $('modal').classList.add('open');
