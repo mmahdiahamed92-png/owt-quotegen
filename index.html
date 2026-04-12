@@ -4103,11 +4103,23 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     var vHasInst=q.instalments&&q.instalments.length;
 
     document.getElementById('quoteViewer').innerHTML=`
-      ${q.heroSrc?`<div style="position:relative"><img class="qv-hero" src="${q.heroSrc}" style="display:block;width:100%;max-height:220px;object-fit:cover"><div style="position:absolute;bottom:0;left:0;right:0;padding:16px 20px;background:linear-gradient(transparent,rgba(0,0,0,0.6))"><div style="color:#fff;font-size:22px;font-weight:500;line-height:1.2">${esc(q.tourTitle||'Your Bespoke Tour')}</div><div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:2px">${esc(q.tourSub||'')}</div></div></div>`:`<div class="qv-hero-ph">${esc(q.dest||'Your Journey')}</div><div class="qv-body"><div class="qv-title">${esc(q.tourTitle||'Your Bespoke Tour')}</div><div class="qv-sub">${esc(q.tourSub||'')}</div></div>`}
+      ${q.heroSrc?`<div style="position:relative;min-height:200px">
+        <img src="${q.heroSrc}" style="display:block;width:100%;height:auto;min-height:200px;max-height:280px;object-fit:cover">
+        <div style="position:absolute;top:0;left:0;right:0;padding:14px 16px;background:linear-gradient(180deg,rgba(0,0,0,0.5),transparent);display:flex;justify-content:space-between;align-items:flex-start">
+          <div>${b.logo?'<img src="'+b.logo+'" style="height:32px;width:auto;max-width:140px;object-fit:contain;filter:brightness(10)">':'<div style="color:#fff;font-size:16px;font-weight:500">'+esc(b.name||'')+'</div>'}</div>
+          <div style="text-align:right"><div style="font-size:9px;color:rgba(255,255,255,0.7);font-weight:600;letter-spacing:1.5px">QUOTATION</div><div style="font-size:11px;color:#fff;font-weight:500">${esc(q.quoteNo||'')}</div><div style="font-size:9px;color:rgba(255,255,255,0.6)">Date: ${fmtD(q.quoteDate)}</div><div style="font-size:9px;color:rgba(255,255,255,0.6)">Valid until: ${fmtD(q.validity)}</div></div>
+        </div>
+        <div style="position:absolute;bottom:0;left:0;right:0;padding:16px 20px;background:linear-gradient(transparent,rgba(0,0,0,0.6))"><div style="color:#fff;font-size:22px;font-weight:500;line-height:1.2">${esc(q.tourTitle||'Your Bespoke Tour')}</div><div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:2px">${esc(q.tourSub||'')}</div></div>
+      </div>`:`<div style="padding:20px 16px;text-align:center;background:#fafaf7">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div>${b.logo?'<img src="'+b.logo+'" style="height:28px;width:auto;max-width:120px;object-fit:contain">':'<div style="font-size:14px;font-weight:500;color:#1a1a1a">'+esc(b.name||'')+'</div>'}</div><div style="text-align:right"><div style="font-size:8px;color:#8B6B3A;font-weight:600;letter-spacing:1.5px">QUOTATION</div><div style="font-size:10px;color:#1a1a1a;font-weight:500">${esc(q.quoteNo||'')}</div><div style="font-size:9px;color:#888">Date: ${fmtD(q.quoteDate)}</div><div style="font-size:9px;color:#888">Valid until: ${fmtD(q.validity)}</div></div></div>
+        <div style="font-size:22px;font-weight:500;color:#1a1a1a">${esc(q.tourTitle||'Your Bespoke Tour')}</div><div style="font-size:12px;color:#888;margin-top:2px">${esc(q.tourSub||'')}</div></div>`}
 
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eee8d5;margin-bottom:4px">
-        <div style="display:flex;align-items:center;gap:8px">${b.logo?`<img src="${b.logo}" style="height:24px;width:auto;object-fit:contain">`:`<span style="font-size:14px;font-weight:500;color:#1a1a1a">${esc(b.name||'')}</span>`}</div>
-        <div style="display:flex;align-items:center;gap:4px"><span style="font-size:13px;font-weight:500;color:#1a1a1a">${b.trustpilotScore||'4.9'}</span><span style="color:#00b67a;font-size:10px;letter-spacing:1px">★★★★★</span></div>
+      <div style="text-align:center;padding:10px 16px 2px">
+        <div style="font-size:14px;font-weight:500;color:#1a1a1a">${esc(b.name||'')}</div>
+        ${b.tagline?'<div style="font-size:10px;color:#888;font-style:italic">'+esc(b.tagline)+'</div>':''}
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px;padding:4px 16px 8px;border-bottom:1px solid #eee8d5;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:500;color:#1a1a1a">${b.trustpilotScore||'4.9'}</span><span style="color:#00b67a;font-size:10px;letter-spacing:1px">★★★★★</span><span style="font-size:10px;color:#888;margin-left:4px">Trustpilot</span>
       </div>
 
       <div style="background:#fafaf7;border:1px solid #eee8d5;border-radius:12px;padding:16px;margin:8px 16px 12px">
