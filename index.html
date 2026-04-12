@@ -912,6 +912,22 @@ body.viewer-mode #quoteViewer{display:block!important}
 
       <div style="font-size:10px;color:#D4AF6A;letter-spacing:.22em;text-transform:uppercase;margin-top:14px;margin-bottom:4px">Return</div>
       <div class="row">
+        <div><label>Return Airline</label>
+          <select id="flightRetAirlineSelect" onchange="var v=this.value;if(v==='__custom__'){$('flightRetAirlineCustom').style.display='block';$('flightRetAirlineCustom').focus();$('flightRetAirline').value=''}else{$('flightRetAirline').value=v;$('flightRetAirlineCustom').style.display='none';syncFormToCurrent()}" style="margin-bottom:4px"></select>
+          <input id="flightRetAirlineCustom" placeholder="Type custom airline" style="display:none" oninput="$('flightRetAirline').value=this.value;syncFormToCurrent()">
+          <input type="hidden" id="flightRetAirline">
+        </div>
+        <div><label>Return Class</label>
+          <select id="flightRetClass" onchange="syncFormToCurrent()">
+            <option value="">Same as outbound</option>
+            <option value="Economy">Economy</option>
+            <option value="Premium Economy">Premium Economy</option>
+            <option value="Business">Business</option>
+            <option value="First">First</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
         <div><label>From Airport</label><input id="flightRetFrom" list="airportList" placeholder="Type to search..." oninput="syncFormToCurrent()" onchange="syncFormToCurrent()"></div>
         <div><label>To Airport</label><input id="flightRetTo" list="airportList" placeholder="Type to search..." oninput="syncFormToCurrent()" onchange="syncFormToCurrent()"></div>
       </div>
@@ -1539,6 +1555,7 @@ function blankQuote(){
     agentPhone:'',agentEmail:'',agentWhatsapp:'',agentMessage:'',
     subFont:'Montserrat',subSize:'11pt',subColor:'#888',subWeight:'600',subStyle:'normal',
     depositAmount:'',depositDesc:'',instalmentCount:'',instalmentStartDate:'',instalments:[],originalPrice:'',quoteMessage:'',
+    flightRetAirline:'',flightRetClass:'',
     flightRetFrom:'',flightRetTo:'',flightRetDate:'',flightRetTime:'',flightRetNo:'',
     internalFlights:[],
     tourTitle:'',tourSub:'',titleFont:'Cinzel',startDate:'',endDate:'',dest:'',heroSrc:'',
@@ -2667,16 +2684,21 @@ function generatePDF(){
     overlay.innerHTML='<div>Generating PDF…</div><div id="__pdfProg" style="font-size:11px;color:#A1A1A6;letter-spacing:.1em">Page 0 / '+pages.length+'</div>';
     document.body.appendChild(overlay);
 
-    const pageWmm=210,pageHmm=297;
+    const pageWmm=210,pageHmm=297,A4W=794;
     const pdf=new (window.jspdf?.jsPDF||window.jsPDF)({unit:'mm',format:'a4',orientation:'portrait',compress:true});
 
     const prevEl=$('preview');
     const prevTransform=prevEl.style.transform;
     prevEl.style.transform='none';
+    // Lock all pages to exact A4 width for consistent capture
+    var origStyles=[];
+    pages.forEach(function(p){origStyles.push({w:p.style.width,mw:p.style.maxWidth});p.style.width=A4W+'px';p.style.maxWidth=A4W+'px'});
 
     let i=0;
     function next(){
       if(i>=pages.length){
+        // Restore original styles
+        pages.forEach(function(p,j){p.style.width=origStyles[j].w;p.style.maxWidth=origStyles[j].mw});
         prevEl.style.transform=prevTransform;
         document.body.removeChild(overlay);
         const blob=pdf.output('blob');
@@ -2687,17 +2709,25 @@ function generatePDF(){
       $('__pdfProg').textContent=`Page ${i+1} / ${pages.length}`;
       const hidden=[];
       el.querySelectorAll('.no-print,.prev-edit,.edit-trust-btn').forEach(n=>{hidden.push([n,n.style.display]);n.style.display='none'});
-      html2canvas(el,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false}).then(canvas=>{
+      html2canvas(el,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false,width:A4W,windowWidth:A4W}).then(canvas=>{
         hidden.forEach(([n,d])=>n.style.display=d);
-        const img=canvas.toDataURL('image/jpeg',0.95);
-        const ratio=canvas.height/canvas.width;
-        const hmm=pageWmm*ratio;
+        const img=canvas.toDataURL('image/jpeg',0.92);
+        // Calculate height from actual canvas ratio — NEVER hardcode both dimensions
+        const imgH=(canvas.height*pageWmm)/canvas.width;
         if(i>0)pdf.addPage();
-        pdf.addImage(img,'JPEG',0,0,pageWmm,Math.min(hmm,pageHmm));
+        if(imgH<=pageHmm){
+          // Content fits — place at top, natural height
+          pdf.addImage(img,'JPEG',0,0,pageWmm,imgH);
+        }else{
+          // Content taller than A4 — scale to fit
+          var scaledW=(canvas.width*pageHmm)/canvas.height;
+          pdf.addImage(img,'JPEG',(pageWmm-scaledW)/2,0,scaledW,pageHmm);
+        }
         i++;
-        setTimeout(next,30);
+        setTimeout(next,50);
       }).catch(err=>{
         hidden.forEach(([n,d])=>n.style.display=d);
+        pages.forEach(function(p,j){p.style.width=origStyles[j].w;p.style.maxWidth=origStyles[j].mw});
         prevEl.style.transform=prevTransform;
         document.body.removeChild(overlay);
         reject(err);
