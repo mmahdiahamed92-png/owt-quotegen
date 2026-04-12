@@ -500,7 +500,7 @@ body.viewer-mode #quoteViewer{display:block!important}
     <div class="lx-field"><label>Email</label><input id="loginUser" type="email" autocomplete="email" spellcheck="false" placeholder="agent@owtgroup.com"></div>
     <div class="lx-field"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
     <div id="loginErr"></div>
-    <button id="loginBtn" type="button" onclick="if(typeof tryLogin==='function')tryLogin();else alert('Page still loading, please wait...')"><span>Enter</span><em>→</em></button>
+    <button id="loginBtn" type="button" onclick="if(typeof tryLogin==='function'){tryLogin()}else{var e=document.getElementById('loginErr');if(e)e.textContent='Loading... try again in a moment. If this persists, check browser console (F12).'}"><span>Enter</span><em>→</em></button>
     <div class="login-hint">OWT Group Ltd · Agent Portal</div>
   </div>
 </div>
@@ -3455,7 +3455,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 /* ============================================================
    AUTH + ADMIN PANEL SYSTEM (Supabase Auth + cloud sync)
    ============================================================ */
-(function(){
+(function(){try{
   const AUTH_LS={log:'owt_log',tpl:'owt_templates'};
   const nowISO=()=>new Date().toISOString();
   const fmtTs=t=>{try{return new Date(t).toLocaleString()}catch{return t}};
@@ -3782,7 +3782,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   // refresh info when backup tab opened
   document.querySelectorAll('.adm-tab').forEach(t=>t.addEventListener('click',()=>{if(t.getAttribute('data-adm')==='backup')renderBackupInfo()}));
   renderBackupInfo();
-})();
+}catch(e){console.error('AUTH IIFE CRASH:',e);var el=document.getElementById('loginErr');if(el)el.textContent='Init error: '+e.message;alert('Startup error: '+e.message)}})();
 </script>
 
 <!-- QUOTE VIEWER (client-facing mobile page) -->
