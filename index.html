@@ -2149,7 +2149,8 @@ function _render(){
   const b=brands.find(x=>x.id===current.brandId)||{name:'',tagline:'',contact:'',logo:''};
   const cur=sym(current.curr);
   $('quoteNoLbl').textContent=current.quoteNo||'';
-  var pgFoot='<div class="foot">'+(b.logo?'<img src="'+IMG.src(b.logo)+'" style="max-height:100px;max-width:576px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto">':'<b>'+esc(b.name)+'</b>')+'<br>'+esc(b.contact||'')+'</div>';
+  var pgFootContact=(function(){var parts=[];if(b.phone)parts.push('<a href="tel:'+b.phone.replace(/[^\d+]/g,'')+'" style="color:#888;text-decoration:none">'+esc(b.phone)+'</a>');if(b.email)parts.push('<a href="mailto:'+esc(b.email)+'" style="color:#888;text-decoration:none">'+esc(b.email)+'</a>');var web=(b.contact||'').match(/([\w.-]+\.(?:co\.uk|com|co|travel|net))/i);if(web)parts.push('<a href="https://'+web[1]+'" style="color:#888;text-decoration:none">'+esc(web[1])+'</a>');if(!parts.length)parts.push(esc(b.contact||''));return parts.join(' | ')})();
+  var pgFoot='<div class="foot">'+(b.logo?'<img src="'+IMG.src(b.logo)+'" style="max-height:100px;max-width:576px;object-fit:contain;margin-bottom:4px;display:block;margin-left:auto;margin-right:auto">':'<b>'+esc(b.name)+'</b>')+'<br>'+pgFootContact+'</div>';
   var pgWrap=function(content){return '<div class="page" style="display:flex;flex-direction:column;min-height:270mm">'+content+pgFoot+'</div>'};
   const waIcon='<svg width="11" height="11" viewBox="0 0 24 24" fill="#25D366" style="vertical-align:-1px;margin-right:3px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
   const brandAddr=(b.address||'').trim();
@@ -2579,7 +2580,7 @@ function _render(){
     </div>
     <div class="sect"><h2>Terms &amp; Conditions</h2><ul class="list">${lines(current.terms)}</ul></div>
     <div class="foot" style="position:relative"><button class="prev-edit no-print" onclick="editField('footMsg')" title="Edit footer message">✏️</button>
-      <b>${esc(b.name)}</b><br>${esc(b.tagline||'')}<br>${esc(b.contact||'')}
+      <b>${esc(b.name)}</b><br>${esc(b.tagline||'')}<br>${pgFootContact}
       ${addrEl}${waEl}
       <br>${esc(current.footMsg||DEFAULT_FOOTMSG)}
     </div>
@@ -2619,9 +2620,9 @@ function _render(){
       <div style="background:#fafaf7;border:1px solid #eee8d5;border-radius:14px;padding:18px 22px;text-align:center">
         <div style="font-family:var(--fh);font-size:16pt;color:#1a1a1a;font-weight:600;margin-bottom:4px">${esc(current.agent||'')}</div>
         <div style="font-size:8pt;color:#8B6B3A;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px">Your Travel Consultant</div>
-        ${(current.agentPhone||b.phone)?`<div style="font-size:9.5pt;color:#555;margin-bottom:4px">📞 ${esc(current.agentPhone||b.phone)}</div>`:''}
-        ${(current.agentEmail||b.email)?`<div style="font-size:9.5pt;color:#555;margin-bottom:4px">✉️ ${esc(current.agentEmail||b.email)}</div>`:''}
-        ${(current.agentWhatsapp||(brandWA.length?brandWA[0].number:''))?`<div style="font-size:9.5pt;color:#25D366;margin-bottom:4px">💬 ${esc(current.agentWhatsapp||(brandWA.length?brandWA[0].number:''))}</div>`:''}
+        ${(current.agentPhone||b.phone)?`<div style="font-size:9.5pt;color:#555;margin-bottom:4px">📞 <a href="tel:${(current.agentPhone||b.phone).replace(/[^\d+]/g,'')}" style="color:#555;text-decoration:none">${esc(current.agentPhone||b.phone)}</a></div>`:''}
+        ${(current.agentEmail||b.email)?`<div style="font-size:9.5pt;color:#555;margin-bottom:4px">✉️ <a href="mailto:${esc(current.agentEmail||b.email)}" style="color:#555;text-decoration:none">${esc(current.agentEmail||b.email)}</a></div>`:''}
+        ${(current.agentWhatsapp||(brandWA.length?brandWA[0].number:''))?`<div style="font-size:9.5pt;color:#25D366;margin-bottom:4px">💬 <a href="https://wa.me/${waClean(current.agentWhatsapp||(brandWA.length?brandWA[0].number:''))}" style="color:#25D366;text-decoration:none">${esc(current.agentWhatsapp||(brandWA.length?brandWA[0].number:''))}</a></div>`:''}
         <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee8d5;font-size:8.5pt;color:#888;line-height:1.6">${esc(current.agentMessage||"I'm here to help with any questions about your trip. Don't hesitate to reach out.")}</div>
       </div>
     </div>
@@ -2631,7 +2632,7 @@ function _render(){
     </div>
 
     <div class="foot" style="position:relative"><button class="prev-edit no-print" onclick="editField('footMsg')" title="Edit footer message">✏️</button>
-      <b>${esc(b.name)}</b><br>${esc(b.tagline||'')}<br>${esc(b.contact||'')}
+      <b>${esc(b.name)}</b><br>${esc(b.tagline||'')}<br>${pgFootContact}
       ${addrEl}${waEl}
       <br>${esc(current.footMsg||DEFAULT_FOOTMSG)}
     </div>
@@ -2720,9 +2721,32 @@ function generatePDF(){
     const prevTransform=prevEl.style.transform;
     prevEl.style.transform='none';
 
+    // Collect link positions from a page element before capture
+    function getLinkPositions(pageEl){
+      var links=[];
+      var pageRect=pageEl.getBoundingClientRect();
+      if(!pageRect.width||!pageRect.height)return links;
+      pageEl.querySelectorAll('a[href]').forEach(function(a){
+        var href=a.getAttribute('href')||'';
+        if(!href||href.startsWith('#')||href.startsWith('javascript'))return;
+        var rect=a.getBoundingClientRect();
+        if(!rect.width||!rect.height)return;
+        links.push({
+          x:(rect.left-pageRect.left)/pageRect.width*pageWmm,
+          y:(rect.top-pageRect.top)/pageRect.height*Math.min(pageWmm*(pageRect.height/pageRect.width),pageHmm),
+          w:rect.width/pageRect.width*pageWmm,
+          h:rect.height/pageRect.height*Math.min(pageWmm*(pageRect.height/pageRect.width),pageHmm),
+          url:href.startsWith('http')||href.startsWith('tel:')||href.startsWith('mailto:')?href:href
+        });
+      });
+      return links;
+    }
+
     let i=0;
     function next(){
       if(i>=pages.length){
+        // Add final clickable contact page
+        addContactPage(pdf);
         prevEl.style.transform=prevTransform;
         document.body.removeChild(overlay);
         const blob=pdf.output('blob');
@@ -2733,6 +2757,8 @@ function generatePDF(){
       $('__pdfProg').textContent=`Page ${i+1} / ${pages.length}`;
       const hidden=[];
       el.querySelectorAll('.no-print,.prev-edit,.edit-trust-btn').forEach(n=>{hidden.push([n,n.style.display]);n.style.display='none'});
+      // Capture link positions BEFORE html2canvas (while DOM is visible)
+      var pageLinks=getLinkPositions(el);
       html2canvas(el,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false}).then(canvas=>{
         hidden.forEach(([n,d])=>n.style.display=d);
         const img=canvas.toDataURL('image/jpeg',0.95);
@@ -2740,6 +2766,10 @@ function generatePDF(){
         const hmm=pageWmm*ratio;
         if(i>0)pdf.addPage();
         pdf.addImage(img,'JPEG',0,0,pageWmm,Math.min(hmm,pageHmm));
+        // Add clickable link annotations on top of the image
+        pageLinks.forEach(function(lnk){
+          try{pdf.link(lnk.x,lnk.y,lnk.w,lnk.h,{url:lnk.url})}catch(e){}
+        });
         i++;
         setTimeout(next,30);
       }).catch(err=>{
@@ -2749,6 +2779,167 @@ function generatePDF(){
         reject(err);
       });
     }
+
+    // Build a final contact page with real clickable text
+    function addContactPage(pdf){
+      var b=brands.find(function(x){return x.id===current.brandId})||{};
+      var brandWA=(b.whatsapp||[]).map(function(w){return typeof w==='string'?{number:w,link:''}:w}).filter(function(w){return w.number});
+      var waClean=function(n){return(n||'').replace(/[^\d]/g,'')};
+
+      pdf.addPage();
+      pdf.setFillColor(250,250,247);
+      pdf.rect(0,0,210,297,'F');
+
+      // Gold accent line at top
+      pdf.setFillColor(212,175,106);
+      pdf.rect(70,30,70,0.8,'F');
+
+      // Brand name
+      pdf.setFontSize(24);
+      pdf.setTextColor(26,26,26);
+      pdf.text(b.name||'OWT Group',105,50,{align:'center'});
+
+      // Tagline
+      if(b.tagline){
+        pdf.setFontSize(10);
+        pdf.setTextColor(153,153,153);
+        pdf.text(b.tagline,105,58,{align:'center'});
+      }
+
+      // "Get in Touch" heading
+      pdf.setFontSize(16);
+      pdf.setTextColor(139,107,58);
+      pdf.text('Get in Touch',105,80,{align:'center'});
+
+      // Divider
+      pdf.setDrawColor(238,232,213);
+      pdf.setLineWidth(0.3);
+      pdf.line(60,85,150,85);
+
+      var yPos=98;
+
+      // Phone
+      if(b.phone){
+        pdf.setFontSize(11);
+        pdf.setTextColor(139,107,58);
+        pdf.text('Phone',45,yPos);
+        pdf.setFontSize(12);
+        pdf.setTextColor(26,26,26);
+        pdf.textWithLink(b.phone,100,yPos,{url:'tel:'+b.phone.replace(/[^\d+]/g,'')});
+        yPos+=14;
+      }
+
+      // Email
+      if(b.email){
+        pdf.setFontSize(11);
+        pdf.setTextColor(139,107,58);
+        pdf.text('Email',45,yPos);
+        pdf.setFontSize(12);
+        pdf.setTextColor(26,26,26);
+        pdf.textWithLink(b.email,100,yPos,{url:'mailto:'+b.email});
+        yPos+=14;
+      }
+
+      // Website
+      var webMatch=(b.contact||'').match(/([\w.-]+\.(?:co\.uk|com|co|travel|net))/i);
+      if(webMatch){
+        pdf.setFontSize(11);
+        pdf.setTextColor(139,107,58);
+        pdf.text('Website',45,yPos);
+        pdf.setFontSize(12);
+        pdf.setTextColor(26,26,26);
+        pdf.textWithLink(webMatch[1],100,yPos,{url:'https://'+webMatch[1]});
+        yPos+=14;
+      }
+
+      // Address
+      if(b.address){
+        pdf.setFontSize(11);
+        pdf.setTextColor(139,107,58);
+        pdf.text('Address',45,yPos);
+        pdf.setFontSize(11);
+        pdf.setTextColor(85,85,85);
+        var addrLines=pdf.splitTextToSize(b.address,100);
+        pdf.text(addrLines,100,yPos);
+        yPos+=addrLines.length*6+10;
+      }
+
+      // WhatsApp numbers
+      if(brandWA.length){
+        yPos+=6;
+        pdf.setFillColor(212,175,106);
+        pdf.rect(70,yPos-4,70,0.5,'F');
+        yPos+=10;
+        pdf.setFontSize(14);
+        pdf.setTextColor(37,211,102);
+        pdf.text('WhatsApp Us',105,yPos,{align:'center'});
+        yPos+=12;
+        brandWA.forEach(function(w){
+          var waUrl=w.link||('https://wa.me/'+waClean(w.number));
+          pdf.setFontSize(13);
+          pdf.setTextColor(37,211,102);
+          pdf.textWithLink(w.number,105,yPos,{url:waUrl,align:'center'});
+          yPos+=10;
+        });
+      }
+
+      // Agent section
+      yPos+=12;
+      pdf.setFillColor(212,175,106);
+      pdf.rect(70,yPos-4,70,0.5,'F');
+      yPos+=10;
+      pdf.setFontSize(10);
+      pdf.setTextColor(139,107,58);
+      pdf.text('YOUR TRAVEL CONSULTANT',105,yPos,{align:'center'});
+      yPos+=10;
+      pdf.setFontSize(18);
+      pdf.setTextColor(26,26,26);
+      pdf.text(current.agent||'',105,yPos,{align:'center'});
+      yPos+=8;
+
+      // Agent phone
+      if(current.agentPhone||b.phone){
+        var aPhone=current.agentPhone||b.phone;
+        pdf.setFontSize(11);
+        pdf.setTextColor(85,85,85);
+        pdf.textWithLink(aPhone,105,yPos,{url:'tel:'+aPhone.replace(/[^\d+]/g,''),align:'center'});
+        yPos+=8;
+      }
+      // Agent email
+      if(current.agentEmail||b.email){
+        var aEmail=current.agentEmail||b.email;
+        pdf.setFontSize(11);
+        pdf.setTextColor(85,85,85);
+        pdf.textWithLink(aEmail,105,yPos,{url:'mailto:'+aEmail,align:'center'});
+        yPos+=8;
+      }
+      // Agent WhatsApp
+      var aWA=current.agentWhatsapp||(brandWA.length?brandWA[0].number:'');
+      if(aWA){
+        pdf.setFontSize(11);
+        pdf.setTextColor(37,211,102);
+        pdf.textWithLink(aWA,105,yPos,{url:'https://wa.me/'+waClean(aWA),align:'center'});
+        yPos+=8;
+      }
+
+      // Trustpilot
+      yPos+=12;
+      pdf.setFontSize(11);
+      pdf.setTextColor(85,85,85);
+      pdf.text('Rated Excellent on ',80,yPos);
+      pdf.setTextColor(0,182,122);
+      pdf.textWithLink('Trustpilot',122,yPos,{url:'https://www.trustpilot.com'});
+
+      // Bottom note
+      pdf.setFontSize(9);
+      pdf.setTextColor(187,187,187);
+      pdf.text('Thank you for choosing us \u2014 we look forward to making your journey unforgettable.',105,275,{align:'center'});
+
+      // Bottom gold line
+      pdf.setFillColor(212,175,106);
+      pdf.rect(70,280,70,0.8,'F');
+    }
+
     setTimeout(next,80);
   });
 }
