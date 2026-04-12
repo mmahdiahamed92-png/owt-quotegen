@@ -3477,6 +3477,8 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 
   // ---- SUPABASE LOGIN FLOW ----
   SB.init();
+  // Retry init if supabase CDN was slow
+  if(!SB.client){setTimeout(function(){SB.init()},2000);setTimeout(function(){SB.init()},5000)}
   const gate=document.getElementById('loginGate');
   const userEl=document.getElementById('loginUser');
   const passEl=document.getElementById('loginPass');
@@ -3504,6 +3506,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     const email=(userEl.value||'').trim();
     const pass=(passEl.value||'').trim();
     if(!email||!pass){errEl.textContent='Enter email and password';return}
+    if(!SB.client){errEl.textContent='Connection error — please refresh the page';return}
     errEl.textContent='Signing in...';
     btn.disabled=true;
     try{
@@ -3511,7 +3514,8 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       userEl.value='';passEl.value='';
       await showApp();
     }catch(e){
-      errEl.textContent=e.message||'Login failed';
+      console.error('Login error:',e);
+      errEl.textContent=e.message||'Login failed — check email and password';
       passEl.value='';passEl.focus();
     }
     btn.disabled=false;
