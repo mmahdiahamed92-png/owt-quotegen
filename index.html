@@ -2298,6 +2298,7 @@ function _render(){
       <div class="qs-row"><div class="qs-label">Travel Dates</div><div class="qs-value">${fmt(current.startDate)} – ${fmt(current.endDate)}</div></div>
     </div>
     ${totalAmt?`<div class="qs-price"><div class="qs-p-label">Total Package Price</div><div class="qs-p-amount">${totalAmt}</div></div>`:''}
+    ${(function(){var op=parseFloat(current.originalPrice)||0;var tr=(current.prices||[]).find(function(p){return p.total});var tp=parseFloat((tr?.amt||'0').toString().replace(/,/g,''))||0;var sv=op>tp&&tp>0?op-tp:0;return sv>0?'<div style="text-align:center;margin-top:4px;margin-bottom:4px;padding:6px 12px;background:rgba(48,209,88,.06);border:1px solid rgba(48,209,88,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;gap:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2f9e44" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="font-size:8pt;color:#2f9e44;font-weight:600">You save '+cur+sv.toFixed(2)+'</span><span style="font-size:7pt;color:#888">(Was '+cur+op.toFixed(2)+')</span></div>':''})()||''}
     <div class="qs-badges">
       ${trust.atol?`<div class="qs-badge"><div class="qs-b-label">ATOL</div><div class="qs-b-value">${esc(trust.atol)}</div></div>`:''}
       ${trust.abta?`<div class="qs-badge"><div class="qs-b-label">ABTA</div><div class="qs-b-value">${esc(trust.abta)}</div></div>`:''}
