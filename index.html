@@ -2359,22 +2359,23 @@ function _render(){
       <h2 style="border-bottom:none;text-align:center;margin-bottom:8px">Package Overview</h2>
       <p style="font-size:9.5pt;line-height:1.8;color:#444;max-width:85%;margin:0 auto;text-align:center;margin-bottom:14px">${esc(overviewText)}</p>
     </div>
-    <div class="quote-summary">
-    <div class="qs-grid">
-      <div class="qs-row"><div class="qs-label">Prepared For</div><div class="qs-value">${esc(current.clientName||'—')}</div></div>
-      <div class="qs-row"><div class="qs-label">Travellers</div><div class="qs-value">${esc(current.travelers||'—')}</div></div>
-      <div class="qs-row"><div class="qs-label">Destination</div><div class="qs-value">${esc(current.dest||'—')}</div></div>
-      <div class="qs-row"><div class="qs-label">Departure</div><div class="qs-value">${esc(current.departureAirport||'—')}</div></div>
-      <div class="qs-row"><div class="qs-label">Travel Dates</div><div class="qs-value">${fmt(current.startDate)} – ${fmt(current.endDate)}</div></div>
-    </div>
-    ${totalAmt?`<div class="qs-price"><div class="qs-p-label">Total Package Price</div><div class="qs-p-amount">${totalAmt}</div></div>`:''}
-    ${(function(){var op=parseFloat(current.originalPrice)||0;var tr=(current.prices||[]).find(function(p){return p.total});var tp=parseFloat((tr?.amt||'0').toString().replace(/,/g,''))||0;var sv=op>tp&&tp>0?op-tp:0;return sv>0?'<div style="text-align:center;margin-top:4px;margin-bottom:4px;padding:6px 12px;background:rgba(48,209,88,.06);border:1px solid rgba(48,209,88,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;gap:5px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2f9e44" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="font-size:8pt;color:#2f9e44;font-weight:600">You save '+cur+sv.toFixed(2)+'</span><span style="font-size:7pt;color:#888">(Was '+cur+op.toFixed(2)+')</span></div>':''})()||''}
-    <div class="qs-badges">
-      ${trust.atol?`<div class="qs-badge"><div class="qs-b-label">ATOL</div><div class="qs-b-value">${esc(trust.atol)}</div></div>`:''}
-      ${trust.abta?`<div class="qs-badge"><div class="qs-b-label">ABTA</div><div class="qs-b-value">${esc(trust.abta)}</div></div>`:''}
-      ${trust.iata?`<div class="qs-badge"><div class="qs-b-label">IATA</div><div class="qs-b-value">${esc(trust.iata)}</div></div>`:''}
-    </div>
-  </div>`;
+    ${(function(){
+      var tn=parseFloat((totalRow?.amt||'0').toString().replace(/,/g,''))||0;
+      var pxM=(current.travelers||'').match(/(\d+)/);
+      var pxC=pxM?parseInt(pxM[1]):0;
+      var ppP=pxC>0?cur+(tn/pxC).toLocaleString('en-GB',{maximumFractionDigits:2}):'';
+      var op=parseFloat(current.originalPrice)||0;
+      var sv=op>tn&&tn>0?op-tn:0;
+      var da=current.depositAmount?cur+parseFloat(current.depositAmount).toFixed(2):'';
+      var daText=current.depositDesc||'10% advance payment to confirm booking';
+      var rows=[['PREPARED FOR',current.clientName],['TRAVELLERS',current.travelers],['DESTINATION',current.dest],['DEPARTURE',current.departureAirport],['TRAVEL DATES',(current.startDate||current.endDate)?fmt(current.startDate)+' – '+fmt(current.endDate):'']].filter(function(r){return r[1]&&r[1].trim()&&r[1]!=='—'});
+      return '<div style="border:1px solid #eee8d5;border-radius:10px;padding:12px 16px;margin-top:10px;background:#fff">'
+        +rows.map(function(r,i){return '<div style="display:table;width:100%;padding:5px 0;'+(i<rows.length-1?'border-bottom:1px solid #f0ebe0':'')+'"><div style="display:table-cell;width:38%;font-size:7.5pt;color:#999;font-weight:600;letter-spacing:.08em;text-transform:uppercase;vertical-align:middle">'+r[0]+'</div><div style="display:table-cell;font-size:9.5pt;color:#1a1a1a;font-weight:500;vertical-align:middle">'+esc(r[1])+'</div></div>'}).join('')
+        +'</div>'
+        +(totalAmt?'<div style="background:linear-gradient(135deg,#1a1a1a,#2a2520);border-radius:12px;padding:16px 20px;text-align:center;margin-top:8px"><div style="font-size:7.5pt;color:#D4AF6A;font-weight:600;letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px">TOTAL PACKAGE PRICE</div><div style="font-size:28pt;font-weight:600;color:#fff;letter-spacing:-.02em">'+totalAmt+'</div>'+(ppP?'<div style="font-size:8.5pt;color:rgba(255,255,255,.35);margin-top:2px">'+ppP+' per person</div>':'')+'</div>':'')
+        +(sv>0?'<div style="display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 14px;background:rgba(48,209,88,.06);border:1px solid rgba(48,209,88,.15);border-radius:8px;margin-top:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2f9e44" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="font-size:8.5pt;color:#2f9e44;font-weight:500">You save '+cur+sv.toFixed(2)+' (Was '+cur+op.toFixed(2)+')</span></div>':'')
+        +'<div style="text-align:center;margin-top:6px;padding:6px 14px;background:rgba(212,175,106,.06);border:1px solid rgba(212,175,106,.18);border-radius:8px;font-size:7.5pt;color:#8B6B3A;font-weight:500">'+(da?'Secure with just '+da+' deposit':esc(daText))+'</div>'
+    })()}`;
   const hp=current.heroPos||'below-title';
   let p1Body='';
   const tpUrl=b.trustpilotUrl||'';
