@@ -4321,17 +4321,37 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     pv.innerHTML='<div style="display:flex;gap:14px;align-items:flex-start">'
       +'<img src="'+IMG.src(e.src)+'" style="max-width:280px;max-height:200px;object-fit:contain;border-radius:8px;border:1px solid var(--bd);background:#000">'
       +'<div style="flex:1;min-width:0">'
-      +'<div style="font-size:15px;color:var(--tx);font-weight:500;margin-bottom:6px">'+esc(e.name||'Untitled')+'</div>'
-      +'<div style="font-size:11px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Category:</b> '+esc(e.category||'—')+'</div>'
-      +'<div style="font-size:11px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Tags:</b> '+(e.tags&&e.tags.length?e.tags.map(function(t){return '<span style="display:inline-block;padding:2px 8px;background:var(--bg-tertiary);border:1px solid var(--bd);border-radius:100px;font-size:9px;margin:1px 2px">'+esc(t)+'</span>'}).join(''):'None')+'</div>'
-      +'<div style="font-size:11px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Uploaded by:</b> '+esc(e.uploadedBy||'—')+'</div>'
-      +'<div style="font-size:11px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Used:</b> '+(e.usedCount||0)+' time'+(e.usedCount===1?'':'s')+'</div>'
-      +(e.dims&&e.dims.w?'<div style="font-size:11px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Size:</b> '+e.dims.w+'×'+e.dims.h+'px</div>':'')
-      +'<div style="display:flex;gap:8px;margin-top:12px">'
-      +'<button class="adm-btn danger" onclick="if(confirm(\'Delete this image permanently?\')){IMGLIB.del(\''+e.id+'\');renderAdmImgLib()}">🗑 Delete Image</button>'
-      +'<button class="adm-btn ghost" onclick="$(\'admImgPreview\').style.display=\'none\'">Close Preview</button>'
+      +'<label style="font-size:10px;color:var(--tx3);margin:0 0 4px;display:block">Name</label>'
+      +'<input id="admImgEditName" value="'+esc(e.name||'')+'" placeholder="Image name" style="margin-bottom:8px;font-size:12px">'
+      +'<label style="font-size:10px;color:var(--tx3);margin:0 0 4px;display:block">Category</label>'
+      +'<select id="admImgEditCat" style="margin-bottom:8px;font-size:12px">'
+      +'<option value="hotel"'+(e.category==='hotel'?' selected':'')+'>Hotel</option>'
+      +'<option value="hero"'+(e.category==='hero'?' selected':'')+'>Hero / Destination</option>'
+      +'<option value="excursion"'+(e.category==='excursion'?' selected':'')+'>Excursion</option>'
+      +'<option value="transfer"'+(e.category==='transfer'?' selected':'')+'>Transfer</option>'
+      +'<option value="attraction"'+(e.category==='attraction'?' selected':'')+'>Attraction</option>'
+      +'<option value="other"'+(e.category==='other'?' selected':'')+'>Other</option>'
+      +'</select>'
+      +'<label style="font-size:10px;color:var(--tx3);margin:0 0 4px;display:block">Tags (comma separated)</label>'
+      +'<input id="admImgEditTags" value="'+esc((e.tags||[]).join(', '))+'" placeholder="e.g. pool, luxury, beach" style="margin-bottom:8px;font-size:12px">'
+      +'<div style="font-size:10px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Uploaded by:</b> '+esc(e.uploadedBy||'—')+' · <b style="color:var(--tx2)">Used:</b> '+(e.usedCount||0)+'x'+(e.dims&&e.dims.w?' · <b style="color:var(--tx2)">Size:</b> '+e.dims.w+'×'+e.dims.h+'px':'')+'</div>'
+      +'<div style="display:flex;gap:8px;margin-top:10px">'
+      +'<button class="adm-btn" onclick="saveAdmImgEdit(\''+e.id+'\')">💾 Save Changes</button>'
+      +'<button class="adm-btn danger" onclick="if(confirm(\'Delete this image permanently?\')){IMGLIB.del(\''+e.id+'\');renderAdmImgLib()}">🗑 Delete</button>'
+      +'<button class="adm-btn ghost" onclick="$(\'admImgPreview\').style.display=\'none\'">Close</button>'
       +'</div></div></div>';
     pv.scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
+  window.saveAdmImgEdit=function(id){
+    var e=IMGLIB.lib.find(function(x){return x.id===id});if(!e)return;
+    e.name=($('admImgEditName')?.value||'').trim();
+    e.category=($('admImgEditCat')?.value||'other');
+    e.tags=($('admImgEditTags')?.value||'').split(',').map(function(t){return t.trim()}).filter(Boolean);
+    IMGLIB.save();
+    // Sync to Supabase
+    if(SB.user)try{SB.client.from('qg_image_library').update({name:e.name,category:e.category,tags:e.tags}).eq('id',id)}catch(ex){}
+    renderAdmImgLib();
+    previewAdmImg(id);
   };
   // Hook into admin tab switching for imglib
   document.querySelectorAll('.adm-tab').forEach(t=>t.addEventListener('click',()=>{if(t.getAttribute('data-adm')==='imglib')renderAdmImgLib()}));
