@@ -1045,7 +1045,7 @@ body.viewer-mode #quoteViewer{display:block!important}
           <div style="font-size:10px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px;font-weight:600">Payment Plan</div>
           <div class="row">
             <div><label>Deposit Amount</label><input type="number" id="depositAmount" placeholder="e.g. 20" min="0" step="0.01" oninput="current.depositAmount=this.value;calcInstalments();render();autoSave()"></div>
-            <div><label>Number of Instalments</label><select id="instalmentCount" onchange="current.instalmentCount=this.value;calcInstalments();render();autoSave()"><option value="">No instalments</option>${[2,3,4,5,6,7,8,9,10,11,12].map(function(n){return '<option value="'+n+'">'+n+' instalments</option>'}).join('')}</select></div>
+            <div><label>Number of Instalments</label><select id="instalmentCount" onchange="current.instalmentCount=this.value;calcInstalments();render();autoSave()"><option value="">No instalments</option><option value="2">2 instalments</option><option value="3">3 instalments</option><option value="4">4 instalments</option><option value="5">5 instalments</option><option value="6">6 instalments</option><option value="7">7 instalments</option><option value="8">8 instalments</option><option value="9">9 instalments</option><option value="10">10 instalments</option><option value="11">11 instalments</option><option value="12">12 instalments</option></select></div>
           </div>
           <div class="row">
             <div><label>First Instalment Date</label><input type="date" id="instalmentStartDate" onchange="current.instalmentStartDate=this.value;calcInstalments();render();autoSave()"></div>
