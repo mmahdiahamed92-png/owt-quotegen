@@ -487,22 +487,36 @@ body.viewer-mode #quoteViewer{display:block!important}
 </style>
 </head>
 <body><script>
-// Early hash detection — if this is a share link, hide the app immediately
+// Early hash detection — if share link, redirect to PDF BEFORE page renders
 (function(){
   var h=(window.location.hash||'').replace('#','');
-  if(h&&h.startsWith('q_')){
-    document.body.classList.add('viewer-mode');
-    // Inline fast redirect — don't wait for the full app to load
-    var sbUrl='https://faebuflzzeetphtudycw.supabase.co';
-    var sbKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZWJ1Zmx6emVldHBodHVkeWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjQxNDcsImV4cCI6MjA4OTk0MDE0N30.WSrZbqdQz1H_ZhXh8wdttiMju7UZRIlQ-XKI60z4hSc';
-    fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h)+'&select=pdf_url',{headers:{'apikey':sbKey,'Authorization':'Bearer '+sbKey}})
-      .then(function(r){return r.json()})
-      .then(function(rows){
-        if(rows&&rows.length&&rows[0].pdf_url){
-          window.location.replace(rows[0].pdf_url);
-        }
-      }).catch(function(){});
-  }
+  if(!h||!h.startsWith('q_'))return;
+  // Hide EVERYTHING immediately with injected style
+  var s=document.createElement('style');
+  s.textContent='body>*:not(#__pdfRedirect){display:none!important}#__pdfRedirect{display:flex!important;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;background:#f8f6f1;flex-direction:column;gap:12px}';
+  document.head.appendChild(s);
+  // Show loading message
+  var d=document.createElement('div');d.id='__pdfRedirect';
+  d.innerHTML='<div style="font-size:32px">📄</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Loading your quote...</div><div style="color:#888;font-size:13px">Please wait</div>';
+  document.body.appendChild(d);
+  // Fetch PDF URL directly from Supabase REST API
+  var sbUrl='https://faebuflzzeetphtudycw.supabase.co';
+  var sbKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZWJ1Zmx6emVldHBodHVkeWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjQxNDcsImV4cCI6MjA4OTk0MDE0N30.WSrZbqdQz1H_ZhXh8wdttiMju7UZRIlQ-XKI60z4hSc';
+  window.__shareTokenHandled=true;
+  fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h)+'&select=pdf_url,views',{headers:{'apikey':sbKey,'Authorization':'Bearer '+sbKey}})
+    .then(function(r){return r.json()})
+    .then(function(rows){
+      if(rows&&rows.length&&rows[0].pdf_url){
+        // Increment view count
+        fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h),{method:'PATCH',headers:{'apikey':sbKey,'Authorization':'Bearer '+sbKey,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({views:(rows[0].views||0)+1})}).catch(function(){});
+        // Redirect to PDF
+        window.location.replace(rows[0].pdf_url);
+      }else{
+        d.innerHTML='<div style="font-size:32px">❌</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Quote Not Found</div><div style="color:#888;font-size:13px">This link may have expired or is invalid.</div>';
+      }
+    }).catch(function(e){
+      d.innerHTML='<div style="font-size:32px">��️</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Error Loading Quote</div><div style="color:#888;font-size:13px">Please try again later.</div>';
+    });
 })();
 </script>
 
@@ -4336,32 +4350,25 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 (function(){
   var shareToken=(window.location.hash||'').replace('#','');
   if(!shareToken||!shareToken.startsWith('q_'))return;
+  // If the early redirect script already handled this (PDF links), stop here
+  if(window.__shareTokenHandled)return;
 
-  // Switch to viewer mode immediately — hide main app
+  // Switch to viewer mode for legacy HTML viewer links
   document.body.classList.add('viewer-mode');
-  document.getElementById('quoteViewer').innerHTML='<div style="padding:60px 20px;text-align:center;font-family:Satoshi,sans-serif"><div style="font-size:32px;margin-bottom:12px">📄</div><h2 style="color:#1a1a1a;margin:0 0 8px">Loading your quote...</h2><p style="color:#888;font-size:14px">Please wait while we fetch your travel quotation.</p></div>';
 
   var SB_V=null;
   try{SB_V=window.supabase?window.supabase.createClient(SB_URL,SB_KEY):null}catch(e){}
-  if(!SB_V){document.getElementById('quoteViewer').innerHTML='<div style="padding:40px;text-align:center;color:#888">Unable to load quote. Please try again later.</div>';return}
+  if(!SB_V){document.getElementById('quoteViewer').innerHTML='<div style="padding:40px;text-align:center;color:#888">Unable to load quote.</div>';return}
 
   async function loadQuote(){
     try{
       var res=await SB_V.from('qg_shared_quotes').select('*').eq('token',shareToken).single();
       if(res.error||!res.data){document.getElementById('quoteViewer').innerHTML='<div style="padding:60px 20px;text-align:center"><h2 style="color:#1a1a1a;margin:0 0 8px">Quote Not Found</h2><p style="color:#888;font-size:14px">This quote link may have expired or is invalid.</p></div>';return}
       var data=res.data;
-      // Increment view count (once per session)
-      var viewKey='qv_viewed_'+shareToken;
-      if(!sessionStorage.getItem(viewKey)){sessionStorage.setItem(viewKey,'1');try{SB_V.from('qg_shared_quotes').update({views:(data.views||0)+1}).eq('token',shareToken)}catch(e){}}
-      // If this is a PDF link, redirect straight to the PDF
-      if(data.pdf_url){
-        window.location.replace(data.pdf_url);
-        return;
-      }
-      // Legacy: render HTML viewer for old links without PDF
+      if(data.pdf_url){window.location.replace(data.pdf_url);return}
       renderViewer(data.quote_data,data.brand_data,data.expires_at);
     }catch(e){
-      document.getElementById('quoteViewer').innerHTML='<div style="padding:60px 20px;text-align:center"><h2 style="color:#1a1a1a;margin:0 0 8px">Error Loading Quote</h2><p style="color:#888;font-size:14px">'+((e&&e.message)||'Unknown error')+'. Please try again.</p></div>';
+      document.getElementById('quoteViewer').innerHTML='<div style="padding:60px 20px;text-align:center"><h2 style="color:#1a1a1a;margin:0 0 8px">Error Loading Quote</h2><p style="color:#888;font-size:14px">'+((e&&e.message)||'Unknown error')+'</p></div>';
     }
   }
 
