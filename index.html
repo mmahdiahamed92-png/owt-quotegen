@@ -893,11 +893,14 @@ body.viewer-mode #quoteViewer{display:block!important}
       </div>
       <div class="row">
         <div><label>Date</label><input id="flightOutDate" type="date" onchange="syncFormToCurrent()"></div>
-        <div><label>Time</label><input id="flightOutTime" type="time" onchange="syncFormToCurrent()"></div>
+        <div><label>Flight Number</label><input id="flightOutNo" placeholder="e.g. BA238" style="width:100%"></div>
       </div>
-      <label>Flight Number</label><input id="flightOutNo" placeholder="e.g. BA238">
+      <div class="row">
+        <div><label>Departure Time</label><input id="flightOutTime" type="time" onchange="syncFormToCurrent();calcFlightDuration('Out')"></div>
+        <div><label>Arrival Time</label><input id="flightOutArrival" type="time" onchange="current.flightOutArrival=this.value;calcFlightDuration('Out');autoSave()"></div>
+        <div><label>Duration</label><input id="flightOutDuration" placeholder="auto" readonly style="background:rgba(212,175,106,.06);color:var(--gold);font-weight:600"></div>
+      </div>
       <label>Flight Name (optional)</label><input id="flightOutName" placeholder="e.g. London to Athens Direct">
-      <label>Duration (optional)</label><input id="flightOutDuration" placeholder="e.g. 2h 40m">
 
       <div style="font-size:10px;color:#D4AF6A;letter-spacing:.22em;text-transform:uppercase;margin-top:14px;margin-bottom:4px">Return</div>
       <div class="row">
@@ -906,11 +909,14 @@ body.viewer-mode #quoteViewer{display:block!important}
       </div>
       <div class="row">
         <div><label>Date</label><input id="flightRetDate" type="date" onchange="syncFormToCurrent()"></div>
-        <div><label>Time</label><input id="flightRetTime" type="time" onchange="syncFormToCurrent()"></div>
+        <div><label>Flight Number</label><input id="flightRetNo" placeholder="e.g. BA239" style="width:100%"></div>
       </div>
-      <label>Flight Number</label><input id="flightRetNo" placeholder="e.g. BA239">
+      <div class="row">
+        <div><label>Departure Time</label><input id="flightRetTime" type="time" onchange="syncFormToCurrent();calcFlightDuration('Ret')"></div>
+        <div><label>Arrival Time</label><input id="flightRetArrival" type="time" onchange="current.flightRetArrival=this.value;calcFlightDuration('Ret');autoSave()"></div>
+        <div><label>Duration</label><input id="flightRetDuration" placeholder="auto" readonly style="background:rgba(212,175,106,.06);color:var(--gold);font-weight:600"></div>
+      </div>
       <label>Flight Name (optional)</label><input id="flightRetName" placeholder="e.g. Athens to London Direct">
-      <label>Duration (optional)</label><input id="flightRetDuration" placeholder="e.g. 2h 40m">
 
       <div id="baggageSection">
         <div style="font-size:10px;color:#D4AF6A;letter-spacing:.22em;text-transform:uppercase;margin-top:18px;margin-bottom:8px">Baggage Allowance</div>
@@ -1534,7 +1540,7 @@ function blankQuote(){
     clientName:'',clientContact:'',travelers:'2 Adults',departureAirport:'',
     flightsInc:false,flightAirline:'',flightClass:'Economy',
     flightOutFrom:'',flightOutTo:'',flightOutDate:'',flightOutTime:'',flightOutNo:'',
-    flightOutName:'',flightOutDuration:'',flightRetName:'',flightRetDuration:'',
+    flightOutName:'',flightOutDuration:'',flightOutArrival:'',flightRetName:'',flightRetDuration:'',flightRetArrival:'',
     baggageCabin:[],baggageChecked:[],baggageCustom:'',
     agentPhone:'',agentEmail:'',agentWhatsapp:'',agentMessage:'',
     subFont:'Satoshi',subSize:'11pt',
@@ -1621,7 +1627,7 @@ function onBrandChange(){
 }
 
 // ====== FORM <-> CURRENT ======
-const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','subFont','subSize','depositAmount','depositDesc','instalmentStartDate','originalPrice','quoteMessage','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
+const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightOutArrival','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','flightRetArrival','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','subFont','subSize','depositAmount','depositDesc','instalmentStartDate','originalPrice','quoteMessage','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
 
 // ====== INCLUSIONS / EXCLUSIONS CATALOGUE ======
 const INCL_CATALOGUE=[
@@ -1898,6 +1904,25 @@ function loadPaymentPlan(){
   if($('depositDesc'))$('depositDesc').value=current.depositDesc||'';
   if($('originalPrice'))$('originalPrice').value=current.originalPrice||'';
   calcInstalments();
+}
+function calcFlightDuration(leg){
+  if(!current)return;
+  var dep=$('flight'+leg+'Time')?.value||'';
+  var arr=$('flight'+leg+'Arrival')?.value||'';
+  var durEl=$('flight'+leg+'Duration');
+  if(!dep||!arr||!durEl)return;
+  var d=dep.split(':').map(Number);
+  var a=arr.split(':').map(Number);
+  var depMin=d[0]*60+d[1];
+  var arrMin=a[0]*60+a[1];
+  var diff=arrMin-depMin;
+  if(diff<=0)diff+=1440; // next day arrival
+  var h=Math.floor(diff/60);
+  var m=diff%60;
+  var str=h+'h'+(m>0?' '+m+'m':'');
+  durEl.value=str;
+  current['flight'+leg+'Duration']=str;
+  render();autoSave();
 }
 function syncRoomFeatures(idx){
   if(!current||!current.hotels[idx])return;
