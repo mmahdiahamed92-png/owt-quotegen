@@ -664,6 +664,7 @@ body.viewer-mode #quoteViewer{display:block!important}
       <button class="adm-tab" data-adm="quotes">Quotes</button>
       <button class="adm-tab" data-adm="templates">Pricing / Templates</button>
       <button class="adm-tab" data-adm="imglib">Image Library</button>
+      <button class="adm-tab" data-adm="shared">Shared Quotes</button>
       <button class="adm-tab" data-adm="backup">Backup / Restore</button>
       <button class="adm-tab" data-adm="log">Activity Log</button>
     </div>
@@ -746,6 +747,13 @@ body.viewer-mode #quoteViewer{display:block!important}
         <button class="adm-btn ghost" onclick="IMGLIB.pullCloud().then(()=>renderAdmImgLib())">🔄 Sync</button>
       </div>
       <div id="admImgGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-height:500px;overflow-y:auto"></div>
+    </div>
+
+    <div class="adm-panel" id="adm-shared">
+      <h3 style="margin:0 0 12px;color:#F5F5F7">Shared Quote Links</h3>
+      <p style="color:#A1A1A6;font-size:12px;margin:0 0 16px">Track all quote links sent to clients. Links auto-expire after validity date or 7 days.</p>
+      <div id="sharedStats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
+      <div id="sharedQuotesTable"></div>
     </div>
 
     <div class="adm-panel" id="adm-backup">
@@ -3035,7 +3043,7 @@ async function sendEmail(){
       await resolveImg(qClone);await resolveImg(bClone);
       var token='q_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
       var expiresAt=qClone.validity?new Date(qClone.validity+'T23:59:59').toISOString():null;
-      await SB.client.from('qg_shared_quotes').upsert({token:token,quote_data:qClone,brand_data:bClone,expires_at:expiresAt,views:0});
+      await SB.client.from('qg_shared_quotes').upsert({token:token,quote_data:qClone,brand_data:bClone,expires_at:expiresAt,created_at:new Date().toISOString(),views:0});
       shareUrl=window.location.origin+window.location.pathname+'#'+token;
     }catch(e){console.warn('Share link gen:',e)}
   }
@@ -3975,6 +3983,44 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     renderAdmImgLib();
   };
 
+  // Shared quotes management
+  async function cleanupExpiredQuotes(){
+    if(!SB.user||!SB.client)return;
+    try{
+      var now=new Date().toISOString();
+      await SB.client.from('qg_shared_quotes').delete().lt('expires_at',now).not('expires_at','is',null);
+      var week=new Date(Date.now()-7*864e5).toISOString();
+      await SB.client.from('qg_shared_quotes').delete().is('expires_at',null).lt('created_at',week);
+    }catch(e){console.warn('Cleanup:',e)}
+  }
+  cleanupExpiredQuotes();
+
+  async function renderSharedQuotes(){
+    var stats=$('sharedStats');var tbl=$('sharedQuotesTable');
+    if(!stats||!tbl)return;
+    if(!SB.user||!SB.client){tbl.innerHTML='<p style="color:var(--tx3)">Log in to view shared quotes.</p>';return}
+    try{
+      var res=await SB.client.from('qg_shared_quotes').select('*').order('created_at',{ascending:false});
+      if(res.error)throw res.error;
+      var quotes=res.data||[];
+      var now=new Date();
+      var active=quotes.filter(function(q){return !q.expires_at||new Date(q.expires_at)>now});
+      var expired=quotes.filter(function(q){return q.expires_at&&new Date(q.expires_at)<=now});
+      var views=quotes.reduce(function(a,q){return a+(q.views||0)},0);
+      stats.innerHTML='<div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+quotes.length+'</div><div class="l">Total</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+active.length+'</div><div class="l">Active</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+expired.length+'</div><div class="l">Expired</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+views+'</div><div class="l">Views</div></div>';
+      tbl.innerHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:12px"><thead><tr><th>Quote</th><th>Client</th><th>Dest</th><th>Views</th><th>Status</th><th>Created</th><th>Expires</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
+        var qd=q.quote_data||{};var isExp=q.expires_at&&new Date(q.expires_at)<=now;
+        var url=window.location.origin+window.location.pathname+'#'+q.token;
+        return '<tr><td><b>'+esc(qd.quoteNo||'—')+'</b></td><td>'+esc(qd.clientName||'—')+'</td><td>'+esc(qd.tourTitle||qd.dest||'—')+'</td><td style="color:var(--gold);font-weight:600">'+(q.views||0)+'</td><td>'+(isExp?'<span class="badge expired">Expired</span>':'<span class="badge accepted">Active</span>')+'</td><td>'+(q.created_at?new Date(q.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—')+'</td><td>'+(q.expires_at?new Date(q.expires_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'None')+'</td><td><div style="display:flex;gap:4px"><button class="btn ghost sm" style="font-size:9px;padding:4px 8px" onclick="navigator.clipboard.writeText(\''+url+'\');this.textContent=\'Copied!\'">Copy</button><button class="btn ghost sm" style="font-size:9px;padding:4px 8px" onclick="window.open(\''+url+'\',\'_blank\')">View</button><button class="btn ghost sm" style="font-size:9px;padding:4px 8px;color:var(--danger)" onclick="deleteSharedQuote(\''+q.token+'\')">Del</button></div></td></tr>';
+      }).join('')+'</tbody></table></div><div style="margin-top:10px;font-size:10px;color:var(--tx3)">Expired links auto-delete on next agent login.</div>';
+    }catch(e){tbl.innerHTML='<p style="color:var(--danger)">Error: '+esc(e.message)+'</p>'}
+  }
+  window.deleteSharedQuote=async function(token){
+    if(!confirm('Delete this shared link?'))return;
+    try{await SB.client.from('qg_shared_quotes').delete().eq('token',token);renderSharedQuotes()}catch(e){alert('Failed: '+e.message)}
+  };
+  document.querySelectorAll('.adm-tab').forEach(function(t){t.addEventListener('click',function(){if(t.getAttribute('data-adm')==='shared')renderSharedQuotes()})});
+
   function renderAdmImgLib(){
     const q=($('admImgSearch')?.value||'').trim();
     const items=IMGLIB.search(q,'all');
@@ -4181,8 +4227,9 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   async function loadQuote(){
     const{data,error}=await SB_V.from('qg_shared_quotes').select('*').eq('token',shareToken).single();
     if(error||!data){document.getElementById('quoteViewer').innerHTML='<div style="padding:60px 20px;text-align:center"><h2 style="color:#1a1a1a;margin:0 0 8px">Quote Not Found</h2><p style="color:#888;font-size:14px">This quote link may have expired or is invalid.</p></div>';return}
-    // Increment view count
-    SB_V.from('qg_shared_quotes').update({views:(data.views||0)+1}).eq('token',shareToken);
+    // Increment view count (once per session)
+    var viewKey='qv_viewed_'+shareToken;
+    if(!sessionStorage.getItem(viewKey)){sessionStorage.setItem(viewKey,'1');SB_V.from('qg_shared_quotes').update({views:(data.views||0)+1}).eq('token',shareToken)}
     renderViewer(data.quote_data,data.brand_data,data.expires_at);
   }
 
