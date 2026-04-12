@@ -2755,67 +2755,66 @@ function generatePDF(){
 async function shareQuoteLink(){
   if(!current){alert('Open a quote first');return}
   if(!SB.user){alert('Please log in to share quotes');return}
-  // Show loading modal immediately
-  const modal=$('modal');
+  var b=brands.find(x=>x.id===current.brandId)||{};
+  var modal=$('modal');
   modal.classList.add('open');
-  $('modalTitle').textContent='Preparing Quote Link...';
-  $('modalBody').innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">⏳</div><p style="color:var(--tx2)">Uploading images and generating link...</p></div>';
+  $('modalTitle').textContent='Generating PDF...';
+  $('modalBody').innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">⏳</div><p style="color:var(--tx2)">Generating PDF and uploading...</p></div>';
   try{
-    // Deep clone to avoid mutating originals
-    const qClone=JSON.parse(JSON.stringify(current));
-    const bClone=JSON.parse(JSON.stringify(brands.find(x=>x.id===current.brandId)||{}));
-    // Resolve all idb:// refs to public URLs
-    async function resolveImages(obj){
-      if(!obj||typeof obj!=='object')return;
-      for(const key of Object.keys(obj)){
-        if(typeof obj[key]==='string'&&obj[key].startsWith('idb://')){
-          const base64=await IMG.get(obj[key]);
-          if(base64&&SB.user){
-            try{obj[key]=await SB.uploadImage(base64)}catch{obj[key]=base64}
-          }else if(base64){obj[key]=base64}
-        }else if(typeof obj[key]==='object'&&obj[key]!==null){
-          await resolveImages(obj[key]);
-        }
-      }
-    }
-    await resolveImages(qClone);
-    await resolveImages(bClone);
-    const token='q_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
-    const clientPhone=((current.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,'');
-    const expiresAt=qClone.validity?new Date(qClone.validity+'T23:59:59').toISOString():null;
-    const{error}=await SB.client.from('qg_shared_quotes').upsert({
+    // 1. Generate PDF blob (same as Download PDF)
+    var pdfResult=await generatePDF();
+    $('modalBody').querySelector('p').textContent='Uploading PDF to cloud...';
+
+    // 2. Upload PDF to Supabase Storage
+    var token='q_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+    var storagePath='quotes/'+token+'/'+pdfResult.filename;
+    var uploadRes=await SB.client.storage.from('qg-images').upload(storagePath,pdfResult.blob,{contentType:'application/pdf',upsert:true});
+    if(uploadRes.error)throw uploadRes.error;
+
+    // 3. Get public URL
+    var urlRes=SB.client.storage.from('qg-images').getPublicUrl(storagePath);
+    var pdfUrl=urlRes.data.publicUrl;
+
+    // 4. Save metadata to DB
+    var expiresAt=new Date(Date.now()+7*864e5).toISOString();
+    var dbRes=await SB.client.from('qg_shared_quotes').upsert({
       token:token,
-      quote_data:qClone,
-      brand_data:bClone,
+      quote_data:{quoteNo:current.quoteNo,clientName:current.clientName,tourTitle:current.tourTitle,dest:current.dest,agent:current.agent},
+      brand_data:{name:b.name||''},
+      pdf_url:pdfUrl,
+      storage_path:storagePath,
       expires_at:expiresAt,
       views:0
     });
-    if(error)throw error;
-    const shareUrl=window.location.origin+window.location.pathname+'#'+token;
-    // Copy to clipboard
-    try{await navigator.clipboard.writeText(shareUrl)}catch{}
-    const clientName=current.clientName||'';
-    const dest=current.tourTitle||current.dest||'your trip';
-    const waMsg=`Hi${clientName?' '+clientName:''},\n\nYour personalised travel quote for *${dest}* is ready to view:\n\n${shareUrl}\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n${current.agent||b.name||''}`;
-    const emailSubj=encodeURIComponent('Your Travel Quote — '+dest);
-    const emailBody=encodeURIComponent('Hi'+(clientName?' '+clientName:'')+',\n\nYour personalised travel quote is ready to view:\n\n'+shareUrl+'\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n'+(current.agent||''));
-    $('modalTitle').textContent='Quote Link Ready';
-    $('modalBody').innerHTML=`
-      <div style="text-align:center;padding:10px 0">
-        <div style="font-size:42px;margin-bottom:12px">🔗</div>
-        <p style="color:var(--tx2);font-size:13px;margin:0 0 16px">Share this link with your client. They can view the quote on their phone.</p>
-        <div style="background:var(--bg-tertiary);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px;word-break:break-all">
-          <a href="${shareUrl}" target="_blank" style="color:var(--gold);font-size:12px;text-decoration:underline">${shareUrl}</a>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn" style="flex:1;min-width:120px" onclick="navigator.clipboard.writeText('${shareUrl}');this.textContent='✓ Copied!'">📋 Copy Link</button>
-          <button class="btn ghost" style="flex:1;min-width:120px;border-color:#25D366;color:#25D366" onclick="window.open('https://wa.me/${clientPhone}?text='+encodeURIComponent(document.getElementById('__waMsg').value))">📱 WhatsApp</button>
-          <button class="btn ghost" style="flex:1;min-width:120px" onclick="window.location.href='mailto:${current.clientContact&&current.clientContact.includes('@')?current.clientContact:''}?subject=${emailSubj}&body=${emailBody}'">✉️ Email</button>
-        </div>
-        <textarea id="__waMsg" style="width:100%;margin-top:12px;font-size:11px;min-height:80px;resize:vertical">${waMsg.replace(/"/g,'&quot;')}</textarea>
-        <p style="color:var(--tx3);font-size:10px;margin-top:6px">Edit the message above before sending via WhatsApp</p>
-        <p style="color:var(--tx3);font-size:11px;margin-top:8px">${expiresAt?'Expires: '+new Date(expiresAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'No expiry set'} · Views will be tracked</p>
-      </div>`;
+    if(dbRes.error)throw dbRes.error;
+
+    // 5. Copy to clipboard
+    try{await navigator.clipboard.writeText(pdfUrl)}catch{}
+
+    var clientName=current.clientName||'';
+    var dest=current.tourTitle||current.dest||'your trip';
+    var clientPhone=((current.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,'');
+    var waMsg='Hi'+(clientName?' '+clientName:'')+',\n\nYour personalised travel quote for *'+dest+'* is ready to view:\n\n'+pdfUrl+'\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n'+(current.agent||b.name||'');
+    var emailSubj=encodeURIComponent('Your Travel Quote — '+dest);
+    var emailBody=encodeURIComponent('Hi'+(clientName?' '+clientName:'')+',\n\nYour personalised travel quote is ready to view:\n\n'+pdfUrl+'\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n'+(current.agent||''));
+    var emailTo=(current.clientContact&&current.clientContact.includes('@'))?current.clientContact:'';
+    $('modalTitle').textContent='PDF Link Ready';
+    $('modalBody').innerHTML='<div style="text-align:center;padding:10px 0">'
+      +'<div style="font-size:42px;margin-bottom:12px">📄</div>'
+      +'<p style="color:var(--tx2);font-size:13px;margin:0 0 16px">Your quote PDF has been uploaded. Share the direct link with your client.</p>'
+      +'<div style="background:var(--bg-tertiary);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px;word-break:break-all">'
+      +'<a href="'+pdfUrl+'" target="_blank" style="color:var(--gold);font-size:12px;text-decoration:underline">'+pdfUrl+'</a>'
+      +'</div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      +'<button class="btn" style="flex:1;min-width:120px" onclick="navigator.clipboard.writeText(\''+pdfUrl.replace(/'/g,"\\'")+'\');this.textContent=\'✓ Copied!\'">📋 Copy Link</button>'
+      +'<button class="btn ghost" style="flex:1;min-width:120px;border-color:#25D366;color:#25D366" onclick="window.open(\'https://wa.me/'+clientPhone+'?text=\'+encodeURIComponent(document.getElementById(\'__waMsg\').value))">📱 WhatsApp</button>'
+      +'<button class="btn ghost" style="flex:1;min-width:120px" onclick="window.location.href=\'mailto:'+emailTo+'?subject='+emailSubj+'&body='+emailBody+'\'">✉️ Email</button>'
+      +'</div>'
+      +'<textarea id="__waMsg" style="width:100%;margin-top:12px;font-size:11px;min-height:80px;resize:vertical">'+waMsg.replace(/"/g,'&quot;')+'</textarea>'
+      +'<p style="color:var(--tx3);font-size:10px;margin-top:6px">Edit the message above before sending via WhatsApp</p>'
+      +'<p style="color:var(--tx3);font-size:11px;margin-top:8px">PDF auto-deletes after 7 days ('
+      +new Date(expiresAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+')</p>'
+      +'</div>';
   }catch(e){
     closeModal();
     alert('Failed to generate share link: '+(e.message||e));
@@ -3985,9 +3984,21 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     if(!SB.user||!SB.client)return;
     try{
       var now=new Date().toISOString();
-      await SB.client.from('qg_shared_quotes').delete().lt('expires_at',now).not('expires_at','is',null);
+      // Find expired quotes with storage paths so we can delete PDFs
+      var expired=await SB.client.from('qg_shared_quotes').select('token,storage_path').lt('expires_at',now).not('expires_at','is',null);
+      if(expired.data&&expired.data.length){
+        var paths=expired.data.map(function(q){return q.storage_path}).filter(Boolean);
+        if(paths.length)await SB.client.storage.from('qg-images').remove(paths);
+        await SB.client.from('qg_shared_quotes').delete().lt('expires_at',now).not('expires_at','is',null);
+      }
+      // Also clean up very old quotes with no expiry (>7 days)
       var week=new Date(Date.now()-7*864e5).toISOString();
-      await SB.client.from('qg_shared_quotes').delete().is('expires_at',null).lt('created_at',week);
+      var old=await SB.client.from('qg_shared_quotes').select('token,storage_path').is('expires_at',null).lt('created_at',week);
+      if(old.data&&old.data.length){
+        var oldPaths=old.data.map(function(q){return q.storage_path}).filter(Boolean);
+        if(oldPaths.length)await SB.client.storage.from('qg-images').remove(oldPaths);
+        await SB.client.from('qg_shared_quotes').delete().is('expires_at',null).lt('created_at',week);
+      }
     }catch(e){console.warn('Cleanup:',e)}
   }
   cleanupExpiredQuotes();
@@ -4005,16 +4016,25 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       var expired=quotes.filter(function(q){return q.expires_at&&new Date(q.expires_at)<=now});
       var views=quotes.reduce(function(a,q){return a+(q.views||0)},0);
       stats.innerHTML='<div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+quotes.length+'</div><div class="l">Total</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+active.length+'</div><div class="l">Active</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+expired.length+'</div><div class="l">Expired</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+views+'</div><div class="l">Views</div></div>';
-      tbl.innerHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:12px"><thead><tr><th>Quote</th><th>Client</th><th>Dest</th><th>Views</th><th>Status</th><th>Created</th><th>Expires</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
+      tbl.innerHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:12px"><thead><tr><th>Quote</th><th>Client</th><th>Dest</th><th>Type</th><th>Status</th><th>Created</th><th>Expires</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
         var qd=q.quote_data||{};var isExp=q.expires_at&&new Date(q.expires_at)<=now;
-        var url=window.location.origin+window.location.pathname+'#'+q.token;
-        return '<tr><td><b>'+esc(qd.quoteNo||'—')+'</b></td><td>'+esc(qd.clientName||'—')+'</td><td>'+esc(qd.tourTitle||qd.dest||'—')+'</td><td style="color:var(--gold);font-weight:600">'+(q.views||0)+'</td><td>'+(isExp?'<span class="badge expired">Expired</span>':'<span class="badge accepted">Active</span>')+'</td><td>'+(q.created_at?new Date(q.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—')+'</td><td>'+(q.expires_at?new Date(q.expires_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'None')+'</td><td><div style="display:flex;gap:4px"><button class="btn ghost sm" style="font-size:9px;padding:4px 8px" onclick="navigator.clipboard.writeText(\''+url+'\');this.textContent=\'Copied!\'">Copy</button><button class="btn ghost sm" style="font-size:9px;padding:4px 8px" onclick="window.open(\''+url+'\',\'_blank\')">View</button><button class="btn ghost sm" style="font-size:9px;padding:4px 8px;color:var(--danger)" onclick="deleteSharedQuote(\''+q.token+'\')">Del</button></div></td></tr>';
-      }).join('')+'</tbody></table></div><div style="margin-top:10px;font-size:10px;color:var(--tx3)">Expired links auto-delete on next agent login.</div>';
+        var url=q.pdf_url||window.location.origin+window.location.pathname+'#'+q.token;
+        var isPdf=!!q.pdf_url;
+        return '<tr><td><b>'+esc(qd.quoteNo||'—')+'</b></td><td>'+esc(qd.clientName||'—')+'</td><td>'+esc(qd.tourTitle||qd.dest||'—')+'</td><td>'+(isPdf?'<span style="color:var(--gold);font-size:10px">📄 PDF</span>':'<span style="color:var(--tx3);font-size:10px">🔗 Link</span>')+'</td><td>'+(isExp?'<span class="badge expired">Expired</span>':'<span class="badge accepted">Active</span>')+'</td><td>'+(q.created_at?new Date(q.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—')+'</td><td>'+(q.expires_at?new Date(q.expires_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'None')+'</td><td><div style="display:flex;gap:4px"><button class="btn ghost sm" style="font-size:9px;padding:4px 8px" onclick="navigator.clipboard.writeText(\''+url.replace(/'/g,"\\'")+'\');this.textContent=\'Copied!\'">Copy</button><button class="btn ghost sm" style="font-size:9px;padding:4px 8px" onclick="window.open(\''+url.replace(/'/g,"\\'")+'\',\'_blank\')">View</button><button class="btn ghost sm" style="font-size:9px;padding:4px 8px;color:var(--danger)" onclick="deleteSharedQuote(\''+q.token+'\')">Del</button></div></td></tr>';
+      }).join('')+'</tbody></table></div><div style="margin-top:10px;font-size:10px;color:var(--tx3)">PDFs auto-delete after 7 days. Expired links cleaned on agent login.</div>';
     }catch(e){tbl.innerHTML='<p style="color:var(--danger)">Error: '+esc(e.message)+'</p>'}
   }
   window.deleteSharedQuote=async function(token){
     if(!confirm('Delete this shared link?'))return;
-    try{await SB.client.from('qg_shared_quotes').delete().eq('token',token);renderSharedQuotes()}catch(e){alert('Failed: '+e.message)}
+    try{
+      // Get storage path first to delete PDF file
+      var res=await SB.client.from('qg_shared_quotes').select('storage_path').eq('token',token).single();
+      if(res.data&&res.data.storage_path){
+        await SB.client.storage.from('qg-images').remove([res.data.storage_path]);
+      }
+      await SB.client.from('qg_shared_quotes').delete().eq('token',token);
+      renderSharedQuotes();
+    }catch(e){alert('Failed: '+e.message)}
   };
   document.querySelectorAll('.adm-tab').forEach(function(t){t.addEventListener('click',function(){if(t.getAttribute('data-adm')==='shared')renderSharedQuotes()})});
 
