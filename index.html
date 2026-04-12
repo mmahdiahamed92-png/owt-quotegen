@@ -676,7 +676,7 @@ body.viewer-mode #quoteViewer{display:block!important}
         <input id="admNewRole" placeholder="Agent Name (e.g. Jane Doe)">
         <button class="adm-btn" id="admAddUserBtn">Add User</button>
       </div>
-      <table><thead><tr><th>Username</th><th>Role</th><th>Created</th><th>Last Login</th><th></th></tr></thead>
+      <table><thead><tr><th>Email</th><th>Name</th><th>Created</th><th>Last Login</th><th>Actions</th></tr></thead>
       <tbody id="admUsersTbody"></tbody></table>
     </div>
 
@@ -3612,22 +3612,43 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   async function renderUsers(){
     const tb=document.getElementById('admUsersTbody');if(!tb)return;
     const myEmail=SB.user?.email||'';
-    // Fetch all agents from database
     if(SB.client){
       try{
         const{data,error}=await SB.client.rpc('list_agents');
         if(!error&&data&&data.length){
           tb.innerHTML=data.map(function(u){
             var isMe=u.email===myEmail;
-            return '<tr><td><b>'+esc(u.email)+'</b></td><td>'+esc(u.name||'')+'</td><td>'+fmtTs(u.created_at)+'</td><td>'+(u.last_sign_in?fmtTs(u.last_sign_in):'Never')+'</td><td style="text-align:right">'+(isMe?'<span style="color:var(--success);font-size:11px">● You</span>':'<span style="color:var(--tx3);font-size:11px">Agent</span>')+'</td></tr>';
+            var actions=isMe?'<span style="color:var(--success);font-size:11px">● You</span>':
+              '<button class="adm-btn ghost" style="padding:4px 10px;font-size:10px" onclick="resetAgentPw(\''+u.id+'\',\''+esc(u.email)+'\')">Reset PW</button> '+
+              '<button class="adm-btn danger" style="padding:4px 10px;font-size:10px" onclick="deleteAgent(\''+u.id+'\',\''+esc(u.email)+'\')">Delete</button>';
+            return '<tr><td><b>'+esc(u.email)+'</b></td><td>'+esc(u.name||'')+'</td><td>'+fmtTs(u.created_at)+'</td><td>'+(u.last_sign_in?fmtTs(u.last_sign_in):'Never')+'</td><td style="text-align:right">'+actions+'</td></tr>';
           }).join('');
           return;
         }
       }catch(e){console.warn('List agents:',e)}
     }
-    // Fallback: show current user only
     tb.innerHTML='<tr><td><b>'+esc(myEmail)+'</b></td><td>'+esc(SB.user?.user_metadata?.name||'')+'</td><td>'+(SB.user?.created_at?fmtTs(SB.user.created_at):'—')+'</td><td>'+(SB.user?.last_sign_in_at?fmtTs(SB.user.last_sign_in_at):'—')+'</td><td style="text-align:right"><span style="color:var(--success);font-size:11px">● You</span></td></tr>';
   }
+  window.deleteAgent=async function(id,email){
+    if(!confirm('Delete agent '+email+'? This cannot be undone.'))return;
+    try{
+      var{error}=await SB.client.rpc('delete_agent',{agent_id:id});
+      if(error)throw error;
+      logAct('agent.deleted',email);
+      await renderUsers();
+      alert('Agent '+email+' deleted.');
+    }catch(e){alert('Delete failed: '+(e.message||e))}
+  };
+  window.resetAgentPw=async function(id,email){
+    var np=prompt('New password for '+email+' (min 6 chars):');
+    if(!np||np.length<6){if(np)alert('Password must be at least 6 characters');return}
+    try{
+      var{error}=await SB.client.rpc('reset_agent_password',{agent_id:id,new_password:np});
+      if(error)throw error;
+      logAct('agent.resetPassword',email);
+      alert('Password updated for '+email);
+    }catch(e){alert('Reset failed: '+(e.message||e))}
+  };
   document.getElementById('admAddUserBtn').addEventListener('click',async()=>{
     const email=document.getElementById('admNewUser').value.trim();
     const pass=document.getElementById('admNewPass').value.trim();
