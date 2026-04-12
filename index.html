@@ -887,7 +887,7 @@ body.viewer-mode #quoteViewer{display:block!important}
       <label>Flight Name (optional)</label><input id="flightRetName" placeholder="e.g. Athens to London Direct">
       <label>Duration (optional)</label><input id="flightRetDuration" placeholder="e.g. 2h 40m">
 
-      <div id="baggageSection" style="display:none">
+      <div id="baggageSection">
         <div style="font-size:10px;color:#D4AF6A;letter-spacing:.22em;text-transform:uppercase;margin-top:18px;margin-bottom:8px">Baggage Allowance</div>
         <div class="row">
           <div>
@@ -1726,7 +1726,7 @@ function syncBaggage(el,group){
 function loadBaggageFromCurrent(){
   if(!current)return;
   const sec=document.getElementById('baggageSection');
-  if(sec)sec.style.display=current.flightsInc?'block':'none';
+  if(sec)sec.style.display='block';
   document.querySelectorAll('input[data-bag="cabin"]').forEach(cb=>{cb.checked=(current.baggageCabin||[]).includes(cb.value)});
   document.querySelectorAll('input[data-bag="checked"]').forEach(cb=>{cb.checked=(current.baggageChecked||[]).includes(cb.value)});
   if($('baggageCustom'))$('baggageCustom').value=current.baggageCustom||'';
