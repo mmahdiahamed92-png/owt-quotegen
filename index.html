@@ -2384,7 +2384,11 @@ function _render(){
       <ul class="list" style="columns:2;column-gap:24px">${lines(t.whyBullets||'')}</ul>
     </div>
 
-    <div class="foot" style="margin-top:14px"><b>${esc(t.closing||'')}</b><br>Your journey starts safely with ${esc(b.name||'OWT Group')}<br>${esc(b.contact||'')}</div>
+    <div class="foot" style="position:relative"><button class="prev-edit no-print" onclick="editField('footMsg')" title="Edit footer message">✏️</button>
+      <b>${esc(b.name)}</b><br>${esc(b.tagline||'')}<br>${esc(b.contact||'')}
+      ${addrEl}${waEl}
+      <br>${esc(current.footMsg||DEFAULT_FOOTMSG)}
+    </div>
   </div>`;
 
   $('preview').innerHTML=p1+pItin+pFlights+p3+pExc+pXfer+p4+p5;
