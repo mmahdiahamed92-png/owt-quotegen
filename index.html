@@ -2343,7 +2343,7 @@ function _render(){
   // page 5 — trust / financial protection (editable per brand)
   const t=(b.trust||DEFAULT_TRUST);
   const headingHtml=esc(t.heading||'').replace(/\n/g,'<br>');
-  let p5=`<div class="page" style="position:relative">
+  let p5=`<div class="page" style="position:relative;display:flex;flex-direction:column;min-height:297mm">
     <button class="edit-trust-btn no-print" onclick="editTrustPage()" title="Edit this page">✏️ Edit Protection Page</button>
     <div class="title" style="margin-top:8px"><h1>${headingHtml}</h1>
     <p>${esc(t.subhead||'')}</p></div>
