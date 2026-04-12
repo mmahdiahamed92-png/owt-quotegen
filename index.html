@@ -975,7 +975,13 @@ body.viewer-mode #quoteViewer{display:block!important}
           </select>
         </div>
       </div>
-      <label>Destinations</label><input id="dest" placeholder="Athens, Santorini, Mykonos">
+      <label>Destinations</label>
+      <div id="destTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+      <div style="display:flex;gap:6px">
+        <input id="destInput" placeholder="Type a city and press Enter or +" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addDestTag()}">
+        <button class="btn ghost sm" type="button" onclick="addDestTag()" style="padding:6px 12px">+</button>
+      </div>
+      <input type="hidden" id="dest">
       <label>Hero / Cover Image</label>
       <div style="display:flex;gap:6px;margin-top:4px">
         <button class="btn ghost sm" onclick="openImageLibrary('hero')">📷 Library</button>
@@ -1768,6 +1774,7 @@ function loadCurrentToForm(){
   if(typeof loadAirlineFromCurrent==='function')loadAirlineFromCurrent();
   if(typeof loadBaggageFromCurrent==='function')loadBaggageFromCurrent();
   if(typeof loadPaymentPlan==='function')loadPaymentPlan();
+  if(typeof renderDestTags==='function')renderDestTags();
   if(typeof loadInclExclFromCurrent==='function')loadInclExclFromCurrent();
   if(typeof updateTitlePreview==='function')updateTitlePreview();
   // warm image cache then render
@@ -1802,6 +1809,30 @@ function syncBaggage(el,group){
   current.baggageChecked=[...document.querySelectorAll('input[data-bag="checked"]:checked')].map(c=>c.value);
   current.baggageCustom=$('baggageCustom')?.value||'';
   render();autoSave();
+}
+function addDestTag(){
+  var input=$('destInput');if(!input)return;
+  var val=input.value.trim();if(!val)return;
+  input.value='';
+  var current_dests=(current.dest||'').split(',').map(function(s){return s.trim()}).filter(Boolean);
+  if(!current_dests.includes(val)){current_dests.push(val)}
+  current.dest=current_dests.join(', ');
+  $('dest').value=current.dest;
+  renderDestTags();render();autoSave();
+}
+function removeDestTag(idx){
+  var dests=(current.dest||'').split(',').map(function(s){return s.trim()}).filter(Boolean);
+  dests.splice(idx,1);
+  current.dest=dests.join(', ');
+  $('dest').value=current.dest;
+  renderDestTags();render();autoSave();
+}
+function renderDestTags(){
+  var container=$('destTags');if(!container)return;
+  var dests=(current&&current.dest||'').split(',').map(function(s){return s.trim()}).filter(Boolean);
+  container.innerHTML=dests.map(function(d,i){
+    return '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);border-radius:100px;font-size:11px;color:#1a1a1a;font-weight:500"><span>📍 '+esc(d)+'</span><button onclick="removeDestTag('+i+')" style="background:none;border:none;color:#999;cursor:pointer;font-size:14px;padding:0;line-height:1">×</button></span>';
+  }).join('');
 }
 function calcInstalments(){
   if(!current)return;
