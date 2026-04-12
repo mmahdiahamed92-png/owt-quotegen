@@ -1717,7 +1717,7 @@ function syncFormToCurrent(){
 
 // ====== DYNAMIC ITEMS ======
 function addDay(){if(!current)return;current.days.push({title:'',desc:'',img:''});renderItems();render();autoSave()}
-function addHotel(){if(!current)return;current.hotels.push({name:'',city:'',nights:'',stars:'',board:'',img:''});renderItems();render();autoSave()}
+function addHotel(){if(!current)return;current.hotels.push({name:'',city:'',nights:'',stars:'',board:'',img:'',checkin:'',checkout:'',roomType:'',roomFeatures:[],roomDesc:'',maxOccupancy:'',distAttraction:'',distAirport:'',distBeach:'',transferTime:'',nearby:''});renderItems();render();autoSave()}
 function addPrice(){if(!current)return;current.prices.push({label:'',amt:'',total:false});renderItems();render();autoSave()}
 function syncBaggage(el,group){
   if(!current)return;
@@ -1730,6 +1730,11 @@ function syncBaggage(el,group){
   current.baggageCabin=[...document.querySelectorAll('input[data-bag="cabin"]:checked')].map(c=>c.value);
   current.baggageChecked=[...document.querySelectorAll('input[data-bag="checked"]:checked')].map(c=>c.value);
   current.baggageCustom=$('baggageCustom')?.value||'';
+  render();autoSave();
+}
+function syncRoomFeatures(idx){
+  if(!current||!current.hotels[idx])return;
+  current.hotels[idx].roomFeatures=[...document.querySelectorAll('input[data-roomfeat="'+idx+'"]:checked')].map(c=>c.value);
   render();autoSave();
 }
 function loadBaggageFromCurrent(){
@@ -1792,6 +1797,16 @@ function renderItems(){
         <div><label>Transfer time</label><input placeholder="e.g. 30 min private transfer" value="${esc(h.transferTime||'')}" oninput="current.hotels[${i}].transferTime=this.value;render();autoSave()"></div>
       </div>
       <label>Nearby highlights</label><input placeholder="e.g. Disney Village 2 min · Mall 10 min" value="${esc(h.nearby||'')}" oninput="current.hotels[${i}].nearby=this.value;render();autoSave()">
+      <div style="font-size:10px;color:#D4AF6A;letter-spacing:.18em;text-transform:uppercase;margin-top:12px;margin-bottom:4px">Room Features</div>
+      <label>Room Type</label><input placeholder="e.g. Superior Room, Family Suite" value="${esc(h.roomType||'')}" oninput="current.hotels[${i}].roomType=this.value;render();autoSave()">
+      <label>Room features</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px">
+        ${['King or twin beds','Double + bunk beds','Free WiFi','Air conditioning','Smart TV','Mini fridge','Tea & coffee maker','Balcony / terrace','Sea view','Pool view','Bathtub','Walk-in shower','In-room safe','Room service','Spa access','Gym access','Hairdryer','Iron & board','Kitchenette','Washing machine'].map(feat=>'<label class="chk" style="font-size:11px"><input type="checkbox" data-roomfeat="'+i+'" value="'+feat+'" '+((h.roomFeatures||[]).includes(feat)?'checked':'')+' onchange="syncRoomFeatures('+i+')"> '+feat+'</label>').join('')}
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div><label>Room description</label><input placeholder="e.g. Marvel-themed décor" value="${esc(h.roomDesc||'')}" oninput="current.hotels[${i}].roomDesc=this.value;render();autoSave()"></div>
+        <div><label>Max occupancy</label><select onchange="current.hotels[${i}].maxOccupancy=this.value;render();autoSave()"><option value="">Select...</option>${[1,2,3,4,5,6].map(n=>'<option value="'+n+'" '+(h.maxOccupancy==n?'selected':'')+'>Sleeps up to '+n+'</option>').join('')}</select></div>
+      </div>
     </div>`).join('');
   // internal flights
   $('internalFlights').innerHTML=(current.internalFlights||[]).map((f,i)=>`
@@ -2202,7 +2217,10 @@ function _render(){
           ${s>=5?'<li>World-class service & hospitality</li>':''}
         </ul>
       </td>
-    </tr></table></div>`+
+    </tr></table>`+
+    (function(){var rf=h.roomFeatures||[];var hasRoom=rf.length||h.roomType||h.roomDesc;if(!hasRoom)return '';
+      return '<div style="border-top:1px solid #eee8d5;padding:10px 16px;background:#fafaf7;border-radius:0 0 12px 12px"><div style="font-size:7pt;color:#8B6B3A;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px">ROOM FEATURES'+(h.roomType?' — '+esc(h.roomType).toUpperCase():'')+'</div>'+(rf.length?'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px 8px">'+rf.map(function(f){return '<div style="font-size:7.5pt;color:#555;padding:2px 0">✓ '+esc(f)+'</div>'}).join('')+(h.maxOccupancy?'<div style="font-size:7.5pt;color:#555;padding:2px 0">✓ Sleeps up to '+esc(h.maxOccupancy)+'</div>':'')+'</div>':'')+(h.roomDesc?'<div style="font-size:7.5pt;color:#999;margin-top:5px;padding-top:5px;border-top:1px solid #eee8d5;font-style:italic">'+esc(h.roomDesc)+'</div>':'')+'</div>'
+    })()+`</div>`+
     (function(){var df=[h.distAttraction,h.distAirport,h.distBeach,h.transferTime,h.nearby].filter(Boolean);if(!df.length)return '';
       var rows='';
       if(h.distAttraction||h.distAirport)rows+='<div style="display:table;width:100%">'+(h.distAttraction?'<div style="display:table-cell;width:50%;padding:4px 8px"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Main Attraction</div><div style="font-size:8pt;color:#1a1a1a;font-weight:500;margin-top:1px">'+esc(h.distAttraction)+'</div></div>':'')+(h.distAirport?'<div style="display:table-cell;width:50%;padding:4px 8px"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Airport</div><div style="font-size:8pt;color:#1a1a1a;font-weight:500;margin-top:1px">'+esc(h.distAirport)+'</div></div>':'')+'</div>';
@@ -3868,6 +3886,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       <b>${esc(h.name||'')}</b>
       <small>${h.stars?stars(h.stars)+' · ':''}📍 ${esc(h.city||'')} · ${esc(h.nights||'')} Night${h.nights==='1'?'':'s'}${h.board?' · '+esc(h.board):''}</small>
       ${distItems.length?'<div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee8d5;font-size:11px;color:#888">'+distItems.map(function(d){return '<div style="padding:2px 0">📍 '+esc(d)+'</div>'}).join('')+(h.nearby?'<div style="padding:2px 0;color:#aaa;font-size:10px">Nearby: '+esc(h.nearby)+'</div>':'')+'</div>':''}
+      ${(h.roomFeatures||[]).length||h.roomType?'<div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee8d5"><div style="font-size:10px;color:#D4AF6A;font-weight:700;letter-spacing:.1em;margin-bottom:4px">ROOM FEATURES'+(h.roomType?' — '+esc(h.roomType):'')+'</div>'+(h.roomFeatures||[]).map(function(f){return '<div style="font-size:11px;color:#555;padding:1px 0">✓ '+esc(f)+'</div>'}).join('')+(h.maxOccupancy?'<div style="font-size:11px;color:#555;padding:1px 0">✓ Sleeps up to '+esc(h.maxOccupancy)+'</div>':'')+(h.roomDesc?'<div style="font-size:11px;color:#999;font-style:italic;margin-top:4px">'+esc(h.roomDesc)+'</div>':'')+'</div>':''}
     </div>`}).join('');
 
     // Excursions
