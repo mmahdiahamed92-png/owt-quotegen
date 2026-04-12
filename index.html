@@ -1032,6 +1032,10 @@ body.viewer-mode #quoteViewer{display:block!important}
       <label>Agent WhatsApp</label><input id="agentWhatsapp" placeholder="e.g. +44 7700 900111">
       <label>Agent Message</label><input id="agentMessage" placeholder="e.g. I'm here to help with any questions about your trip.">
 
+      <h3>Client Quote Message (Share Link)</h3>
+      <textarea id="quoteMessage" rows="3" placeholder="e.g. Hi {client}, I've managed to secure this deal for {price}. Here's what's included..." oninput="current.quoteMessage=this.value;render();autoSave()"></textarea>
+      <p style="font-size:10px;color:var(--tx3);margin-top:4px">Use {client} for name, {price} for total, {brand} for brand. Shown on client's share link.</p>
+
       <h3>Footer Message</h3>
       <textarea id="footMsg" rows="2" placeholder="Closing message at the bottom of the pricing page."></textarea>
 
@@ -1487,7 +1491,7 @@ function blankQuote(){
     flightOutName:'',flightOutDuration:'',flightRetName:'',flightRetDuration:'',
     baggageCabin:[],baggageChecked:[],baggageCustom:'',
     agentPhone:'',agentEmail:'',agentWhatsapp:'',agentMessage:'',
-    depositAmount:'',depositDesc:'',instalmentCount:'',instalmentStartDate:'',instalments:[],originalPrice:'',
+    depositAmount:'',depositDesc:'',instalmentCount:'',instalmentStartDate:'',instalments:[],originalPrice:'',quoteMessage:'',
     flightRetFrom:'',flightRetTo:'',flightRetDate:'',flightRetTime:'',flightRetNo:'',
     internalFlights:[],
     tourTitle:'',tourSub:'',titleFont:'Cinzel',startDate:'',endDate:'',dest:'',heroSrc:'',
@@ -1570,7 +1574,7 @@ function onBrandChange(){
 }
 
 // ====== FORM <-> CURRENT ======
-const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','depositAmount','depositDesc','instalmentStartDate','originalPrice','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
+const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','depositAmount','depositDesc','instalmentStartDate','originalPrice','quoteMessage','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
 
 // ====== INCLUSIONS / EXCLUSIONS CATALOGUE ======
 const INCL_CATALOGUE=[
@@ -4087,17 +4091,56 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       ${trust.partner?`<div style="font-size:12px;color:#555;line-height:1.7">${esc(trust.partner)}</div>`:''}
     </div>`:'';
 
-    document.getElementById('quoteViewer').innerHTML=`
-      ${q.heroSrc?`<img class="qv-hero" src="${q.heroSrc}">`:`<div class="qv-hero-ph">${esc(q.dest||'Your Journey')}</div>`}
-      <div class="qv-body">
-        <div class="qv-brand">
-          ${b.logo?`<img src="${b.logo}"><br>`:''}
-          <div class="qv-bname">${esc(b.name||'')}</div>
-        </div>
-        <div class="qv-title">${esc(q.tourTitle||'Your Bespoke Tour')}</div>
-        <div class="qv-sub">${esc(q.tourSub||'')}</div>
-        ${expiryHTML}
+    // Build new viewer sections
+    var clientFirst=(q.clientName||'').split(' ')[0]||'there';
+    var msgTpl=q.quoteMessage||"Hi {client}, I've managed to secure this deal for a total of {price}. Here's what's included in your package:";
+    var parsedMsg=msgTpl.replace(/\{client\}/gi,clientFirst).replace(/\{price\}/gi,totalAmt).replace(/\{brand\}/gi,b.name||'');
+    var msgIncl=(q.incl||'').split('\n').filter(Boolean).slice(0,8);
+    var vOrigP=parseFloat(q.originalPrice)||0;
+    var vFinalP=parseFloat(((q.prices||[]).find(function(p){return p.total})||{}).amt?.toString().replace(/,/g,'')||'0')||0;
+    var vDiscount=vOrigP>vFinalP?vOrigP-vFinalP:0;
+    var vDepAmt=parseFloat(q.depositAmount)||0;
+    var vHasInst=q.instalments&&q.instalments.length;
 
+    document.getElementById('quoteViewer').innerHTML=`
+      ${q.heroSrc?`<div style="position:relative"><img class="qv-hero" src="${q.heroSrc}" style="display:block;width:100%;max-height:220px;object-fit:cover"><div style="position:absolute;bottom:0;left:0;right:0;padding:16px 20px;background:linear-gradient(transparent,rgba(0,0,0,0.6))"><div style="color:#fff;font-size:22px;font-weight:500;line-height:1.2">${esc(q.tourTitle||'Your Bespoke Tour')}</div><div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:2px">${esc(q.tourSub||'')}</div></div></div>`:`<div class="qv-hero-ph">${esc(q.dest||'Your Journey')}</div><div class="qv-body"><div class="qv-title">${esc(q.tourTitle||'Your Bespoke Tour')}</div><div class="qv-sub">${esc(q.tourSub||'')}</div></div>`}
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eee8d5;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:8px">${b.logo?`<img src="${b.logo}" style="height:24px;width:auto;object-fit:contain">`:`<span style="font-size:14px;font-weight:500;color:#1a1a1a">${esc(b.name||'')}</span>`}</div>
+        <div style="display:flex;align-items:center;gap:4px"><span style="font-size:13px;font-weight:500;color:#1a1a1a">${b.trustpilotScore||'4.9'}</span><span style="color:#00b67a;font-size:10px;letter-spacing:1px">★★★★★</span></div>
+      </div>
+
+      <div style="background:#fafaf7;border:1px solid #eee8d5;border-radius:12px;padding:16px;margin:8px 16px 12px">
+        <div style="font-size:15px;color:#1a1a1a;line-height:1.6">${esc(parsedMsg)}</div>
+        ${msgIncl.length?`<div style="font-size:9px;color:#8B6B3A;font-weight:700;letter-spacing:.12em;margin:10px 0 6px">PRICE INCLUSIVE</div>${msgIncl.map(function(item){return '<div style="font-size:13px;color:#555;padding:3px 0;display:flex;align-items:center;gap:6px"><span style="color:#C4A55A;font-weight:600;font-size:14px">+</span> '+esc(item)+'</div>'}).join('')}`:''}
+      </div>
+
+      ${vDiscount>0?`<div style="display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;margin:0 16px 12px;background:rgba(48,209,88,0.06);border:1px solid rgba(48,209,88,0.15);border-radius:10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f9e44" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="font-size:14px;color:#2f9e44;font-weight:500">You save ${cur}${vDiscount.toFixed(2)} with this package</span></div>`:''}
+
+      <div style="background:linear-gradient(135deg,#1a1a1a,#2a2520);border-radius:12px;padding:16px;margin:0 16px 12px">
+        ${vDiscount>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:14px"><span style="color:rgba(255,255,255,0.5)">Original price</span><span style="color:rgba(255,255,255,0.3);text-decoration:line-through">${cur}${vOrigP.toFixed(2)}</span></div><div style="display:flex;justify-content:space-between;padding:5px 0;font-size:14px"><span style="color:rgba(255,255,255,0.5)">Discount</span><span style="color:#30D158">-${cur}${vDiscount.toFixed(2)}</span></div><div style="border-top:1px solid rgba(255,255,255,0.1);margin:6px 0"></div>`:''}
+        ${(q.prices||[]).filter(function(p){return !p.total&&p.label&&p.amt}).map(function(p){return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px"><span style="color:rgba(255,255,255,0.5)">'+esc(p.label)+'</span><span style="color:#fff;font-weight:500">'+cur+esc(p.amt)+'</span></div>'}).join('')}
+        <div style="border-top:1px solid rgba(255,255,255,0.1);margin:6px 0"></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="color:#C4A55A;font-size:10px;font-weight:600;letter-spacing:1.5px">TOTAL PACKAGE PRICE</span><span style="color:#fff;font-size:26px;font-weight:600">${totalAmt}</span></div>
+      </div>
+
+      ${(vDepAmt||vHasInst)?`<div style="border:1px solid #eee8d5;border-radius:12px;padding:16px;margin:0 16px 12px;background:#fafaf7">
+        <div style="text-align:center;padding:14px;background:#fff;border:1px solid #eee8d5;border-radius:10px;margin-bottom:8px"><div style="font-size:8px;color:#8B6B3A;font-weight:600;letter-spacing:1.5px">DEPOSIT TO SECURE</div><div style="font-size:28px;font-weight:600;color:#1a1a1a;margin-top:2px">${cur}${vDepAmt.toFixed(2)}</div>${q.depositDesc?'<div style="font-size:11px;color:#888;margin-top:4px">'+esc(q.depositDesc)+'</div>':''}</div>
+        ${vHasInst?`<div style="display:flex;align-items:flex-start;position:relative;margin:12px 0"><div style="position:absolute;top:10px;left:10%;right:10%;height:2px;background:repeating-linear-gradient(90deg,#C4A55A 0 4px,transparent 4px 8px)"></div>${[{l:'DEPOSIT',a:vDepAmt,d:'Today',n:'£'}].concat(q.instalments.map(function(inst,j){return{l:q.instalments.length<=4?inst.label.toUpperCase():'M'+(j+1),a:inst.amount,d:fmtD(inst.date),n:j+1}})).map(function(s){return '<div style="flex:1;text-align:center;position:relative;z-index:1"><div style="width:22px;height:22px;border-radius:50%;background:#1a1a1a;color:#C4A55A;font-size:10px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;margin-bottom:4px">'+s.n+'</div><div style="font-size:8px;color:#8B6B3A;font-weight:600">'+s.l+'</div><div style="font-size:11px;color:#1a1a1a;font-weight:500">'+cur+s.a.toFixed(2)+'</div><div style="font-size:9px;color:#999">'+s.d+'</div></div>'}).join('')}</div>`:''}
+        <div style="text-align:center;font-size:11px;color:#999;margin-top:4px">No additional fees on instalment payments</div>
+      </div>`:``}
+
+      <div style="margin:0 16px 16px;border-radius:12px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#1a1a1a,#2a2520);padding:14px 16px;display:flex;justify-content:space-between;align-items:center"><span style="color:#fff;font-size:16px;font-weight:500">Ready to secure your holiday?</span><span style="padding:4px 10px;background:rgba(212,175,106,0.2);border:1px solid rgba(212,175,106,0.3);border-radius:100px;font-size:9px;color:#C4A55A;font-weight:600">NEXT STEPS</span></div>
+        <div style="padding:16px;border:1px solid #eee8d5;border-top:none;border-radius:0 0 12px 12px">
+          <div style="font-size:14px;color:#555;text-align:center;line-height:1.5;margin-bottom:12px">Thank you for choosing <b style="color:#1a1a1a">${esc(b.name||'')}</b></div>
+          ${waHref?`<a href="${waHref}" target="_blank" style="display:block;padding:14px;background:linear-gradient(135deg,#C4A55A,#A8854A);border-radius:10px;color:#fff;text-decoration:none;font-size:15px;font-weight:600;text-align:center">Proceed with Booking</a>`:''}<div style="text-align:center;font-size:11px;color:#999;margin:8px 0">or</div>
+          ${waHref?`<a href="${waHref}" target="_blank" style="display:block;padding:12px;border:1px solid #eee8d5;border-radius:10px;color:#888;text-decoration:none;font-size:13px;text-align:center">Request amendments to this quote</a>`:''}</div>
+      </div>
+
+      ${expiryHTML?'<div style="padding:0 16px">'+expiryHTML+'</div>':''}
+
+      <div class="qv-body">
         <div class="qv-sect">
           <div class="qv-sect-title">Trip Details</div>
           <div class="qv-row"><span class="qv-label">Prepared For</span><span class="qv-val">${esc(q.clientName||'—')}</span></div>
@@ -4109,31 +4152,11 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
           <div class="qv-row"><span class="qv-label">Agent</span><span class="qv-val">${esc(q.agent||'—')}</span></div>
         </div>
 
-        ${daysHTML?`<div class="qv-sect"><div class="qv-sect-title">Your Journey</div>${daysHTML}</div>`:''}
         ${flightsHTML?`<div class="qv-sect"><div class="qv-sect-title">Flights</div>${flightsHTML}</div>`:''}
         ${hotelsHTML?`<div class="qv-sect"><div class="qv-sect-title">Accommodation</div>${hotelsHTML}</div>`:''}
         ${excHTML?`<div class="qv-sect"><div class="qv-sect-title">Excursions</div>${excHTML}</div>`:''}
         ${transfersHTML?`<div class="qv-sect"><div class="qv-sect-title">Transfers</div>${transfersHTML}</div>`:''}
-
-        ${priceRows?`<div class="qv-sect"><div class="qv-sect-title">Price Breakdown</div>${priceRows}</div>`:''}
-        ${totalAmt?`<div class="qv-price-block"><div class="qv-pl">Total Package Price</div><div class="qv-pa">${totalAmt}</div></div>`:''}
-        ${totalAmt?`<div class="qv-deposit">${esc(depositText)}</div>`:''}
-        ${(q.instalments&&q.instalments.length)?`<div class="qv-sect"><div class="qv-sect-title">Payment Plan</div>
-          <div class="qv-card" style="border-left:3px solid #D4AF6A;padding:14px 16px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-              <div><div style="font-size:10px;color:#D4AF6A;font-weight:700;letter-spacing:.1em">DEPOSIT TO SECURE</div>
-              <div style="font-size:11px;color:#888;margin-top:2px">${esc(q.depositDesc||'Secure your booking today')}</div></div>
-              <div style="font-size:22px;font-weight:600;color:#1a1a1a">${cur}${parseFloat(q.depositAmount).toFixed(2)}</div>
-            </div>
-            <div style="border-top:1px solid #eee8d5;padding-top:8px">
-              ${q.instalments.map(function(inst){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f0e8;font-size:13px"><div><div style="font-weight:500;color:#1a1a1a">'+esc(inst.label)+'</div><div style="font-size:11px;color:#888">'+fmtD(inst.date)+'</div></div><div style="font-weight:600;color:#1a1a1a">'+cur+inst.amount.toFixed(2)+'</div></div>'}).join('')}
-            </div>
-            <div style="text-align:center;margin-top:8px;font-size:11px;color:#999">No additional fees on instalment payments</div>
-          </div></div>
-          <div style="background:linear-gradient(135deg,#1a1a1a,#2a2520);border-radius:12px;padding:16px;text-align:center;margin-top:12px">
-            <div style="color:#fff;font-size:16px;font-weight:500;margin-bottom:4px">Ready to secure your holiday?</div>
-            <div style="color:#D4AF6A;font-size:12px;margin-bottom:12px">Thank you for choosing ${esc(b.name||'')}</div>
-            ${waHref?`<a href="${waHref}" target="_blank" style="display:block;padding:12px;background:linear-gradient(135deg,#C4A55A,#A8854A);border-radius:8px;color:#fff;text-decoration:none;font-size:14px;font-weight:600">Proceed with Booking</a>`:''}</div>`:''}
+        ${daysHTML?`<div class="qv-sect"><div class="qv-sect-title">Your Journey</div>${daysHTML}</div>`:''}
 
         ${inclHTML?`<div class="qv-sect"><div class="qv-sect-title">Inclusions</div><ul class="qv-list">${inclHTML}</ul></div>`:''}
         ${exclHTML?`<div class="qv-sect"><div class="qv-sect-title">Exclusions</div><ul class="qv-list">${exclHTML}</ul></div>`:''}
