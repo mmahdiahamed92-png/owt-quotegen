@@ -704,7 +704,7 @@ body.viewer-mode #quoteViewer{display:block!important}
 
     <div class="adm-panel" id="adm-quotes">
       <h3 style="margin:0 0 12px;color:#F5F5F7">All Saved Quotes</h3>
-      <div class="form-row"><input id="admQSearch" placeholder="Search..." style="flex:1;min-width:200px"></div>
+      <div class="form-row"><input id="admQSearch" placeholder="Search..." style="flex:1;min-width:200px"><button class="adm-btn danger" id="admDeleteAllQuotes">🗑 Delete All Quotes</button></div>
       <table><thead><tr><th>Quote #</th><th>Client</th><th>Brand</th><th>Status</th><th>Updated</th><th></th></tr></thead>
       <tbody id="admQuotesTbody"></tbody></table>
     </div>
@@ -4291,6 +4291,18 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     }));
   }
   document.getElementById('admQSearch').addEventListener('input',renderAdmQuotes);
+  document.getElementById('admDeleteAllQuotes').addEventListener('click',function(){
+    var all=load(LS.quotes,[]);
+    if(!all.length){alert('No quotes to delete.');return}
+    if(!confirm('Delete ALL '+all.length+' quotes? This cannot be undone.'))return;
+    if(!confirm('Are you absolutely sure?'))return;
+    var ids=all.map(function(q){return q.id});
+    quotes=[];save(LS.quotes,quotes);current=null;
+    logAct('quotes.deleteAll',ids.length+' quotes');
+    if(SB.user)ids.forEach(function(id){SB.deleteQuote(id).catch(function(){})});
+    if(typeof renderDashboard==='function')renderDashboard();
+    renderAdmQuotes();
+  });
 
   // ---- TEMPLATES ----
   function renderTemplates(){
