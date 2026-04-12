@@ -768,7 +768,8 @@ body.viewer-mode #quoteViewer{display:block!important}
         <input id="admImgSearch" placeholder="Search images..." oninput="renderAdmImgLib()" style="flex:1">
         <button class="adm-btn ghost" onclick="IMGLIB.pullCloud().then(()=>renderAdmImgLib())">🔄 Sync</button>
       </div>
-      <div id="admImgGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-height:500px;overflow-y:auto"></div>
+      <div id="admImgGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-height:400px;overflow-y:auto"></div>
+      <div id="admImgPreview" style="display:none;margin-top:14px;padding:14px;border:1px solid var(--bd-gold);border-radius:12px;background:rgba(212,175,106,.04)"></div>
     </div>
 
     <div class="adm-panel" id="adm-shared">
@@ -4299,15 +4300,34 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     const q=($('admImgSearch')?.value||'').trim();
     const items=IMGLIB.search(q,'all');
     $('admImgCount').textContent=items.length+' images';
-    $('admImgGrid').innerHTML=items.map(e=>`<div style="border:1px solid var(--bd);border-radius:10px;overflow:hidden;position:relative">
+    $('admImgGrid').innerHTML=items.map(e=>`<div onclick="previewAdmImg('${e.id}')" style="border:1px solid var(--bd);border-radius:10px;overflow:hidden;position:relative;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--bd)'">
       <img src="${IMG.src(e.thumbnail||e.src)}" style="width:100%;height:70px;object-fit:cover;display:block" loading="lazy">
       <div style="padding:6px 8px">
         <div style="font-size:9px;color:var(--tx);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(e.name||'Untitled')}</div>
         <div style="font-size:7px;color:var(--tx3);text-transform:uppercase">${esc(e.category)} · used ${e.usedCount||0}x</div>
       </div>
-      <button onclick="if(confirm('Delete this image?')){IMGLIB.del('${e.id}');renderAdmImgLib()}" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:0;border-radius:50%;width:20px;height:20px;font-size:10px;cursor:pointer;line-height:20px;text-align:center">×</button>
     </div>`).join('')||'<p style="grid-column:1/-1;text-align:center;color:var(--tx3);font-size:12px;padding:20px">No images in library</p>';
+    var pv=$('admImgPreview');if(pv)pv.style.display='none';
   }
+  window.previewAdmImg=function(id){
+    var e=IMGLIB.lib.find(function(x){return x.id===id});if(!e)return;
+    var pv=$('admImgPreview');if(!pv)return;
+    pv.style.display='block';
+    pv.innerHTML='<div style="display:flex;gap:14px;align-items:flex-start">'
+      +'<img src="'+IMG.src(e.src)+'" style="max-width:280px;max-height:200px;object-fit:contain;border-radius:8px;border:1px solid var(--bd);background:#000">'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:15px;color:var(--tx);font-weight:500;margin-bottom:6px">'+esc(e.name||'Untitled')+'</div>'
+      +'<div style="font-size:11px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Category:</b> '+esc(e.category||'—')+'</div>'
+      +'<div style="font-size:11px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Tags:</b> '+(e.tags&&e.tags.length?e.tags.map(function(t){return '<span style="display:inline-block;padding:2px 8px;background:var(--bg-tertiary);border:1px solid var(--bd);border-radius:100px;font-size:9px;margin:1px 2px">'+esc(t)+'</span>'}).join(''):'None')+'</div>'
+      +'<div style="font-size:11px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Uploaded by:</b> '+esc(e.uploadedBy||'—')+'</div>'
+      +'<div style="font-size:11px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Used:</b> '+(e.usedCount||0)+' time'+(e.usedCount===1?'':'s')+'</div>'
+      +(e.dims&&e.dims.w?'<div style="font-size:11px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Size:</b> '+e.dims.w+'×'+e.dims.h+'px</div>':'')
+      +'<div style="display:flex;gap:8px;margin-top:12px">'
+      +'<button class="adm-btn danger" onclick="if(confirm(\'Delete this image permanently?\')){IMGLIB.del(\''+e.id+'\');renderAdmImgLib()}">🗑 Delete Image</button>'
+      +'<button class="adm-btn ghost" onclick="$(\'admImgPreview\').style.display=\'none\'">Close Preview</button>'
+      +'</div></div></div>';
+    pv.scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
   // Hook into admin tab switching for imglib
   document.querySelectorAll('.adm-tab').forEach(t=>t.addEventListener('click',()=>{if(t.getAttribute('data-adm')==='imglib')renderAdmImgLib()}));
 
