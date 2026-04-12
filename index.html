@@ -952,6 +952,29 @@ body.viewer-mode #quoteViewer{display:block!important}
       <input type="hidden" id="titleFont" value="Cinzel">
       <div id="titleFontPreview" style="margin-top:6px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;color:var(--gold);font-size:20px;min-height:48px;display:flex;align-items:center;transition:font-family .3s"></div>
       <label>Subtitle</label><input id="tourSub" placeholder="7 Nights / 8 Days">
+      <div class="row">
+        <div><label>Subtitle Font</label>
+          <select id="subFont" onchange="current.subFont=this.value;render();autoSave()">
+            <option value="Satoshi">Satoshi</option>
+            <option value="Cinzel">Cinzel</option>
+            <option value="Playfair Display">Playfair Display</option>
+            <option value="Cormorant Garamond">Cormorant Garamond</option>
+            <option value="Lora">Lora</option>
+            <option value="Raleway">Raleway</option>
+            <option value="Montserrat">Montserrat</option>
+            <option value="Carattere">Carattere</option>
+          </select>
+        </div>
+        <div><label>Subtitle Size</label>
+          <select id="subSize" onchange="current.subSize=this.value;render();autoSave()">
+            <option value="9pt">Small (9pt)</option>
+            <option value="11pt" selected>Normal (11pt)</option>
+            <option value="13pt">Medium (13pt)</option>
+            <option value="15pt">Large (15pt)</option>
+            <option value="18pt">Extra Large (18pt)</option>
+          </select>
+        </div>
+      </div>
       <label>Destinations</label><input id="dest" placeholder="Athens, Santorini, Mykonos">
       <label>Hero / Cover Image</label>
       <div style="display:flex;gap:6px;margin-top:4px">
@@ -1491,6 +1514,7 @@ function blankQuote(){
     flightOutName:'',flightOutDuration:'',flightRetName:'',flightRetDuration:'',
     baggageCabin:[],baggageChecked:[],baggageCustom:'',
     agentPhone:'',agentEmail:'',agentWhatsapp:'',agentMessage:'',
+    subFont:'Satoshi',subSize:'11pt',
     depositAmount:'',depositDesc:'',instalmentCount:'',instalmentStartDate:'',instalments:[],originalPrice:'',quoteMessage:'',
     flightRetFrom:'',flightRetTo:'',flightRetDate:'',flightRetTime:'',flightRetNo:'',
     internalFlights:[],
@@ -1574,7 +1598,7 @@ function onBrandChange(){
 }
 
 // ====== FORM <-> CURRENT ======
-const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','depositAmount','depositDesc','instalmentStartDate','originalPrice','quoteMessage','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
+const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','subFont','subSize','depositAmount','depositDesc','instalmentStartDate','originalPrice','quoteMessage','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
 
 // ====== INCLUSIONS / EXCLUSIONS CATALOGUE ======
 const INCL_CATALOGUE=[
@@ -2009,7 +2033,9 @@ function _render(){
     ?`<img src="${IMG.src(current.heroSrc)}" class="hero" style="${heroStyle}">`
     :`<div class="hero-ph" style="${shapeStyles[current.heroShape||'rect']}">${esc(current.dest||'Destination')}</div>`;
   const tFont=current.titleFont||'Satoshi';
-  const titleEl=`<div class="title" style="position:relative"><button class="prev-edit no-print" onclick="editField('tourTitle')" title="Edit title">✏️</button><h1 style="font-family:'${tFont}',serif">${esc(current.tourTitle||'Your Bespoke Tour')}</h1><p>${esc(current.tourSub||'')}</p></div>`;
+  var sFont=current.subFont||'Satoshi';
+  var sSize=current.subSize||'11pt';
+  const titleEl=`<div class="title" style="position:relative"><button class="prev-edit no-print" onclick="editField('tourTitle')" title="Edit title">✏️</button><h1 style="font-family:'${tFont}',serif">${esc(current.tourTitle||'Your Bespoke Tour')}</h1><p style="font-family:'${sFont}',sans-serif;font-size:${sSize}">${esc(current.tourSub||'')}</p></div>`;
   const clientEl='';
   const flightsEl=current.flightsInc?(function(){
     const al=current.flightAirline||'Airline TBC';
