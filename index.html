@@ -1773,6 +1773,16 @@ function renderItems(){
         <input type="file" accept="image/*" style="display:none" onchange="fileToData(this.files[0],(s,dim)=>{current.hotels[${i}].img=s;current.hotels[${i}].dims=dim;saveHotelToStore(current.hotels[${i}]);renderItems();render();autoSave()})">
       </div>
       ${h.img?`<img src="${IMG.src(h.img)}" class="thumb">`:''}
+      <div style="font-size:10px;color:#D4AF6A;letter-spacing:.18em;text-transform:uppercase;margin-top:12px;margin-bottom:4px">Distance & Location</div>
+      <div class="row">
+        <div><label>Main attraction</label><input placeholder="e.g. 5 min walk to Disney Parks" value="${esc(h.distAttraction||'')}" oninput="current.hotels[${i}].distAttraction=this.value;render();autoSave()"></div>
+        <div><label>Airport</label><input placeholder="e.g. 45 min from CDG" value="${esc(h.distAirport||'')}" oninput="current.hotels[${i}].distAirport=this.value;render();autoSave()"></div>
+      </div>
+      <div class="row">
+        <div><label>Beach / City centre</label><input placeholder="e.g. 10 min walk" value="${esc(h.distBeach||'')}" oninput="current.hotels[${i}].distBeach=this.value;render();autoSave()"></div>
+        <div><label>Transfer time</label><input placeholder="e.g. 30 min private transfer" value="${esc(h.transferTime||'')}" oninput="current.hotels[${i}].transferTime=this.value;render();autoSave()"></div>
+      </div>
+      <label>Nearby highlights</label><input placeholder="e.g. Disney Village 2 min · Mall 10 min" value="${esc(h.nearby||'')}" oninput="current.hotels[${i}].nearby=this.value;render();autoSave()">
     </div>`).join('');
   // internal flights
   $('internalFlights').innerHTML=(current.internalFlights||[]).map((f,i)=>`
@@ -2010,8 +2020,13 @@ function _render(){
           </div>
         </div>`;
       };
-      var bagItems=[].concat(current.baggageCabin||[]).concat(current.baggageChecked||[]).concat(current.baggageCustom?[current.baggageCustom]:[]).filter(Boolean);
-      var bagEl=bagItems.length?'<div style="text-align:center;margin-top:10px;padding:10px 16px;background:#fafaf7;border:1px solid #eee8d5;border-radius:10px"><div style="font-size:7pt;color:#8B6B3A;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="#D4AF6A" style="vertical-align:-2px;margin-right:4px"><path d="M17 6h-2V3c0-.55-.45-1-1-1h-4c-.55 0-1 .45-1 1v3H7c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2 0 .55.45 1 1 1s1-.45 1-1h6c0 .55.45 1 1 1s1-.45 1-1c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 3h4v3h-4V3zm7 16H7V8h10v11z"/></svg>BAGGAGE ALLOWANCE</div><div style="font-size:8pt;color:#555">'+bagItems.map(function(b){return esc(b)}).join(' · ')+'</div></div>':'';
+      var cabinB=(current.baggageCabin||[]).filter(function(b){return b.indexOf('No cabin')<0});
+      var checkedB=(current.baggageChecked||[]).filter(function(b){return b.indexOf('No checked')<0});
+      var noCab=(current.baggageCabin||[]).some(function(b){return b.indexOf('No cabin')>=0});
+      var noChk=(current.baggageChecked||[]).some(function(b){return b.indexOf('No checked')>=0});
+      var custB=current.baggageCustom||'';
+      var hasBag=cabinB.length||checkedB.length||noCab||noChk||custB;
+      var bagEl=hasBag?'<div style="border:1px solid #eee8d5;border-radius:14px;padding:16px 20px;margin-top:14px;background:#fafaf7;page-break-inside:avoid"><div style="text-align:center;margin-bottom:12px"><svg width="22" height="22" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M17 6h-2V3c0-.55-.45-1-1-1h-4c-.55 0-1 .45-1 1v3H7c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2 0 .55.45 1 1 1s1-.45 1-1h6c0 .55.45 1 1 1s1-.45 1-1c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 3h4v3h-4V3zm7 16H7V8h10v11z"/></svg><div style="font-size:7.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-top:4px">Baggage Allowance</div></div><div style="display:table;width:100%;border-spacing:10px 0"><div style="display:table-cell;width:50%;vertical-align:top;text-align:center;padding:12px;border:1px solid #eee8d5;border-radius:10px;background:#fff"><div style="font-size:7pt;color:#8B6B3A;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">Cabin Baggage</div>'+(cabinB.length?cabinB.map(function(b){return '<div style="font-size:8.5pt;color:#1a1a1a;font-weight:500;padding:2px 0">'+esc(b)+'</div>'}).join(''):noCab?'<div style="font-size:8.5pt;color:#999;font-style:italic">Not included</div>':'<div style="font-size:8.5pt;color:#999;font-style:italic">Check with airline</div>')+'</div><div style="display:table-cell;width:50%;vertical-align:top;text-align:center;padding:12px;border:1px solid #eee8d5;border-radius:10px;background:#fff"><div style="font-size:7pt;color:#8B6B3A;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">Checked Baggage</div>'+(checkedB.length?checkedB.map(function(b){return '<div style="font-size:8.5pt;color:#1a1a1a;font-weight:500;padding:2px 0">'+esc(b)+'</div>'}).join(''):noChk?'<div style="font-size:8.5pt;color:#999;font-style:italic">Not included</div>':'<div style="font-size:8.5pt;color:#999;font-style:italic">Check with airline</div>')+'</div></div>'+(custB?'<div style="text-align:center;margin-top:8px;padding-top:8px;border-top:1px solid #eee8d5;font-size:8pt;color:#555;font-style:italic">'+esc(custB)+'</div>':'')+'<div style="text-align:center;margin-top:6px;font-size:6.5pt;color:#bbb">Per person per direction unless stated otherwise</div></div>':'';
       return `<div class="sect" style="text-align:center">
         <div style="margin-bottom:8px"><svg width="30" height="30" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2 1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg></div>
         <div class="fl-hero-title">Flights</div>
@@ -2178,7 +2193,13 @@ function _render(){
           ${s>=5?'<li>World-class service & hospitality</li>':''}
         </ul>
       </td>
-    </tr></table></div>`;
+    </tr></table></div>`+
+    (function(){var df=[h.distAttraction,h.distAirport,h.distBeach,h.transferTime,h.nearby].filter(Boolean);if(!df.length)return '';
+      var rows='';
+      if(h.distAttraction||h.distAirport)rows+='<div style="display:table;width:100%">'+(h.distAttraction?'<div style="display:table-cell;width:50%;padding:4px 8px"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Main Attraction</div><div style="font-size:8pt;color:#1a1a1a;font-weight:500;margin-top:1px">'+esc(h.distAttraction)+'</div></div>':'')+(h.distAirport?'<div style="display:table-cell;width:50%;padding:4px 8px"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Airport</div><div style="font-size:8pt;color:#1a1a1a;font-weight:500;margin-top:1px">'+esc(h.distAirport)+'</div></div>':'')+'</div>';
+      if(h.distBeach||h.transferTime)rows+='<div style="display:table;width:100%">'+(h.distBeach?'<div style="display:table-cell;width:50%;padding:4px 8px"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Beach / Centre</div><div style="font-size:8pt;color:#1a1a1a;font-weight:500;margin-top:1px">'+esc(h.distBeach)+'</div></div>':'')+(h.transferTime?'<div style="display:table-cell;width:50%;padding:4px 8px"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Transfer</div><div style="font-size:8pt;color:#1a1a1a;font-weight:500;margin-top:1px">'+esc(h.transferTime)+'</div></div>':'')+'</div>';
+      if(h.nearby)rows+='<div style="padding:4px 8px;border-top:1px solid #eee8d5"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Nearby</div><div style="font-size:8pt;color:#555;margin-top:1px">'+esc(h.nearby)+'</div></div>';
+      return '<div style="border:1px solid #eee8d5;border-radius:10px;padding:8px;margin-top:-4px;margin-bottom:14px;background:#fafaf7;page-break-inside:avoid">'+rows+'</div>'})();
   }).join('');
   const hotelsBlock=current.hotels.length?`<div class="sect" style="text-align:center">
     <div style="margin-bottom:10px"><svg width="32" height="32" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg></div>
@@ -3825,11 +3846,14 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     }
 
     // Hotels
-    const hotelsHTML=(q.hotels||[]).map(h=>`<div class="qv-card">
+    const hotelsHTML=(q.hotels||[]).map(h=>{
+      var distItems=[h.distAttraction,h.distAirport,h.distBeach,h.transferTime].filter(Boolean);
+      return `<div class="qv-card">
       ${h.img?`<img src="${h.img}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px">`:''}
       <b>${esc(h.name||'')}</b>
       <small>${h.stars?stars(h.stars)+' · ':''}📍 ${esc(h.city||'')} · ${esc(h.nights||'')} Night${h.nights==='1'?'':'s'}${h.board?' · '+esc(h.board):''}</small>
-    </div>`).join('');
+      ${distItems.length?'<div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee8d5;font-size:11px;color:#888">'+distItems.map(function(d){return '<div style="padding:2px 0">📍 '+esc(d)+'</div>'}).join('')+(h.nearby?'<div style="padding:2px 0;color:#aaa;font-size:10px">Nearby: '+esc(h.nearby)+'</div>':'')+'</div>':''}
+    </div>`}).join('');
 
     // Excursions
     const excHTML=(q.excursions||[]).filter(x=>x.name).map(x=>`<div class="qv-card">
