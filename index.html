@@ -2468,7 +2468,6 @@ function generatePDF(){
     document.body.appendChild(overlay);
 
     const pageWmm=210,pageHmm=297;
-    const A4W=794,A4H=1123; // A4 at 96dpi
     const pdf=new (window.jspdf?.jsPDF||window.jsPDF)({unit:'mm',format:'a4',orientation:'portrait',compress:true});
 
     const prevEl=$('preview');
@@ -2488,20 +2487,16 @@ function generatePDF(){
       $('__pdfProg').textContent=`Page ${i+1} / ${pages.length}`;
       const hidden=[];
       el.querySelectorAll('.no-print,.prev-edit,.edit-trust-btn').forEach(n=>{hidden.push([n,n.style.display]);n.style.display='none'});
-      // Save original styles and lock to A4 proportions
-      const origW=el.style.width;const origMinH=el.style.minHeight;
-      el.style.width=A4W+'px';el.style.minHeight=A4H+'px';
-      html2canvas(el,{scale:3,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false,width:A4W,windowWidth:A4W}).then(canvas=>{
-        el.style.width=origW;el.style.minHeight=origMinH;
+      html2canvas(el,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false}).then(canvas=>{
         hidden.forEach(([n,d])=>n.style.display=d);
-        const img=canvas.toDataURL('image/jpeg',0.92);
+        const img=canvas.toDataURL('image/jpeg',0.95);
+        const ratio=canvas.height/canvas.width;
+        const hmm=pageWmm*ratio;
         if(i>0)pdf.addPage();
-        // Place at exact A4 dimensions — no stretching
-        pdf.addImage(img,'JPEG',0,0,pageWmm,pageHmm);
+        pdf.addImage(img,'JPEG',0,0,pageWmm,Math.min(hmm,pageHmm));
         i++;
-        setTimeout(next,50);
+        setTimeout(next,30);
       }).catch(err=>{
-        el.style.width=origW;el.style.minHeight=origMinH;
         hidden.forEach(([n,d])=>n.style.display=d);
         prevEl.style.transform=prevTransform;
         document.body.removeChild(overlay);
