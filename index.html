@@ -2886,11 +2886,16 @@ function generatePDF(){
       $('__pdfProg').textContent=`Page ${i+1} / ${pages.length}`;
       const hidden=[];
       el.querySelectorAll('.no-print,.prev-edit,.edit-trust-btn').forEach(n=>{hidden.push([n,n.style.display]);n.style.display='none'});
-      // Hide zero-dimension images and canvases that cause createPattern errors
-      el.querySelectorAll('img,canvas,svg').forEach(n=>{if(!n.offsetWidth||!n.offsetHeight||n.naturalWidth===0||n.naturalHeight===0){hidden.push([n,n.style.display]);n.style.display='none'}});
+      // Hide broken/zero-dimension images that cause createPattern errors
+      el.querySelectorAll('img').forEach(n=>{
+        if(!n.naturalWidth||!n.naturalHeight||!n.complete||n.src===''){hidden.push([n,n.style.display]);n.style.display='none'}
+      });
+      el.querySelectorAll('canvas').forEach(n=>{
+        if(!n.width||!n.height){hidden.push([n,n.style.display]);n.style.display='none'}
+      });
       // Capture link positions BEFORE html2canvas (while DOM is visible)
       var pageLinks=getLinkPositions(el);
-      html2canvas(el,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false}).then(canvas=>{
+      html2canvas(el,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false,ignoreElements:function(node){if(node.tagName==='IMG'&&(!node.naturalWidth||!node.naturalHeight||!node.complete))return true;if(node.tagName==='CANVAS'&&(!node.width||!node.height))return true;return false}}).then(canvas=>{
         hidden.forEach(([n,d])=>n.style.display=d);
         const img=canvas.toDataURL('image/jpeg',0.95);
         const ratio=canvas.height/canvas.width;
