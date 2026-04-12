@@ -997,6 +997,19 @@ body.viewer-mode #quoteViewer{display:block!important}
       <div id="prices"></div>
       <button class="btn ghost sm" onclick="addPrice()">+ Price Row</button>
 
+      <h3>Payment Plan</h3>
+      <div class="row">
+        <div><label>Deposit Amount</label><input type="number" id="depositAmount" placeholder="e.g. 20" min="0" step="0.01" oninput="current.depositAmount=this.value;calcInstalments();render();autoSave()"></div>
+        <div><label>Number of Instalments</label><select id="instalmentCount" onchange="current.instalmentCount=this.value;calcInstalments();render();autoSave()"><option value="">No instalments</option>${[2,3,4,5,6,7,8,9,10,11,12].map(function(n){return '<option value="'+n+'">'+n+' instalments</option>'}).join('')}</select></div>
+      </div>
+      <div class="row">
+        <div><label>First Instalment Date</label><input type="date" id="instalmentStartDate" onchange="current.instalmentStartDate=this.value;calcInstalments();render();autoSave()"></div>
+        <div><label>Deposit Description</label><input id="depositDesc" placeholder="e.g. Low deposit to secure your booking" oninput="current.depositDesc=this.value;render();autoSave()"></div>
+      </div>
+      <label>Original Price (before discount, optional)</label>
+      <input type="number" id="originalPrice" placeholder="e.g. 3100" step="0.01" oninput="current.originalPrice=this.value;render();autoSave()">
+      <div id="instalmentPreview"></div>
+
       <h3>Inclusions</h3>
       <div id="inclChecks" class="check-groups"></div>
       <label style="margin-top:10px">Custom inclusions (one per line)</label>
@@ -1474,6 +1487,7 @@ function blankQuote(){
     flightOutName:'',flightOutDuration:'',flightRetName:'',flightRetDuration:'',
     baggageCabin:[],baggageChecked:[],baggageCustom:'',
     agentPhone:'',agentEmail:'',agentWhatsapp:'',agentMessage:'',
+    depositAmount:'',depositDesc:'',instalmentCount:'',instalmentStartDate:'',instalments:[],originalPrice:'',
     flightRetFrom:'',flightRetTo:'',flightRetDate:'',flightRetTime:'',flightRetNo:'',
     internalFlights:[],
     tourTitle:'',tourSub:'',titleFont:'Cinzel',startDate:'',endDate:'',dest:'',heroSrc:'',
@@ -1556,7 +1570,7 @@ function onBrandChange(){
 }
 
 // ====== FORM <-> CURRENT ======
-const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
+const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','depositAmount','depositDesc','instalmentStartDate','originalPrice','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
 
 // ====== INCLUSIONS / EXCLUSIONS CATALOGUE ======
 const INCL_CATALOGUE=[
@@ -1717,6 +1731,7 @@ function loadCurrentToForm(){
   if(typeof loadPaxFromTravelers==='function')loadPaxFromTravelers();
   if(typeof loadAirlineFromCurrent==='function')loadAirlineFromCurrent();
   if(typeof loadBaggageFromCurrent==='function')loadBaggageFromCurrent();
+  if(typeof loadPaymentPlan==='function')loadPaymentPlan();
   if(typeof loadInclExclFromCurrent==='function')loadInclExclFromCurrent();
   if(typeof updateTitlePreview==='function')updateTitlePreview();
   // warm image cache then render
@@ -1751,6 +1766,41 @@ function syncBaggage(el,group){
   current.baggageChecked=[...document.querySelectorAll('input[data-bag="checked"]:checked')].map(c=>c.value);
   current.baggageCustom=$('baggageCustom')?.value||'';
   render();autoSave();
+}
+function calcInstalments(){
+  if(!current)return;
+  var totalRow=(current.prices||[]).find(function(p){return p.total});
+  var totalPrice=parseFloat((totalRow?.amt||'0').toString().replace(/,/g,''))||0;
+  var deposit=parseFloat(current.depositAmount)||0;
+  var count=parseInt(current.instalmentCount)||0;
+  var startDate=current.instalmentStartDate||'';
+  if(!totalPrice||!deposit||!count||!startDate||deposit>=totalPrice){current.instalments=[];renderInstalmentPreview();return}
+  var remaining=totalPrice-deposit;
+  var per=Math.floor(remaining/count*100)/100;
+  var last=Math.round((remaining-per*(count-1))*100)/100;
+  var instalments=[];
+  var start=new Date(startDate);
+  for(var j=0;j<count;j++){
+    var d=new Date(start);d.setMonth(d.getMonth()+j);
+    instalments.push({number:j+1,amount:j===count-1?last:per,date:d.toISOString().slice(0,10),label:j===count-1?'Final Payment':'Instalment '+(j+1)});
+  }
+  current.instalments=instalments;
+  renderInstalmentPreview();
+}
+function renderInstalmentPreview(){
+  var el=document.getElementById('instalmentPreview');if(!el||!current)return;
+  if(!current.instalments||!current.instalments.length){el.innerHTML='';return}
+  var c=sym(current.curr||'GBP');
+  el.innerHTML='<div style="background:var(--bg-tertiary);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-top:8px"><div style="font-size:10px;color:var(--gold);font-weight:600;letter-spacing:.12em;margin-bottom:8px">PAYMENT PLAN PREVIEW</div><div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="color:var(--tx2)">Deposit</span><span style="color:var(--gold);font-weight:600">'+c+parseFloat(current.depositAmount).toFixed(2)+'</span></div>'+current.instalments.map(function(inst){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="color:var(--tx2)">'+esc(inst.label)+' · '+fmt(inst.date)+'</span><span style="color:var(--tx);font-weight:500">'+c+inst.amount.toFixed(2)+'</span></div>'}).join('')+'<div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:13px;font-weight:600"><span style="color:var(--tx)">Total</span><span style="color:var(--gold)">'+c+((parseFloat(current.depositAmount)||0)+current.instalments.reduce(function(a,i){return a+i.amount},0)).toFixed(2)+'</span></div></div>';
+}
+function loadPaymentPlan(){
+  if(!current)return;
+  if($('depositAmount'))$('depositAmount').value=current.depositAmount||'';
+  if($('instalmentCount'))$('instalmentCount').value=current.instalmentCount||'';
+  if($('instalmentStartDate'))$('instalmentStartDate').value=current.instalmentStartDate||'';
+  if($('depositDesc'))$('depositDesc').value=current.depositDesc||'';
+  if($('originalPrice'))$('originalPrice').value=current.originalPrice||'';
+  calcInstalments();
 }
 function syncRoomFeatures(idx){
   if(!current||!current.hotels[idx])return;
@@ -2323,11 +2373,25 @@ function _render(){
   let pXfer=xferHTML?pgWrap(xferHTML):'';
 
   // page 4 — pricing + incl/excl + terms
+  var totalP=parseFloat((totalRow?.amt||'0').toString().replace(/,/g,''))||0;
+  var origP=parseFloat(current.originalPrice)||0;
+  var discountAmt=origP>totalP?origP-totalP:0;
+  var savingsEl=discountAmt>0?'<div style="text-align:center;margin-bottom:10px"><span style="display:inline-flex;align-items:center;gap:4px;padding:5px 14px;background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.2);border-radius:100px;font-size:8.5pt;color:#2f9e44;font-weight:500">✓ You save '+cur+discountAmt.toFixed(2)+' with this package</span></div>':'';
+  var discountRows=discountAmt>0?'<tr><td>Original Price</td><td style="text-align:right;text-decoration:line-through;color:#999">'+cur+origP.toFixed(2)+'</td></tr><tr><td>Discount</td><td style="text-align:right;color:#2f9e44">-'+cur+discountAmt.toFixed(2)+'</td></tr>':'';
   const priceRows=current.prices.map(pr=>`<tr class="${pr.total?'total':''}"><td>${esc(pr.label)}</td><td style="text-align:right">${cur}${esc(pr.amt)}</td></tr>`).join('');
+  var instEl='';
+  if(current.instalments&&current.instalments.length){
+    var dep=parseFloat(current.depositAmount)||0;
+    var steps=[{l:'DEPOSIT',a:dep,d:'Today'}].concat(current.instalments.map(function(inst,j){return{l:current.instalments.length<=3?inst.label.toUpperCase():'MONTH '+(j+1),a:inst.amount,d:fmt(inst.date)}}));
+    var sz=steps.length>6?'small':'normal';
+    instEl='<div style="border:1px solid #eee8d5;border-radius:14px;padding:16px 20px;background:#fafaf7;margin:14px 0;page-break-inside:avoid"><div style="text-align:center;margin-bottom:12px"><div style="font-size:8pt;color:#8B6B3A;font-weight:700;letter-spacing:.16em;text-transform:uppercase">Payment Plan</div>'+(current.depositDesc?'<div style="font-size:8pt;color:#888;margin-top:4px">'+esc(current.depositDesc)+'</div>':'')+'</div><div style="text-align:center;padding:10px;border:1px solid #eee8d5;border-radius:10px;background:#fff;margin-bottom:10px"><div style="font-size:7pt;color:#8B6B3A;font-weight:600;letter-spacing:.12em">DEPOSIT TO SECURE</div><div style="font-size:18pt;font-weight:600;color:#1a1a1a;margin-top:2px">'+cur+dep.toFixed(2)+'</div></div><div style="display:table;width:100%;border-collapse:separate;border-spacing:4px 0">'+steps.map(function(s,j){return '<div style="display:table-cell;text-align:center;vertical-align:top;width:'+Math.floor(100/steps.length)+'%"><div style="width:'+(sz==='small'?16:22)+'px;height:'+(sz==='small'?16:22)+'px;border-radius:50%;background:#1a1a1a;color:#D4AF6A;font-size:'+(sz==='small'?6:8)+'pt;font-weight:600;display:inline-flex;align-items:center;justify-content:center;margin-bottom:3px">'+(j===0?'£':s.l.match(/\d+/)?s.l.match(/\d+/)[0]:(j))+'</div><div style="font-size:'+(sz==='small'?5:6.5)+'pt;color:#8B6B3A;font-weight:600;letter-spacing:.04em">'+s.l+'</div><div style="font-size:'+(sz==='small'?6.5:8)+'pt;color:#1a1a1a;font-weight:500;margin-top:1px">'+cur+s.a.toFixed(2)+'</div><div style="font-size:'+(sz==='small'?5:6)+'pt;color:#999">'+s.d+'</div></div>'}).join('')+'</div><div style="text-align:center;margin-top:6px;font-size:6.5pt;color:#bbb">No additional fees on instalment payments</div></div>';
+  }
   let p4=`<div class="page" style="display:flex;flex-direction:column;min-height:297mm">
+    ${savingsEl}
     <div class="sect"><h2>Pricing Breakdown</h2>
-      <table class="price"><tr><th>Description</th><th style="text-align:right">Amount (${current.curr})</th></tr>${priceRows}</table>
+      <table class="price"><tr><th>Description</th><th style="text-align:right">Amount (${current.curr})</th></tr>${discountRows}${priceRows}</table>
     </div>
+    ${instEl}
     <div class="twocol">
       <div class="sect"><h2>Inclusions</h2><ul class="list">${lines(current.incl)}</ul></div>
       <div class="sect"><h2>Exclusions</h2><ul class="list">${lines(current.excl)}</ul></div>
@@ -4054,6 +4118,22 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
         ${priceRows?`<div class="qv-sect"><div class="qv-sect-title">Price Breakdown</div>${priceRows}</div>`:''}
         ${totalAmt?`<div class="qv-price-block"><div class="qv-pl">Total Package Price</div><div class="qv-pa">${totalAmt}</div></div>`:''}
         ${totalAmt?`<div class="qv-deposit">${esc(depositText)}</div>`:''}
+        ${(q.instalments&&q.instalments.length)?`<div class="qv-sect"><div class="qv-sect-title">Payment Plan</div>
+          <div class="qv-card" style="border-left:3px solid #D4AF6A;padding:14px 16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div><div style="font-size:10px;color:#D4AF6A;font-weight:700;letter-spacing:.1em">DEPOSIT TO SECURE</div>
+              <div style="font-size:11px;color:#888;margin-top:2px">${esc(q.depositDesc||'Secure your booking today')}</div></div>
+              <div style="font-size:22px;font-weight:600;color:#1a1a1a">${cur}${parseFloat(q.depositAmount).toFixed(2)}</div>
+            </div>
+            <div style="border-top:1px solid #eee8d5;padding-top:8px">
+              ${q.instalments.map(function(inst){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f0e8;font-size:13px"><div><div style="font-weight:500;color:#1a1a1a">'+esc(inst.label)+'</div><div style="font-size:11px;color:#888">'+fmtD(inst.date)+'</div></div><div style="font-weight:600;color:#1a1a1a">'+cur+inst.amount.toFixed(2)+'</div></div>'}).join('')}
+            </div>
+            <div style="text-align:center;margin-top:8px;font-size:11px;color:#999">No additional fees on instalment payments</div>
+          </div></div>
+          <div style="background:linear-gradient(135deg,#1a1a1a,#2a2520);border-radius:12px;padding:16px;text-align:center;margin-top:12px">
+            <div style="color:#fff;font-size:16px;font-weight:500;margin-bottom:4px">Ready to secure your holiday?</div>
+            <div style="color:#D4AF6A;font-size:12px;margin-bottom:12px">Thank you for choosing ${esc(b.name||'')}</div>
+            ${waHref?`<a href="${waHref}" target="_blank" style="display:block;padding:12px;background:linear-gradient(135deg,#C4A55A,#A8854A);border-radius:8px;color:#fff;text-decoration:none;font-size:14px;font-weight:600">Proceed with Booking</a>`:''}</div>`:''}
 
         ${inclHTML?`<div class="qv-sect"><div class="qv-sect-title">Inclusions</div><ul class="qv-list">${inclHTML}</ul></div>`:''}
         ${exclHTML?`<div class="qv-sect"><div class="qv-sect-title">Exclusions</div><ul class="qv-list">${exclHTML}</ul></div>`:''}
