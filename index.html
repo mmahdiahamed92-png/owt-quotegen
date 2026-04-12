@@ -1812,16 +1812,6 @@ function renderItems(){
         <input type="file" accept="image/*" style="display:none" onchange="fileToData(this.files[0],(s,dim)=>{current.hotels[${i}].img=s;current.hotels[${i}].dims=dim;saveHotelToStore(current.hotels[${i}]);renderItems();render();autoSave()})">
       </div>
       ${h.img?`<img src="${IMG.src(h.img)}" class="thumb">`:''}
-      <div style="font-size:10px;color:#D4AF6A;letter-spacing:.18em;text-transform:uppercase;margin-top:12px;margin-bottom:4px">Distance & Location</div>
-      <div class="row">
-        <div><label>Main attraction</label><input placeholder="e.g. 5 min walk to Disney Parks" value="${esc(h.distAttraction||'')}" oninput="current.hotels[${i}].distAttraction=this.value;render();autoSave()"></div>
-        <div><label>Airport</label><input placeholder="e.g. 45 min from CDG" value="${esc(h.distAirport||'')}" oninput="current.hotels[${i}].distAirport=this.value;render();autoSave()"></div>
-      </div>
-      <div class="row">
-        <div><label>Beach / City centre</label><input placeholder="e.g. 10 min walk" value="${esc(h.distBeach||'')}" oninput="current.hotels[${i}].distBeach=this.value;render();autoSave()"></div>
-        <div><label>Transfer time</label><input placeholder="e.g. 30 min private transfer" value="${esc(h.transferTime||'')}" oninput="current.hotels[${i}].transferTime=this.value;render();autoSave()"></div>
-      </div>
-      <label>Nearby highlights</label><input placeholder="e.g. Disney Village 2 min · Mall 10 min" value="${esc(h.nearby||'')}" oninput="current.hotels[${i}].nearby=this.value;render();autoSave()">
       <div style="font-size:10px;color:#D4AF6A;letter-spacing:.18em;text-transform:uppercase;margin-top:12px;margin-bottom:4px">Room Features</div>
       <label>Room Type</label><input placeholder="e.g. Superior Room, Family Suite" value="${esc(h.roomType||'')}" oninput="current.hotels[${i}].roomType=this.value;render();autoSave()">
       <label>Room features</label>
@@ -2245,13 +2235,7 @@ function _render(){
     </tr></table>`+
     (function(){var rf=h.roomFeatures||[];var hasRoom=rf.length||h.roomType||h.roomDesc;if(!hasRoom)return '';
       return '<div style="border-top:1px solid #eee8d5;padding:10px 16px;background:#fafaf7;border-radius:0 0 12px 12px"><div style="font-size:7pt;color:#8B6B3A;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px">ROOM FEATURES'+(h.roomType?' — '+esc(h.roomType).toUpperCase():'')+'</div>'+(rf.length?'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px 8px">'+rf.map(function(f){return '<div style="font-size:7.5pt;color:#555;padding:2px 0">✓ '+esc(f)+'</div>'}).join('')+(h.maxOccupancy?'<div style="font-size:7.5pt;color:#555;padding:2px 0">✓ Sleeps up to '+esc(h.maxOccupancy)+'</div>':'')+'</div>':'')+(h.roomDesc?'<div style="font-size:7.5pt;color:#999;margin-top:5px;padding-top:5px;border-top:1px solid #eee8d5;font-style:italic">'+esc(h.roomDesc)+'</div>':'')+'</div>'
-    })()+`</div>`+
-    (function(){var df=[h.distAttraction,h.distAirport,h.distBeach,h.transferTime,h.nearby].filter(Boolean);if(!df.length)return '';
-      var rows='';
-      if(h.distAttraction||h.distAirport)rows+='<div style="display:table;width:100%">'+(h.distAttraction?'<div style="display:table-cell;width:50%;padding:4px 8px"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Main Attraction</div><div style="font-size:8pt;color:#1a1a1a;font-weight:500;margin-top:1px">'+esc(h.distAttraction)+'</div></div>':'')+(h.distAirport?'<div style="display:table-cell;width:50%;padding:4px 8px"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Airport</div><div style="font-size:8pt;color:#1a1a1a;font-weight:500;margin-top:1px">'+esc(h.distAirport)+'</div></div>':'')+'</div>';
-      if(h.distBeach||h.transferTime)rows+='<div style="display:table;width:100%">'+(h.distBeach?'<div style="display:table-cell;width:50%;padding:4px 8px"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Beach / Centre</div><div style="font-size:8pt;color:#1a1a1a;font-weight:500;margin-top:1px">'+esc(h.distBeach)+'</div></div>':'')+(h.transferTime?'<div style="display:table-cell;width:50%;padding:4px 8px"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Transfer</div><div style="font-size:8pt;color:#1a1a1a;font-weight:500;margin-top:1px">'+esc(h.transferTime)+'</div></div>':'')+'</div>';
-      if(h.nearby)rows+='<div style="padding:4px 8px;border-top:1px solid #eee8d5"><div style="font-size:6.5pt;color:#8B6B3A;font-weight:600;letter-spacing:.1em;text-transform:uppercase">Nearby</div><div style="font-size:8pt;color:#555;margin-top:1px">'+esc(h.nearby)+'</div></div>';
-      return '<div style="border:1px solid #eee8d5;border-radius:10px;padding:8px;margin-top:-4px;margin-bottom:14px;background:#fafaf7;page-break-inside:avoid">'+rows+'</div>'})();
+    })()+`</div>`;
   }).join('');
   const hotelsBlock=current.hotels.length?`<div class="sect" style="text-align:center">
     <div style="margin-bottom:10px"><svg width="32" height="32" viewBox="0 0 24 24" fill="#D4AF6A"><path d="M7 13c1.66 0 3-1.34 3-3S8.66 7 7 7s-3 1.34-3 3 1.34 3 3 3zm12-6h-8v7H3V5H1v15h2v-3h18v3h2v-9c0-2.21-1.79-4-4-4z"/></svg></div>
@@ -3973,12 +3957,10 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 
     // Hotels
     const hotelsHTML=(q.hotels||[]).map(h=>{
-      var distItems=[h.distAttraction,h.distAirport,h.distBeach,h.transferTime].filter(Boolean);
       return `<div class="qv-card">
       ${h.img?`<img src="${h.img}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:8px">`:''}
       <b>${esc(h.name||'')}</b>
       <small>${h.stars?stars(h.stars)+' · ':''}📍 ${esc(h.city||'')} · ${esc(h.nights||'')} Night${h.nights==='1'?'':'s'}${h.board?' · '+esc(h.board):''}</small>
-      ${distItems.length?'<div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee8d5;font-size:11px;color:#888">'+distItems.map(function(d){return '<div style="padding:2px 0">📍 '+esc(d)+'</div>'}).join('')+(h.nearby?'<div style="padding:2px 0;color:#aaa;font-size:10px">Nearby: '+esc(h.nearby)+'</div>':'')+'</div>':''}
       ${(h.roomFeatures||[]).length||h.roomType?'<div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee8d5"><div style="font-size:10px;color:#D4AF6A;font-weight:700;letter-spacing:.1em;margin-bottom:4px">ROOM FEATURES'+(h.roomType?' — '+esc(h.roomType):'')+'</div>'+(h.roomFeatures||[]).map(function(f){return '<div style="font-size:11px;color:#555;padding:1px 0">✓ '+esc(f)+'</div>'}).join('')+(h.maxOccupancy?'<div style="font-size:11px;color:#555;padding:1px 0">✓ Sleeps up to '+esc(h.maxOccupancy)+'</div>':'')+(h.roomDesc?'<div style="font-size:11px;color:#999;font-style:italic;margin-top:4px">'+esc(h.roomDesc)+'</div>':'')+'</div>':''}
     </div>`}).join('');
 
