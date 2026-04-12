@@ -1025,24 +1025,36 @@ body.viewer-mode #quoteViewer{display:block!important}
       <h3>Transfers <button class="btn ghost sm" onclick="addTransfer()">+ Transfer</button></h3>
       <div id="transfers"></div>
 
-      <h3>Pricing (GBP £)</h3>
-      <label>Currency</label>
-      <select id="curr"><option>GBP</option><option>EUR</option><option>USD</option></select>
-      <div id="prices"></div>
-      <button class="btn ghost sm" onclick="addPrice()">+ Price Row</button>
+      <h3>Pricing & Payment</h3>
 
-      <h3>Payment Plan</h3>
-      <div class="row">
-        <div><label>Deposit Amount</label><input type="number" id="depositAmount" placeholder="e.g. 20" min="0" step="0.01" oninput="current.depositAmount=this.value;calcInstalments();render();autoSave()"></div>
-        <div><label>Number of Instalments</label><select id="instalmentCount" onchange="current.instalmentCount=this.value;calcInstalments();render();autoSave()"><option value="">No instalments</option>${[2,3,4,5,6,7,8,9,10,11,12].map(function(n){return '<option value="'+n+'">'+n+' instalments</option>'}).join('')}</select></div>
+      <div style="background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="font-size:10px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px;font-weight:600">Price Breakdown</div>
+        <label>Currency</label>
+        <select id="curr"><option>GBP</option><option>EUR</option><option>USD</option></select>
+        <div id="prices"></div>
+        <button class="btn ghost sm" onclick="addPrice()" style="margin-top:6px">+ Price Row</button>
+
+        <div style="border-top:1px solid var(--bd);margin-top:12px;padding-top:12px">
+          <div style="font-size:10px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px;font-weight:600">Discount / Savings</div>
+          <label>Original Price (before discount)</label>
+          <input type="number" id="originalPrice" placeholder="e.g. 3100 — leave blank if no discount" step="0.01" oninput="current.originalPrice=this.value;render();autoSave()">
+          <div id="savingsPreview" style="margin-top:6px"></div>
+        </div>
+
+        <div style="border-top:1px solid var(--bd);margin-top:12px;padding-top:12px">
+          <div style="font-size:10px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px;font-weight:600">Payment Plan</div>
+          <div class="row">
+            <div><label>Deposit Amount</label><input type="number" id="depositAmount" placeholder="e.g. 20" min="0" step="0.01" oninput="current.depositAmount=this.value;calcInstalments();render();autoSave()"></div>
+            <div><label>Number of Instalments</label><select id="instalmentCount" onchange="current.instalmentCount=this.value;calcInstalments();render();autoSave()"><option value="">No instalments</option>${[2,3,4,5,6,7,8,9,10,11,12].map(function(n){return '<option value="'+n+'">'+n+' instalments</option>'}).join('')}</select></div>
+          </div>
+          <div class="row">
+            <div><label>First Instalment Date</label><input type="date" id="instalmentStartDate" onchange="current.instalmentStartDate=this.value;calcInstalments();render();autoSave()"></div>
+            <div><label>Deposit Description</label><input id="depositDesc" placeholder="e.g. Low deposit to secure your booking" oninput="current.depositDesc=this.value;render();autoSave()"></div>
+          </div>
+        </div>
+
+        <div id="instalmentPreview"></div>
       </div>
-      <div class="row">
-        <div><label>First Instalment Date</label><input type="date" id="instalmentStartDate" onchange="current.instalmentStartDate=this.value;calcInstalments();render();autoSave()"></div>
-        <div><label>Deposit Description</label><input id="depositDesc" placeholder="e.g. Low deposit to secure your booking" oninput="current.depositDesc=this.value;render();autoSave()"></div>
-      </div>
-      <label>Original Price (before discount, optional)</label>
-      <input type="number" id="originalPrice" placeholder="e.g. 3100" step="0.01" oninput="current.originalPrice=this.value;render();autoSave()">
-      <div id="instalmentPreview"></div>
 
       <h3>Inclusions</h3>
       <div id="inclChecks" class="check-groups"></div>
@@ -1860,9 +1872,23 @@ function calcInstalments(){
 }
 function renderInstalmentPreview(){
   var el=document.getElementById('instalmentPreview');if(!el||!current)return;
-  if(!current.instalments||!current.instalments.length){el.innerHTML='';return}
   var c=sym(current.curr||'GBP');
-  el.innerHTML='<div style="background:var(--bg-tertiary);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-top:8px"><div style="font-size:10px;color:var(--gold);font-weight:600;letter-spacing:.12em;margin-bottom:8px">PAYMENT PLAN PREVIEW</div><div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="color:var(--tx2)">Deposit</span><span style="color:var(--gold);font-weight:600">'+c+parseFloat(current.depositAmount).toFixed(2)+'</span></div>'+current.instalments.map(function(inst){return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="color:var(--tx2)">'+esc(inst.label)+' · '+fmt(inst.date)+'</span><span style="color:var(--tx);font-weight:500">'+c+inst.amount.toFixed(2)+'</span></div>'}).join('')+'<div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:13px;font-weight:600"><span style="color:var(--tx)">Total</span><span style="color:var(--gold)">'+c+((parseFloat(current.depositAmount)||0)+current.instalments.reduce(function(a,i){return a+i.amount},0)).toFixed(2)+'</span></div></div>';
+  // Savings preview
+  var sp=$('savingsPreview');
+  if(sp){
+    var totalRow=(current.prices||[]).find(function(p){return p.total});
+    var tp=parseFloat((totalRow?.amt||'0').toString().replace(/,/g,''))||0;
+    var op=parseFloat(current.originalPrice)||0;
+    var disc=op>tp&&tp>0?op-tp:0;
+    if(disc>0){
+      sp.innerHTML='<div style="padding:8px 12px;background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.15);border-radius:8px;font-size:12px;color:#2f9e44;font-weight:500">✓ Client saves '+c+disc.toFixed(2)+' (Original: '+c+op.toFixed(2)+' → Now: '+c+tp.toFixed(2)+')</div>';
+    }else{sp.innerHTML=''}
+  }
+  // Instalment preview
+  if(!current.instalments||!current.instalments.length){el.innerHTML='';return}
+  var dep=parseFloat(current.depositAmount)||0;
+  var remaining=current.instalments.reduce(function(a,i){return a+i.amount},0);
+  el.innerHTML='<div style="background:var(--bg-tertiary);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-top:10px"><div style="font-size:10px;color:var(--gold);font-weight:600;letter-spacing:.12em;margin-bottom:8px">PAYMENT SCHEDULE</div><div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="color:var(--tx2)">Deposit (today)</span><span style="color:var(--gold);font-weight:600">'+c+dep.toFixed(2)+'</span></div><div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="color:var(--tx2)">Remaining ('+current.instalments.length+' instalments)</span><span style="color:var(--tx);font-weight:500">'+c+remaining.toFixed(2)+'</span></div>'+current.instalments.map(function(inst,idx){return '<div style="display:flex;justify-content:space-between;padding:5px 0 5px 16px;border-bottom:1px solid rgba(255,255,255,.04);font-size:11px"><span style="color:var(--tx3)"><span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--gold);color:#0a0a0a;font-size:8px;font-weight:700;text-align:center;line-height:16px;margin-right:6px">'+(idx+1)+'</span>'+esc(inst.label)+' · '+fmt(inst.date)+'</span><span style="color:var(--tx);font-weight:500">'+c+inst.amount.toFixed(2)+'</span></div>'}).join('')+'<div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:13px;font-weight:600;border-top:1px solid var(--bd)"><span style="color:var(--tx)">Total Package</span><span style="color:var(--gold)">'+c+(dep+remaining).toFixed(2)+'</span></div></div>';
 }
 function loadPaymentPlan(){
   if(!current)return;
