@@ -2886,6 +2886,8 @@ function generatePDF(){
       $('__pdfProg').textContent=`Page ${i+1} / ${pages.length}`;
       const hidden=[];
       el.querySelectorAll('.no-print,.prev-edit,.edit-trust-btn').forEach(n=>{hidden.push([n,n.style.display]);n.style.display='none'});
+      // Hide zero-dimension images and canvases that cause createPattern errors
+      el.querySelectorAll('img,canvas,svg').forEach(n=>{if(!n.offsetWidth||!n.offsetHeight||n.naturalWidth===0||n.naturalHeight===0){hidden.push([n,n.style.display]);n.style.display='none'}});
       // Capture link positions BEFORE html2canvas (while DOM is visible)
       var pageLinks=getLinkPositions(el);
       html2canvas(el,{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false}).then(canvas=>{
