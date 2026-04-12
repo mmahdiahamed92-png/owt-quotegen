@@ -986,6 +986,14 @@ body.viewer-mode #quoteViewer{display:block!important}
       <h3>Package Overview Text</h3>
       <textarea id="overview" rows="4" placeholder="Intro paragraph shown on the cover page. Use {brand} for the brand name."></textarea>
 
+      <h3>Agent Details (Last Page)</h3>
+      <div class="row">
+        <div><label>Agent Phone</label><input id="agentPhone" placeholder="e.g. +44 7700 900111"></div>
+        <div><label>Agent Email</label><input id="agentEmail" placeholder="e.g. jane@ivytravel.co.uk"></div>
+      </div>
+      <label>Agent WhatsApp</label><input id="agentWhatsapp" placeholder="e.g. +44 7700 900111">
+      <label>Agent Message</label><input id="agentMessage" placeholder="e.g. I'm here to help with any questions about your trip.">
+
       <h3>Footer Message</h3>
       <textarea id="footMsg" rows="2" placeholder="Closing message at the bottom of the pricing page."></textarea>
 
@@ -1440,6 +1448,7 @@ function blankQuote(){
     flightOutFrom:'',flightOutTo:'',flightOutDate:'',flightOutTime:'',flightOutNo:'',
     flightOutName:'',flightOutDuration:'',flightRetName:'',flightRetDuration:'',
     baggageCabin:[],baggageChecked:[],baggageCustom:'',
+    agentPhone:'',agentEmail:'',agentWhatsapp:'',agentMessage:'',
     flightRetFrom:'',flightRetTo:'',flightRetDate:'',flightRetTime:'',flightRetNo:'',
     internalFlights:[],
     tourTitle:'',tourSub:'',titleFont:'Cinzel',startDate:'',endDate:'',dest:'',heroSrc:'',
@@ -1522,7 +1531,7 @@ function onBrandChange(){
 }
 
 // ====== FORM <-> CURRENT ======
-const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','baggageCustom','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
+const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
 
 // ====== INCLUSIONS / EXCLUSIONS CATALOGUE ======
 const INCL_CATALOGUE=[
@@ -2337,14 +2346,15 @@ function _render(){
       </div>
     </div>
 
-    <div class="sect"><h2>Your Dedicated Agent</h2>
+    <div class="sect" style="position:relative"><button class="prev-edit no-print" onclick="editField('agentPhone')" title="Edit agent details">✏️</button>
+      <h2>Your Dedicated Agent</h2>
       <div style="background:#fafaf7;border:1px solid #eee8d5;border-radius:14px;padding:18px 22px;text-align:center">
         <div style="font-family:var(--fh);font-size:16pt;color:#1a1a1a;font-weight:600;margin-bottom:4px">${esc(current.agent||'')}</div>
         <div style="font-size:8pt;color:#8B6B3A;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px">Your Travel Consultant</div>
-        ${b.phone?`<div style="font-size:9.5pt;color:#555;margin-bottom:4px">📞 ${esc(b.phone)}</div>`:''}
-        ${b.email?`<div style="font-size:9.5pt;color:#555;margin-bottom:4px">✉️ ${esc(b.email)}</div>`:''}
-        ${brandWA.length?`<div style="font-size:9.5pt;color:#25D366;margin-bottom:4px">💬 ${esc(brandWA[0].number)}</div>`:''}
-        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee8d5;font-size:8.5pt;color:#888;line-height:1.6">I'm here to help with any questions about your trip.<br>Don't hesitate to reach out — I'd love to hear from you.</div>
+        ${(current.agentPhone||b.phone)?`<div style="font-size:9.5pt;color:#555;margin-bottom:4px">📞 ${esc(current.agentPhone||b.phone)}</div>`:''}
+        ${(current.agentEmail||b.email)?`<div style="font-size:9.5pt;color:#555;margin-bottom:4px">✉️ ${esc(current.agentEmail||b.email)}</div>`:''}
+        ${(current.agentWhatsapp||(brandWA.length?brandWA[0].number:''))?`<div style="font-size:9.5pt;color:#25D366;margin-bottom:4px">💬 ${esc(current.agentWhatsapp||(brandWA.length?brandWA[0].number:''))}</div>`:''}
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee8d5;font-size:8.5pt;color:#888;line-height:1.6">${esc(current.agentMessage||"I'm here to help with any questions about your trip. Don't hesitate to reach out.")}</div>
       </div>
     </div>
 
