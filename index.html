@@ -2215,6 +2215,7 @@ function _render(){
   const waIcon='<svg width="11" height="11" viewBox="0 0 24 24" fill="#25D366" style="vertical-align:-1px;margin-right:3px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
   const brandAddr=(b.address||'').trim();
   const brandWA=(b.whatsapp||[]).map(w=>typeof w==='string'?{number:w,link:''}:w).filter(w=>w.number);
+  const primaryWA=brandWA.find(w=>w.primary)||brandWA[0]||null;
   const addrEl=brandAddr?`<div style="font-size:7pt;color:#999;line-height:1.6;text-align:center;letter-spacing:.02em;margin-top:6px">📍 ${esc(brandAddr)}</div>`:'';
   const waClean=n=>(n||'').replace(/[^\d]/g,'');
   const waEl=brandWA.length?`<div style="font-size:7.5pt;text-align:center;margin-top:4px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap">${brandWA.map(w=>{
@@ -2496,7 +2497,7 @@ function _render(){
       var ppP=pxC>0?cur+(tn2/pxC).toFixed(2):'';
       var si=(current.quoteSummaryIncl||'').trim()?current.quoteSummaryIncl.split('\n').map(function(s){return s.trim()}).filter(Boolean):(current.incl||'').split('\n').filter(Boolean).slice(0,8);
       var da=current.depositAmount?cur+parseFloat(current.depositAmount).toFixed(2):'';
-      var bkWA=brandWA.length?(brandWA[0].link||'https://wa.me/'+waClean(brandWA[0].number)):'#';
+      var bkWA=primaryWA?(primaryWA.link||'https://wa.me/'+waClean(primaryWA.number)):'#';
       var bkMsg=encodeURIComponent('Hi, I would like to proceed with booking '+(current.tourTitle||current.dest||'my trip')+' (Ref: '+(current.quoteNo||'')+'). Please advise on next steps.');
       var bkHref=bkWA!=='#'?bkWA+'?text='+bkMsg:'#';
       var clHref=b.phone?'tel:'+b.phone.replace(/[^\d+]/g,''):'';
@@ -2708,7 +2709,7 @@ function _render(){
         <div style="font-size:8pt;color:#8B6B3A;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px">Your Travel Consultant</div>
         ${(current.agentPhone||b.phone)?`<div style="font-size:9.5pt;color:#555;margin-bottom:4px">📞 <a href="tel:${(current.agentPhone||b.phone).replace(/[^\d+]/g,'')}" style="color:#555;text-decoration:none">${esc(current.agentPhone||b.phone)}</a></div>`:''}
         ${(current.agentEmail||b.email)?`<div style="font-size:9.5pt;color:#555;margin-bottom:4px">✉️ <a href="mailto:${esc(current.agentEmail||b.email)}" style="color:#555;text-decoration:none">${esc(current.agentEmail||b.email)}</a></div>`:''}
-        ${(current.agentWhatsapp||(brandWA.length?brandWA[0].number:''))?`<div style="font-size:9.5pt;color:#25D366;margin-bottom:4px">💬 <a href="https://wa.me/${waClean(current.agentWhatsapp||(brandWA.length?brandWA[0].number:''))}" style="color:#25D366;text-decoration:none">${esc(current.agentWhatsapp||(brandWA.length?brandWA[0].number:''))}</a></div>`:''}
+        ${(current.agentWhatsapp||(primaryWA?primaryWA.number:''))?`<div style="font-size:9.5pt;color:#25D366;margin-bottom:4px">💬 <a href="https://wa.me/${waClean(current.agentWhatsapp||(primaryWA?primaryWA.number:''))}" style="color:#25D366;text-decoration:none">${esc(current.agentWhatsapp||(primaryWA?primaryWA.number:''))}</a></div>`:''}
         <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee8d5;font-size:8.5pt;color:#888;line-height:1.6">${esc(current.agentMessage||"I'm here to help with any questions about your trip. Don't hesitate to reach out.")}</div>
       </div>
     </div>
@@ -3424,19 +3425,21 @@ function editBrand(id){
         <span style="font-size:11px;color:#25D366;font-weight:600;letter-spacing:.1em;text-transform:uppercase">WhatsApp Numbers</span>
       </div>
       <div id="ebWhatsApp">
-        ${(b.whatsapp||[{number:'',link:''},{number:'',link:''}]).map((w,i)=>{
+        ${(b.whatsapp||[{number:'',link:'',primary:true},{number:'',link:''}]).map((w,i)=>{
           const num=typeof w==='string'?w:(w.number||'');
           const lnk=typeof w==='string'?'':(w.link||'');
-          return `<div style="margin-bottom:10px;padding:10px 12px;background:rgba(37,211,102,.04);border:1px solid rgba(37,211,102,.12);border-radius:10px">
-            <div class="row" style="gap:8px">
+          const isPri=typeof w==='object'&&w.primary;
+          return `<div style="margin-bottom:10px;padding:10px 12px;background:${isPri?'rgba(37,211,102,.1)':'rgba(37,211,102,.04)'};border:1px solid ${isPri?'rgba(37,211,102,.4)':'rgba(37,211,102,.12)'};border-radius:10px">
+            <div class="row" style="gap:8px;align-items:flex-end">
               <div style="flex:1"><label style="font-size:10px;color:#25D366;margin:0 0 4px">Number ${i+1}</label><input class="eb-wa-num" value="${esc(num)}" placeholder="+44 7700 900111"></div>
               <div style="flex:1"><label style="font-size:10px;color:#25D366;margin:0 0 4px">Custom Link (optional)</label><input class="eb-wa-link" value="${esc(lnk)}" placeholder="https://wa.me/447700900111"></div>
+              <div style="flex-shrink:0;padding-bottom:2px"><label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:${isPri?'#25D366':'#999'};font-weight:${isPri?'600':'400'}"><input type="radio" name="eb-wa-primary" class="eb-wa-primary" ${isPri?'checked':''} style="accent-color:#25D366"> Primary</label></div>
             </div>
           </div>`;
         }).join('')}
       </div>
-      <div style="font-size:10px;color:var(--tx3);margin-top:4px;margin-bottom:6px">Leave link blank to auto-generate from number (wa.me/number)</div>
-      <button class="btn ghost sm" style="margin-top:2px" onclick="(()=>{const d=document.createElement('div');d.style.cssText='margin-bottom:10px;padding:10px 12px;background:rgba(37,211,102,.04);border:1px solid rgba(37,211,102,.12);border-radius:10px';d.innerHTML='<div class=row style=gap:8px><div style=flex:1><label style=font-size:10px;color:#25D366;margin:0\\x200\\x204px>Number</label><input class=eb-wa-num placeholder=+44\\x207700\\x20900111></div><div style=flex:1><label style=font-size:10px;color:#25D366;margin:0\\x200\\x204px>Custom Link</label><input class=eb-wa-link placeholder=https://wa.me/...></div></div>';$('ebWhatsApp').appendChild(d)})()">+ Add WhatsApp Number</button>
+      <div style="font-size:10px;color:var(--tx3);margin-top:4px;margin-bottom:6px">The <b>primary</b> number is used for Book Now, Call Us WhatsApp, and general client contact. Leave link blank to auto-generate.</div>
+      <button class="btn ghost sm" style="margin-top:2px" onclick="(()=>{const d=document.createElement('div');d.style.cssText='margin-bottom:10px;padding:10px 12px;background:rgba(37,211,102,.04);border:1px solid rgba(37,211,102,.12);border-radius:10px';d.innerHTML='<div class=row style=gap:8px;align-items:flex-end><div style=flex:1><label style=font-size:10px;color:#25D366;margin:0\\x200\\x204px>Number</label><input class=eb-wa-num placeholder=+44\\x207700\\x20900111></div><div style=flex:1><label style=font-size:10px;color:#25D366;margin:0\\x200\\x204px>Custom Link</label><input class=eb-wa-link placeholder=https://wa.me/...></div><div style=flex-shrink:0;padding-bottom:2px><label style=display:flex;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:#999><input type=radio name=eb-wa-primary class=eb-wa-primary style=accent-color:#25D366> Primary</label></div></div>';$('ebWhatsApp').appendChild(d)})()">+ Add WhatsApp Number</button>
     </div>
 
     <label style="margin-top:16px">Company Address</label>
@@ -3529,7 +3532,10 @@ function saveBrandEdit(id){
   b.address=($('ebAddress')?.value||'').trim();
   const waNums=[...document.querySelectorAll('.eb-wa-num')];
   const waLinks=[...document.querySelectorAll('.eb-wa-link')];
-  b.whatsapp=waNums.map((el,i)=>({number:el.value.trim(),link:(waLinks[i]?.value||'').trim()})).filter(w=>w.number);
+  const waPri=[...document.querySelectorAll('.eb-wa-primary')];
+  b.whatsapp=waNums.map((el,i)=>({number:el.value.trim(),link:(waLinks[i]?.value||'').trim(),primary:!!(waPri[i]&&waPri[i].checked)})).filter(w=>w.number);
+  // Ensure at least one is primary — default to first
+  if(b.whatsapp.length&&!b.whatsapp.some(w=>w.primary))b.whatsapp[0].primary=true;
   saveBrands();closeModal();renderBrands();if(current)render();
 }
 function saveBrands(){save(LS.brands,brands);renderBrandDropdown()}
@@ -4383,7 +4389,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     const trust=b.trust||{};
     const waList=(b.whatsapp||[]).map(w=>typeof w==='string'?{number:w,link:''}:w).filter(w=>w.number);
     const waClean=n=>(n||'').replace(/[^\d]/g,'');
-    const firstWA=waList[0];
+    const firstWA=waList.find(w=>w.primary)||waList[0];
     const waHref=firstWA?(firstWA.link||'https://wa.me/'+waClean(firstWA.number)):'';
     const phoneHref=b.phone?'tel:'+b.phone.replace(/[^\d+]/g,''):'';
     const emailHref=b.email?'mailto:'+b.email:'';
