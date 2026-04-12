@@ -981,6 +981,40 @@ body.viewer-mode #quoteViewer{display:block!important}
           </select>
         </div>
       </div>
+      <div class="row">
+        <div><label>Subtitle Colour</label>
+          <select id="subColor" onchange="current.subColor=this.value;render();autoSave()">
+            <option value="#888">Grey (default)</option>
+            <option value="#1a1a1a">Black</option>
+            <option value="#D4AF6A">Gold</option>
+            <option value="#A8854A">Dark Gold</option>
+            <option value="#555">Dark Grey</option>
+            <option value="#fff">White</option>
+            <option value="#2f9e44">Green</option>
+            <option value="#1a6fb5">Blue</option>
+            <option value="#c0392b">Red</option>
+          </select>
+        </div>
+        <div><label>Subtitle Weight</label>
+          <select id="subWeight" onchange="current.subWeight=this.value;render();autoSave()">
+            <option value="300">Light (300)</option>
+            <option value="400" selected>Regular (400)</option>
+            <option value="500">Medium (500)</option>
+            <option value="600">Semi Bold (600)</option>
+            <option value="700">Bold (700)</option>
+            <option value="900">Extra Bold (900)</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div><label>Subtitle Style</label>
+          <select id="subStyle" onchange="current.subStyle=this.value;render();autoSave()">
+            <option value="italic">Italic (default)</option>
+            <option value="normal">Normal</option>
+          </select>
+        </div>
+        <div></div>
+      </div>
       <label>Destinations</label>
       <div id="destTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
       <div style="display:flex;gap:6px">
@@ -1543,7 +1577,7 @@ function blankQuote(){
     flightOutName:'',flightOutDuration:'',flightOutArrival:'',flightRetName:'',flightRetDuration:'',flightRetArrival:'',
     baggageCabin:[],baggageChecked:[],baggageCustom:'',
     agentPhone:'',agentEmail:'',agentWhatsapp:'',agentMessage:'',
-    subFont:'Satoshi',subSize:'11pt',
+    subFont:'Satoshi',subSize:'11pt',subColor:'#888',subWeight:'400',subStyle:'italic',
     depositAmount:'',depositDesc:'',instalmentCount:'',instalmentStartDate:'',instalments:[],originalPrice:'',quoteMessage:'',
     flightRetFrom:'',flightRetTo:'',flightRetDate:'',flightRetTime:'',flightRetNo:'',
     internalFlights:[],
@@ -1627,7 +1661,7 @@ function onBrandChange(){
 }
 
 // ====== FORM <-> CURRENT ======
-const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightOutArrival','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','flightRetArrival','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','subFont','subSize','depositAmount','depositDesc','instalmentStartDate','originalPrice','quoteMessage','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
+const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightOutArrival','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','flightRetArrival','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','subFont','subSize','subColor','subWeight','subStyle','depositAmount','depositDesc','instalmentStartDate','originalPrice','quoteMessage','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
 
 // ====== INCLUSIONS / EXCLUSIONS CATALOGUE ======
 const INCL_CATALOGUE=[
@@ -2144,7 +2178,10 @@ function _render(){
   const tFont=current.titleFont||'Satoshi';
   var sFont=current.subFont||'Satoshi';
   var sSize=current.subSize||'11pt';
-  const titleEl=`<div class="title" style="position:relative"><button class="prev-edit no-print" onclick="editField('tourTitle')" title="Edit title">✏️</button><h1 style="font-family:'${tFont}',serif">${esc(current.tourTitle||'Your Bespoke Tour')}</h1><p style="font-family:'${sFont}',sans-serif;font-size:${sSize}">${esc(current.tourSub||'')}</p></div>`;
+  var sColor=current.subColor||'#888';
+  var sWeight=current.subWeight||'400';
+  var sStyle=current.subStyle||'italic';
+  const titleEl=`<div class="title" style="position:relative"><button class="prev-edit no-print" onclick="editField('tourTitle')" title="Edit title">✏️</button><h1 style="font-family:'${tFont}',serif">${esc(current.tourTitle||'Your Bespoke Tour')}</h1><p style="font-family:'${sFont}',sans-serif;font-size:${sSize};color:${sColor};font-weight:${sWeight};font-style:${sStyle}">${esc(current.tourSub||'')}</p></div>`;
   const clientEl='';
   const flightsEl=current.flightsInc?(function(){
     const al=current.flightAirline||'Airline TBC';
