@@ -162,16 +162,16 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 .page .hdr .qi b{color:var(--gold-dark);font-family:var(--fb);font-size:9pt;display:block;margin-bottom:4px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
 .page .logo{max-height:189px;max-width:630px;margin:0;display:block;object-fit:contain}
 
-.page .title{text-align:center;margin:8px 0 8px}
+.page .title{text-align:center;margin:6px 0 6px}
 .page .title h1{font-family:var(--fh);font-size:32pt;color:#1a1a1a;font-weight:400;margin:0;letter-spacing:-.035em;line-height:1.05;font-variation-settings:"opsz" 144,"SOFT" 30}
 .page .title p{margin:8px 0 0;color:#888;font-size:10pt;font-weight:300;letter-spacing:.02em;font-family:var(--fa);font-style:italic}
-.page .hero{width:100%;max-width:100%;height:auto;max-height:88mm;min-height:40mm;object-fit:cover;border-radius:18px;margin-bottom:12px;display:block}
+.page .hero{width:100%;max-width:100%;height:auto;max-height:120mm;min-height:55mm;object-fit:cover;border-radius:12px;margin-bottom:8px;display:block}
 .page .hero-ph{width:100%;height:60mm;background:linear-gradient(135deg,#C9A84C,#A88B3D);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--fh);font-size:20pt;border-radius:18px;margin-bottom:12px}
 
 .page .clientbox{background:#fafaf7;border:1px solid #eee8d5;padding:14px 18px;border-radius:14px;margin-bottom:14px;font-size:9.5pt;line-height:1.75;color:#444}
 .page .clientbox b{color:#1a1a1a;font-weight:600;letter-spacing:.02em;text-transform:uppercase;font-size:8pt;display:inline-block;margin-right:4px}
 
-.page .sect{margin:10px 0}
+.page .sect{margin:8px 0}
 .page .sect:first-child{margin-top:0}
 .page .sect:last-child{margin-bottom:0}
 .page .sect h2{font-family:var(--fh);font-size:17pt;color:#1a1a1a;padding-bottom:8px;margin:0 0 12px;font-weight:500;letter-spacing:-.025em;border-bottom:1px solid #eaeaea;font-variation-settings:"opsz" 144,"SOFT" 30}
@@ -2298,8 +2298,6 @@ function _render(){
       <div class="qs-row"><div class="qs-label">Travel Dates</div><div class="qs-value">${fmt(current.startDate)} – ${fmt(current.endDate)}</div></div>
     </div>
     ${totalAmt?`<div class="qs-price"><div class="qs-p-label">Total Package Price</div><div class="qs-p-amount">${totalAmt}</div></div>`:''}
-    ${(function(){var op=parseFloat(current.originalPrice)||0;var tr=(current.prices||[]).find(function(p){return p.total});var tp=parseFloat((tr?.amt||'0').toString().replace(/,/g,''))||0;var sv=op>tp&&tp>0?op-tp:0;return sv>0?'<div style="text-align:center;margin-top:6px;margin-bottom:6px;padding:8px 14px;background:rgba(48,209,88,.06);border:1px solid rgba(48,209,88,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2f9e44" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span style="font-size:9pt;color:#2f9e44;font-weight:600">You save '+cur+sv.toFixed(2)+' with this package</span><span style="font-size:7.5pt;color:#888;margin-left:4px">(Was '+cur+op.toFixed(2)+')</span></div>':''})()||''}
-    ${(function(){var dep=parseFloat(current.depositAmount)||0;var inst=current.instalments||[];if(!dep&&!inst.length)return '';var c=sym(current.curr||'GBP');var parts=[];if(dep)parts.push('Deposit: <b>'+c+dep.toFixed(2)+'</b>');if(inst.length)parts.push(inst.length+' monthly payments of <b>'+c+inst[0].amount.toFixed(2)+'</b>');return '<div style="margin-top:6px;padding:8px 12px;background:rgba(212,175,106,.06);border:1px solid rgba(212,175,106,.15);border-radius:8px;text-align:center;font-size:8pt;color:#555;line-height:1.6"><div style="font-size:7pt;color:#8B6B3A;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px">PAYMENT PLAN AVAILABLE</div>'+parts.join(' · ')+(current.depositDesc?' · <span style="color:#888">'+esc(current.depositDesc)+'</span>':'')+'</div>'})()||''}
     <div class="qs-badges">
       ${trust.atol?`<div class="qs-badge"><div class="qs-b-label">ATOL</div><div class="qs-b-value">${esc(trust.atol)}</div></div>`:''}
       ${trust.abta?`<div class="qs-badge"><div class="qs-b-label">ABTA</div><div class="qs-b-value">${esc(trust.abta)}</div></div>`:''}
