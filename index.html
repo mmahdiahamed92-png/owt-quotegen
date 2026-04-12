@@ -1460,9 +1460,9 @@ const SB={
 
 // ====== DEFAULT BRANDS ======
 const DEFAULT_BRANDS=[
-  {id:'b1',code:'IVY',name:'IVY Travel UK',tagline:'Crafting Unforgettable Journeys',contact:'+44 20 0000 0001 · hello@ivytravel.co.uk · ivytravel.co.uk',logo:'',terms:'50% advance payment to confirm booking\nBalance due 30 days before departure\nCancellation as per company policy\nRates subject to availability and currency fluctuation'},
-  {id:'b2',code:'SKY',name:'Sky Travel UK',tagline:'Your Sky, Your Journey',contact:'+44 20 0000 0002 · hello@skytravel.co.uk',logo:'',terms:'50% advance payment to confirm booking\nBalance due 30 days before departure'},
-  {id:'b3',code:'OWL',name:'One World Lakbay',tagline:'Discover the World, Filipino Style',contact:'+44 20 0000 0003 · hello@oneworldlakbay.com',logo:'',terms:'50% advance payment to confirm booking\nBalance due 30 days before departure'},
+  {id:'b1',code:'IVY',name:'IVY Travel UK',tagline:'Crafting Unforgettable Journeys',contact:'+44 20 0000 0001 · hello@ivytravel.co.uk · ivytravel.co.uk',logo:'',terms:'50% advance payment to confirm booking\nBalance due 30 days before departure\nCancellation as per company policy\nRates subject to availability and currency fluctuation',brandColor:'#2E86AB'},
+  {id:'b2',code:'SKY',name:'Sky Travel UK',tagline:'Your Sky, Your Journey',contact:'+44 20 0000 0002 · hello@skytravel.co.uk',logo:'',terms:'50% advance payment to confirm booking\nBalance due 30 days before departure',brandColor:'#E84855'},
+  {id:'b3',code:'OWL',name:'One World Lakbay',tagline:'Discover the World, Filipino Style',contact:'+44 20 0000 0003 · hello@oneworldlakbay.com',logo:'',terms:'50% advance payment to confirm booking\nBalance due 30 days before departure',brandColor:'#44BBA4'},
   {id:'b4',code:'OWT',name:'One World Travels UK',tagline:'One World, Endless Possibilities',contact:'+44 20 0000 0004 · hello@oneworldtravels.co.uk',logo:'',terms:'50% advance payment to confirm booking\nBalance due 30 days before departure'},
   {id:'b5',code:'OWTT',name:'One World Travels & Tours UK',tagline:'Travels & Tours Reimagined',contact:'+44 20 0000 0005',logo:'',terms:'Standard OWT terms apply'},
   {id:'b6',code:'FCT',name:'First Class Tours UK',tagline:'Travel in First Class',contact:'+44 20 0000 0006',logo:'',terms:'Standard OWT terms apply'},
@@ -3419,6 +3419,9 @@ function renderBrands(){
       Promise.all(needWarm.map(b=>IMG.get(b.logo))).then(()=>renderBrands()).catch(()=>{});
     }
   }
+  // Auto-assign colours to brands that don't have one
+  var _brandPalette=['#2E86AB','#E84855','#44BBA4','#E8871E','#7B68EE','#D4507A','#3AA5D1','#8B6B3A','#6C8C3C','#C75B39','#5B7DB1','#9B59B6','#1ABC9C'];
+  brands.forEach(function(b,i){if(!b.brandColor)b.brandColor=_brandPalette[i%_brandPalette.length]});
   var qCounts={};(quotes||[]).forEach(function(q){qCounts[q.brandId]=(qCounts[q.brandId]||0)+1});
   const cards=brands.map(b=>{
     var color=b.brandColor||'#C4A55A';
