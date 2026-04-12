@@ -2905,34 +2905,53 @@ function downloadAndOpenWA(blob,filename,phone,text){
   },600);
 }
 
-function sendEmail(){
+async function sendEmail(){
   if(!current)return;
-  let email=extractEmail(current.clientContact);
+  var email=extractEmail(current.clientContact);
   if(!email){email=prompt('Enter client email address:');if(!email)return}
-  const b=brands.find(x=>x.id===current.brandId)||{};
-  const subject=`${b.name||'OWT Group'} – Tour Quotation ${current.quoteNo}`;
-  const text=buildShareText();
-  generatePDF().then(({file,blob,filename})=>{
-    // Try Web Share API with file first (works on mobile Safari/Chrome)
-    if(navigator.canShare&&navigator.canShare({files:[file]})){
-      navigator.share({files:[file],text,title:subject}).catch(()=>{
-        downloadAndOpenMail(blob,filename,email,subject,text);
-      });
-    }else{
-      downloadAndOpenMail(blob,filename,email,subject,text);
-    }
-  }).catch(e=>{
-    alert('PDF generation failed. Opening email with text only.');
-    window.location.href=`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
-  });
-}
-function downloadAndOpenMail(blob,filename,email,subject,text){
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
-  setTimeout(()=>{
-    URL.revokeObjectURL(a.href);
-    window.location.href=`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
-    alert('PDF downloaded to your Downloads folder.\n\nYour email client has opened with the message. Click the 📎 attach icon and select the PDF to send them together.');
-  },600);
+  var b=brands.find(function(x){return x.id===current.brandId})||{};
+  var subject=(b.name||'OWT Group')+' – Tour Quotation '+current.quoteNo;
+  var dest=current.tourTitle||current.dest||'your trip';
+  var clientName=current.clientName||'';
+
+  // Generate PDF first
+  var pdfBlob=null,pdfFilename='';
+  try{
+    var result=await generatePDF();
+    pdfBlob=result.blob;pdfFilename=result.filename;
+  }catch(e){console.warn('PDF gen failed:',e)}
+
+  // Build email body with share link if possible
+  var shareUrl='';
+  if(SB.user){
+    try{
+      // Auto-generate share link
+      var qClone=JSON.parse(JSON.stringify(current));
+      var bClone=JSON.parse(JSON.stringify(b));
+      async function resolveImg(obj){if(!obj||typeof obj!=='object')return;for(var k of Object.keys(obj)){if(typeof obj[k]==='string'&&obj[k].startsWith('idb://')){var base64=await IMG.get(obj[k]);if(base64&&SB.user)try{obj[k]=await SB.uploadImage(base64)}catch{obj[k]=base64}}else if(typeof obj[k]==='object'&&obj[k]!==null)await resolveImg(obj[k])}}
+      await resolveImg(qClone);await resolveImg(bClone);
+      var token='q_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+      var expiresAt=qClone.validity?new Date(qClone.validity+'T23:59:59').toISOString():null;
+      await SB.client.from('qg_shared_quotes').upsert({token:token,quote_data:qClone,brand_data:bClone,expires_at:expiresAt,views:0});
+      shareUrl=window.location.origin+window.location.pathname+'#'+token;
+    }catch(e){console.warn('Share link gen:',e)}
+  }
+
+  var body='Hi'+(clientName?' '+clientName:'')+',\n\nYour personalised travel quote for '+dest+' is ready.\n\n';
+  if(shareUrl)body+='View your quote online:\n'+shareUrl+'\n\n';
+  body+='A PDF copy is attached for your reference.\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n'+(current.agent||'')+(b.name?'\n'+b.name:'');
+
+  // Download PDF
+  if(pdfBlob){
+    var a=document.createElement('a');a.href=URL.createObjectURL(pdfBlob);a.download=pdfFilename;a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href)},2000);
+  }
+
+  // Open email client
+  setTimeout(function(){
+    window.location.href='mailto:'+email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    alert('📧 Email opened with your quote details.'+(pdfBlob?'\n\n📎 PDF has been downloaded to your Downloads folder.\nPlease attach it to the email before sending.':''));
+  },800);
 }
 
 function saveQuote(){
