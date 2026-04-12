@@ -2835,6 +2835,13 @@ function generatePDF(){
     const html2canvas=window.html2canvas;
     if(!html2canvas){reject(new Error('html2canvas not available'));return}
     if(!current){reject(new Error('No quote loaded'));return}
+    // Patch createPattern to handle zero-dimension canvas/image (html2canvas bug)
+    var _origCreatePattern=CanvasRenderingContext2D.prototype.createPattern;
+    CanvasRenderingContext2D.prototype.createPattern=function(img,rep){
+      if(img&&(img.width===0||img.height===0))return null;
+      if(img&&img.naturalWidth===0)return null;
+      return _origCreatePattern.call(this,img,rep);
+    };
 
     const filename=`${current.quoteNo||'quote'}.pdf`;
     const pages=[...$('preview').querySelectorAll('.page')];
@@ -2878,6 +2885,7 @@ function generatePDF(){
       if(i>=pages.length){
         prevEl.style.transform=prevTransform;
         document.body.removeChild(overlay);
+        CanvasRenderingContext2D.prototype.createPattern=_origCreatePattern;
         const blob=pdf.output('blob');
         resolve({blob,filename,file:new File([blob],filename,{type:'application/pdf'})});
         return;
@@ -2912,6 +2920,7 @@ function generatePDF(){
         hidden.forEach(([n,d])=>n.style.display=d);
         prevEl.style.transform=prevTransform;
         document.body.removeChild(overlay);
+        CanvasRenderingContext2D.prototype.createPattern=_origCreatePattern;
         reject(err);
       });
     }
