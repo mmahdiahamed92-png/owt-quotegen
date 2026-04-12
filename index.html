@@ -1044,6 +1044,7 @@ body.viewer-mode #quoteViewer{display:block!important}
 </div>
 
 <script>
+try{
 const $=id=>document.getElementById(id);
 const LS={
   brands:'kk_brands',quotes:'kk_quotes',library:'kk_library',
@@ -3451,6 +3452,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   }catch(e){console.warn('IndexedDB init:',e)}
   renderBrandDropdown();renderDashboard();
 })();
+}catch(e){console.error('MAIN SCRIPT CRASH:',e);alert('Startup error: '+e.message+'\n\nLine: '+(e.stack||'').split('\n')[1])}
 
 /* ============================================================
    AUTH + ADMIN PANEL SYSTEM (Supabase Auth + cloud sync)
