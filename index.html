@@ -1810,7 +1810,7 @@ function syncFormToCurrent(){
 
 // ====== DYNAMIC ITEMS ======
 function addDay(){if(!current)return;current.days.push({title:'',desc:'',img:''});renderItems();render();autoSave()}
-function addHotel(){if(!current)return;current.hotels.push({name:'',city:'',nights:'',stars:'',board:'',img:'',checkin:'',checkout:'',roomType:'',roomFeatures:['King or twin beds','Free WiFi','Air conditioning','Smart TV','Mini fridge','Tea & coffee maker'],roomDesc:'',maxOccupancy:'',distAttraction:'',distAirport:'',distBeach:'',transferTime:'',nearby:''});renderItems();render();autoSave()}
+function addHotel(){if(!current)return;current.hotels.push({name:'',city:'',nights:'',stars:'',board:'',img:'',checkin:'',checkout:'',roomType:'',roomFeatures:['Free WiFi','Air conditioning','Smart TV','Mini fridge','Tea & coffee maker'],roomDesc:'',maxOccupancy:'',distAttraction:'',distAirport:'',distBeach:'',transferTime:'',nearby:''});renderItems();render();autoSave()}
 function addPrice(){if(!current)return;current.prices.push({label:'',amt:'',total:false});renderItems();render();autoSave()}
 function syncBaggage(el,group){
   if(!current)return;
