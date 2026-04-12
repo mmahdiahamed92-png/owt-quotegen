@@ -908,15 +908,8 @@ body.viewer-mode #quoteViewer{display:block!important}
         <input type="file" id="heroFile" accept="image/*" style="display:none">
       </div>
       <div id="heroPreview"></div>
+      <input type="hidden" id="heroPos" value="below-title">
       <div class="row">
-        <div><label>Hero Position</label>
-          <select id="heroPos">
-            <option value="top">Top — above title</option>
-            <option value="below-title" selected>Below title</option>
-            <option value="below-client">Below client box</option>
-            <option value="bottom">Bottom of page</option>
-          </select>
-        </div>
         <div><label>Image Crop Focus</label>
           <select id="heroFocus">
             <option value="center">Center</option><option value="top">Top</option><option value="bottom">Bottom</option><option value="left">Left</option><option value="right">Right</option>
