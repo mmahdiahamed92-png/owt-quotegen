@@ -2324,7 +2324,7 @@ function _render(){
 
   // page 4 — pricing + incl/excl + terms
   const priceRows=current.prices.map(pr=>`<tr class="${pr.total?'total':''}"><td>${esc(pr.label)}</td><td style="text-align:right">${cur}${esc(pr.amt)}</td></tr>`).join('');
-  let p4=`<div class="page" style="display:flex;flex-direction:column;min-height:270mm">
+  let p4=`<div class="page" style="display:flex;flex-direction:column;min-height:297mm">
     <div class="sect"><h2>Pricing Breakdown</h2>
       <table class="price"><tr><th>Description</th><th style="text-align:right">Amount (${current.curr})</th></tr>${priceRows}</table>
     </div>
