@@ -1098,7 +1098,23 @@ body.viewer-mode #quoteViewer{display:block!important}
       <textarea id="quoteMessage" rows="3" placeholder="e.g. Hi {client}, I've managed to secure this deal for a total of" oninput="current.quoteMessage=this.value;render();autoSave()"></textarea>
       <p style="font-size:10px;color:var(--tx3);margin-top:4px">Use {client} for name, {price} for total. Shown on Journey page + share link.</p>
       <h3>Quote Summary Inclusions</h3>
-      <p style="font-size:10px;color:var(--tx3);margin-bottom:6px">One per line. If empty, uses main inclusions list.</p>
+      <p style="font-size:10px;color:var(--tx3);margin-bottom:6px">Click to add, or type your own. One per line.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('Return flights')">+ Return flights</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('Hotel accommodation')">+ Hotel</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('Bed and Breakfast included')">+ B&B</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('Half Board (breakfast + dinner)')">+ Half Board</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('All Inclusive')">+ All Inclusive</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('7Kg-10Kg Hand Luggage')">+ Hand Luggage</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('23Kg Checked Baggage')">+ 23Kg Bag</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('Disney Park tickets')">+ Disney Tickets</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('Airport transfers')">+ Transfers</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('Shuttle transfers')">+ Shuttle</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('Private airport transfers')">+ Private Transfer</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('Sightseeing tours')">+ Tours</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('Travel insurance')">+ Insurance</button>
+        <button class="btn ghost sm" style="font-size:10px;padding:3px 8px" onclick="addSummaryIncl('All applicable taxes')">+ Taxes</button>
+      </div>
       <textarea id="quoteSummaryIncl" rows="6" placeholder="e.g.&#10;Return flights from Bristol&#10;Disney Hotel New York - 3 Nights&#10;Bed and Breakfast included&#10;7Kg-10Kg Hand Luggage&#10;2 days Disney Park access (1 day/1 park)&#10;Shuttle transfers from hotel to park and return" oninput="current.quoteSummaryIncl=this.value;render();autoSave()"></textarea>
 
       <h3>Footer Message</h3>
@@ -1869,6 +1885,16 @@ function renderDestTags(){
   container.innerHTML=_destTags.map(function(d,i){
     return '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);border-radius:100px;font-size:11px;color:#1a1a1a;font-weight:500"><span>📍 '+esc(d)+'</span><button onclick="removeDestTag('+i+')" style="background:none;border:none;color:#999;cursor:pointer;font-size:14px;padding:0;line-height:1">×</button></span>';
   }).join('');
+}
+function addSummaryIncl(text){
+  if(!current)return;
+  var el=$('quoteSummaryIncl');if(!el)return;
+  var val=(el.value||'').trim();
+  if(val&&!val.endsWith('\n'))val+='\n';
+  val+=text;
+  el.value=val;
+  current.quoteSummaryIncl=val;
+  render();autoSave();
 }
 function calcInstalments(){
   if(!current)return;
@@ -3725,12 +3751,11 @@ $('flightsInc')?.addEventListener('change',()=>{const s=document.getElementById(
     'Oceania':airlines.slice(116,121),
     'Other':airlines.slice(121)
   };
+  const airlineOpts='<option value="">— Select Airline —</option>'+Object.entries(groups).map(([g,list])=>`<optgroup label="${g}">${list.map(a=>`<option value="${a}">${a}</option>`).join('')}</optgroup>`).join('')+'<option value="__custom__">✏️ Other / Custom Airline...</option>';
   const sel=$('flightAirlineSelect');
-  if(sel){
-    sel.innerHTML='<option value="">— Select Airline —</option>'
-      +Object.entries(groups).map(([g,list])=>`<optgroup label="${g}">${list.map(a=>`<option value="${a}">${a}</option>`).join('')}</optgroup>`).join('')
-      +'<option value="__custom__">✏️ Other / Custom Airline...</option>';
-  }
+  if(sel)sel.innerHTML=airlineOpts;
+  const sel2=$('flightRetAirlineSelect');
+  if(sel2)sel2.innerHTML=airlineOpts;
 })();
 
 // Sync airline select when loading a quote
