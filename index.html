@@ -978,7 +978,7 @@ body.viewer-mode #quoteViewer{display:block!important}
       <label>Destinations</label>
       <div id="destTags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
       <div style="display:flex;gap:6px">
-        <input id="destInput" placeholder="Type a city and press Enter or +" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addDestTag()}">
+        <input id="destInput" placeholder="Type a city and press Enter or +" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addDestTag()}" oninput="syncDestFromInput()" onblur="if(this.value.trim())addDestTag()">
         <button class="btn ghost sm" type="button" onclick="addDestTag()" style="padding:6px 12px">+</button>
       </div>
       <input type="hidden" id="dest">
@@ -1807,27 +1807,34 @@ function syncBaggage(el,group){
   current.baggageCustom=$('baggageCustom')?.value||'';
   render();autoSave();
 }
+var _destTags=[];
+function syncDestFromInput(){
+  if(!current)return;
+  var typing=($('destInput')?.value||'').trim();
+  var display=_destTags.concat(typing?[typing]:[]).join(', ');
+  current.dest=display;
+  $('dest').value=display;
+  render();
+}
 function addDestTag(){
   var input=$('destInput');if(!input)return;
   var val=input.value.trim();if(!val)return;
   input.value='';
-  var current_dests=(current.dest||'').split(',').map(function(s){return s.trim()}).filter(Boolean);
-  if(!current_dests.includes(val)){current_dests.push(val)}
-  current.dest=current_dests.join(', ');
+  if(!_destTags.includes(val))_destTags.push(val);
+  current.dest=_destTags.join(', ');
   $('dest').value=current.dest;
   renderDestTags();render();autoSave();
 }
 function removeDestTag(idx){
-  var dests=(current.dest||'').split(',').map(function(s){return s.trim()}).filter(Boolean);
-  dests.splice(idx,1);
-  current.dest=dests.join(', ');
+  _destTags.splice(idx,1);
+  current.dest=_destTags.join(', ');
   $('dest').value=current.dest;
   renderDestTags();render();autoSave();
 }
 function renderDestTags(){
   var container=$('destTags');if(!container)return;
-  var dests=(current&&current.dest||'').split(',').map(function(s){return s.trim()}).filter(Boolean);
-  container.innerHTML=dests.map(function(d,i){
+  _destTags=(current&&current.dest||'').split(',').map(function(s){return s.trim()}).filter(Boolean);
+  container.innerHTML=_destTags.map(function(d,i){
     return '<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);border-radius:100px;font-size:11px;color:#1a1a1a;font-weight:500"><span>📍 '+esc(d)+'</span><button onclick="removeDestTag('+i+')" style="background:none;border:none;color:#999;cursor:pointer;font-size:14px;padding:0;line-height:1">×</button></span>';
   }).join('');
 }
