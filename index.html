@@ -1002,7 +1002,15 @@ body.viewer-mode #quoteViewer{display:block!important}
           </select>
         </div>
       </div>
-      <input type="hidden" id="heroShape" value="rounded">
+      <label>Image Style</label>
+      <select id="heroShape" onchange="syncFormToCurrent()">
+        <option value="rect">Rectangle (sharp corners)</option>
+        <option value="rounded" selected>Rounded (soft corners)</option>
+        <option value="oval">Oval</option>
+        <option value="circle">Circle</option>
+        <option value="arch">Arch (rounded top)</option>
+        <option value="banner">Banner (wide strip)</option>
+      </select>
 
 
       <h3>Hotels <button class="btn ghost sm" onclick="addHotel()">+ Hotel</button></h3>
@@ -2025,7 +2033,7 @@ function _render(){
   </div>`;
 
   // page 1 — cover with positionable hero
-  const shapeStyles={rect:'border-radius:4px',rounded:'border-radius:18px',oval:'border-radius:50%/35%',circle:'border-radius:50%;width:90mm;height:90mm;margin-left:auto;margin-right:auto;display:block;object-fit:cover'};
+  const shapeStyles={rect:'border-radius:4px',rounded:'border-radius:18px',oval:'border-radius:50%/35%',circle:'border-radius:50%;width:90mm;height:90mm;margin-left:auto;margin-right:auto;display:block;object-fit:cover',arch:'border-radius:50% 50% 0 0',banner:'border-radius:4px;max-height:50mm'};
   const hd=current.heroDims;
   const ar=hd&&hd.ratio?`aspect-ratio:${hd.ratio};height:auto`:'';
   const heroStyle=`object-position:${current.heroFocus||'center'};${ar};${shapeStyles[current.heroShape||'rect']}`;
