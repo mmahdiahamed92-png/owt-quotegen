@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>OWT Group Ltd — Quote Gen</title>
+<title>OWTQuotegen — Travel Quote Generator</title>
 <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,900,1,700i&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Serif+Display&family=Lora:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Raleway:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&family=Cinzel:wght@400;500;600;700&family=Josefin+Sans:wght@300;400;500;600;700&family=Antic+Didone&family=Carattere&display=swap" rel="stylesheet">
@@ -2788,25 +2788,26 @@ async function shareQuoteLink(){
     });
     if(dbRes.error)throw dbRes.error;
 
-    // 5. Copy to clipboard
-    try{await navigator.clipboard.writeText(pdfUrl)}catch{}
+    // 5. Build branded short link using app URL
+    var shareUrl=window.location.origin+window.location.pathname+'#'+token;
+    try{await navigator.clipboard.writeText(shareUrl)}catch{}
 
     var clientName=current.clientName||'';
     var dest=current.tourTitle||current.dest||'your trip';
     var clientPhone=((current.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,'');
-    var waMsg='Hi'+(clientName?' '+clientName:'')+',\n\nYour personalised travel quote for *'+dest+'* is ready to view:\n\n'+pdfUrl+'\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n'+(current.agent||b.name||'');
+    var waMsg='Hi'+(clientName?' '+clientName:'')+',\n\nYour personalised travel quote for *'+dest+'* is ready to view:\n\n'+shareUrl+'\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n'+(current.agent||b.name||'');
     var emailSubj=encodeURIComponent('Your Travel Quote — '+dest);
-    var emailBody=encodeURIComponent('Hi'+(clientName?' '+clientName:'')+',\n\nYour personalised travel quote is ready to view:\n\n'+pdfUrl+'\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n'+(current.agent||''));
+    var emailBody=encodeURIComponent('Hi'+(clientName?' '+clientName:'')+',\n\nYour personalised travel quote is ready to view:\n\n'+shareUrl+'\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n'+(current.agent||''));
     var emailTo=(current.clientContact&&current.clientContact.includes('@'))?current.clientContact:'';
     $('modalTitle').textContent='PDF Link Ready';
     $('modalBody').innerHTML='<div style="text-align:center;padding:10px 0">'
       +'<div style="font-size:42px;margin-bottom:12px">📄</div>'
-      +'<p style="color:var(--tx2);font-size:13px;margin:0 0 16px">Your quote PDF has been uploaded. Share the direct link with your client.</p>'
+      +'<p style="color:var(--tx2);font-size:13px;margin:0 0 16px">Your quote PDF has been uploaded. Share this branded link with your client — it opens the PDF directly.</p>'
       +'<div style="background:var(--bg-tertiary);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px;word-break:break-all">'
-      +'<a href="'+pdfUrl+'" target="_blank" style="color:var(--gold);font-size:12px;text-decoration:underline">'+pdfUrl+'</a>'
+      +'<a href="'+shareUrl+'" target="_blank" style="color:var(--gold);font-size:13px;font-weight:600;text-decoration:underline">'+shareUrl+'</a>'
       +'</div>'
       +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-      +'<button class="btn" style="flex:1;min-width:120px" onclick="navigator.clipboard.writeText(\''+pdfUrl.replace(/'/g,"\\'")+'\');this.textContent=\'✓ Copied!\'">📋 Copy Link</button>'
+      +'<button class="btn" style="flex:1;min-width:120px" onclick="navigator.clipboard.writeText(\''+shareUrl.replace(/'/g,"\\'")+'\');this.textContent=\'✓ Copied!\'">📋 Copy Link</button>'
       +'<button class="btn ghost" style="flex:1;min-width:120px;border-color:#25D366;color:#25D366" onclick="window.open(\'https://wa.me/'+clientPhone+'?text=\'+encodeURIComponent(document.getElementById(\'__waMsg\').value))">📱 WhatsApp</button>'
       +'<button class="btn ghost" style="flex:1;min-width:120px" onclick="window.location.href=\'mailto:'+emailTo+'?subject='+emailSubj+'&body='+emailBody+'\'">✉️ Email</button>'
       +'</div>'
@@ -4247,6 +4248,12 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     // Increment view count (once per session)
     var viewKey='qv_viewed_'+shareToken;
     if(!sessionStorage.getItem(viewKey)){sessionStorage.setItem(viewKey,'1');SB_V.from('qg_shared_quotes').update({views:(data.views||0)+1}).eq('token',shareToken)}
+    // If this is a PDF link, redirect straight to the PDF
+    if(data.pdf_url){
+      window.location.href=data.pdf_url;
+      return;
+    }
+    // Legacy: render HTML viewer for old links without PDF
     renderViewer(data.quote_data,data.brand_data,data.expires_at);
   }
 
