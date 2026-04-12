@@ -2062,13 +2062,6 @@ function _render(){
     ${totalAmt?`<div class="qs-price"><div class="qs-p-label">Total Package Price</div><div class="qs-p-amount">${totalAmt}</div></div>`:''}
     ${(function(){var pp=(current.prices||[]).filter(function(p){return !p.total&&p.amt&&p.label});return pp.length?'<div style="text-align:center;font-size:8pt;color:#888;margin-top:4px">'+pp.map(function(p){return cur+esc(p.amt)+' '+esc(p.label).toLowerCase()}).join(' · ')+'</div>':''})()||''}
     ${totalAmt?`<div class="qs-deposit">${esc((current.terms||'').split('\n').find(function(l){return /deposit|advance|payment/i.test(l)})||'10% advance payment to confirm booking')}</div>`:''}
-    <div style="text-align:center;margin-top:12px;padding-top:10px;border-top:1px solid #eee8d5">
-      ${(function(){var wa2=brandWA.slice(0,2);return wa2.length?'<div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'+wa2.map(function(w){var href=w.link||('https://wa.me/'+waClean(w.number));return '<a href="'+esc(href)+'" target="_blank" style="color:#25D366;text-decoration:none;display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border:1px solid rgba(37,211,102,.2);border-radius:100px;font-size:7.5pt">'+waIcon+'<span style="color:#555">'+esc(w.number)+'</span></a>'}).join('')+'</div>':''})()||''}
-      <div style="font-size:7.5pt;color:#888;line-height:1.8">
-        ${b.phone?'<span style="margin-right:8px">📞 '+esc(b.phone)+'</span>':''}
-        ${b.email?'<span>✉️ '+esc(b.email)+'</span>':''}
-      </div>
-    </div>
     <div class="qs-badges">
       ${trust.atol?`<div class="qs-badge"><div class="qs-b-label">ATOL</div><div class="qs-b-value">${esc(trust.atol)}</div></div>`:''}
       ${trust.abta?`<div class="qs-badge"><div class="qs-b-label">ABTA</div><div class="qs-b-value">${esc(trust.abta)}</div></div>`:''}
