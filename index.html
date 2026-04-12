@@ -978,8 +978,11 @@ body.viewer-mode #quoteViewer{display:block!important}
 
       <div class="ed-section">
       <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="sec-title">Client Quote Message</span></h3>
-      <textarea id="quoteMessage" rows="3" placeholder="e.g. Hi {client}, I've managed to secure this deal for a total of" oninput="current.quoteMessage=this.value;render();autoSave()"></textarea>
-      <p style="font-size:10px;color:var(--tx3);margin-top:4px">Use {client} for name, {price} for total. Shown on Journey page + share link.</p>
+      <div style="padding:10px 14px;background:rgba(212,175,106,.06);border:1px solid rgba(212,175,106,.15);border-radius:8px;margin-bottom:8px;font-size:11px;color:var(--tx2)">
+        <span style="color:var(--gold);font-weight:600">Hi <span id="quoteMsgNamePreview" style="color:var(--tx)">Client</span>,</span> — auto-added from Client Name above
+      </div>
+      <textarea id="quoteMessage" rows="2" placeholder="e.g. I've managed to secure this amazing deal for you. Here's what's included:" oninput="current.quoteMessage=this.value;render();autoSave()"></textarea>
+      <p style="font-size:10px;color:var(--tx3);margin-top:4px">Extra message after greeting. Client name is added automatically.</p>
       <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span class="sec-title">Quote Summary Inclusions</span></h3>
       <p style="font-size:10px;color:var(--tx3);margin-bottom:6px">Click to add, or type your own. One per line.</p>
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
@@ -1899,6 +1902,8 @@ function syncFormToCurrent(){
   if(!current)return;
   FIELDS.forEach(f=>{const el=$(f);if(!el)return;current[f]=el.type==='checkbox'?el.checked:el.value});
   current.updatedAt=Date.now();
+  // Update quote message name preview
+  var np=$('quoteMsgNamePreview');if(np)np.textContent=(current.clientName||'').split(' ')[0]||'Client';
   // inclusion warning
   const w=/airport\s*transfer|transfer/i.test(current.incl||'');
   $('inclWarn').innerHTML=w?'<div class="warn-box">⚠️ Airport transfers should not be included in package deals per OWT Group policy.</div>':'';
@@ -2530,8 +2535,8 @@ function _render(){
       var ta2=tr2?cur+(tr2.amt||'0'):'';
       var tn2=parseFloat((tr2?.amt||'0').toString().replace(/,/g,''))||0;
       var cf=(current.clientName||'').split(' ')[0]||'there';
-      var mt=current.quoteMessage||"Hi {client}, I've managed to secure this deal for a total of";
-      var pm=mt.replace(/\{client\}/gi,cf).replace(/\{price\}/gi,ta2).replace(/\{brand\}/gi,b.name||'');
+      var mt=current.quoteMessage||"I've managed to secure this amazing deal for you. Here's what's included:";
+      var pm='Hi '+cf+', '+mt.replace(/\{client\}/gi,cf).replace(/\{price\}/gi,ta2).replace(/\{brand\}/gi,b.name||'');
       var pxM=(current.travelers||'').match(/(\d+)/);
       var pxC=pxM?parseInt(pxM[1]):0;
       var ppP=pxC>0?cur+(tn2/pxC).toFixed(2):'';
@@ -4516,8 +4521,8 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 
     // Build new viewer sections
     var clientFirst=(q.clientName||'').split(' ')[0]||'there';
-    var msgTpl=q.quoteMessage||"Hi {client}, I've managed to secure this deal for a total of {price}. Here's what's included in your package:";
-    var parsedMsg=msgTpl.replace(/\{client\}/gi,clientFirst).replace(/\{price\}/gi,totalAmt).replace(/\{brand\}/gi,b.name||'');
+    var msgTpl=q.quoteMessage||"I've managed to secure this amazing deal for you. Here's what's included:";
+    var parsedMsg='Hi '+clientFirst+', '+msgTpl.replace(/\{client\}/gi,clientFirst).replace(/\{price\}/gi,totalAmt).replace(/\{brand\}/gi,b.name||'');
     var msgIncl=(q.incl||'').split('\n').filter(Boolean).slice(0,8);
     var vOrigP=parseFloat(q.originalPrice)||0;
     var vFinalP=parseFloat(((q.prices||[]).find(function(p){return p.total})||{}).amt?.toString().replace(/,/g,'')||'0')||0;
