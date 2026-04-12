@@ -3609,17 +3609,24 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   });
 
   // ---- USERS ----
-  function renderUsers(){
+  async function renderUsers(){
     const tb=document.getElementById('admUsersTbody');if(!tb)return;
-    const email=SB.user?.email||'—';
-    const name=SB.user?.user_metadata?.name||email.split('@')[0];
-    tb.innerHTML=`<tr>
-      <td><b>${email}</b></td>
-      <td>${name}</td>
-      <td>${SB.user?.created_at?fmtTs(SB.user.created_at):'—'}</td>
-      <td>${SB.user?.last_sign_in_at?fmtTs(SB.user.last_sign_in_at):'—'}</td>
-      <td style="text-align:right"><span style="color:var(--success);font-size:11px">● You</span></td>
-    </tr>`;
+    const myEmail=SB.user?.email||'';
+    // Fetch all agents from database
+    if(SB.client){
+      try{
+        const{data,error}=await SB.client.rpc('list_agents');
+        if(!error&&data&&data.length){
+          tb.innerHTML=data.map(function(u){
+            var isMe=u.email===myEmail;
+            return '<tr><td><b>'+esc(u.email)+'</b></td><td>'+esc(u.name||'')+'</td><td>'+fmtTs(u.created_at)+'</td><td>'+(u.last_sign_in?fmtTs(u.last_sign_in):'Never')+'</td><td style="text-align:right">'+(isMe?'<span style="color:var(--success);font-size:11px">● You</span>':'<span style="color:var(--tx3);font-size:11px">Agent</span>')+'</td></tr>';
+          }).join('');
+          return;
+        }
+      }catch(e){console.warn('List agents:',e)}
+    }
+    // Fallback: show current user only
+    tb.innerHTML='<tr><td><b>'+esc(myEmail)+'</b></td><td>'+esc(SB.user?.user_metadata?.name||'')+'</td><td>'+(SB.user?.created_at?fmtTs(SB.user.created_at):'—')+'</td><td>'+(SB.user?.last_sign_in_at?fmtTs(SB.user.last_sign_in_at):'—')+'</td><td style="text-align:right"><span style="color:var(--success);font-size:11px">● You</span></td></tr>';
   }
   document.getElementById('admAddUserBtn').addEventListener('click',async()=>{
     const email=document.getElementById('admNewUser').value.trim();
@@ -3629,13 +3636,14 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     if(!email.includes('@')){alert('Enter a valid email address');return}
     if(pass.length<6){alert('Password must be at least 6 characters');return}
     try{
-      // Create user via database function (doesn't affect current session)
       const{data,error}=await SB.client.rpc('create_agent',{agent_email:email,agent_password:pass,agent_name:name});
       if(error)throw error;
       logAct('agent.registered',email);
-      alert('✅ Agent registered: '+email+'\n\nThey can now log in with this email and password.');
       document.getElementById('admNewUser').value='';document.getElementById('admNewPass').value='';document.getElementById('admNewRole').value='';
+      await renderUsers();
+      alert('✅ Agent registered: '+email+'\n\nThey can now log in with this email and password.');
     }catch(e){
+      console.error('Create agent error:',e);
       alert('Registration failed: '+(e.message||e));
     }
   });
