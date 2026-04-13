@@ -4581,6 +4581,32 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 
   var _fmtTime=function(s){if(!s)return'—';if(s<60)return s+'s';if(s<3600)return Math.floor(s/60)+'m '+s%60+'s';return Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'m'};
   var _fmtAgo=function(d){if(!d)return'—';var s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'};
+  function getFollowUpStatus(q,views){
+    var now=new Date();var ca=new Date(q.created_at);var ea=q.expires_at?new Date(q.expires_at):null;
+    var hSinceCreated=(now-ca)/36e5;var hUntilExpiry=ea?(ea-now)/36e5:999;
+    var tv=(views||[]).length;var us=[...new Set((views||[]).map(function(v){return v.session_id}))].length;
+    var lv=views&&views.length?new Date(views[0].viewed_at):null;
+    var hSinceLV=lv?(now-lv)/36e5:null;
+    var totalT=(views||[]).reduce(function(a,v){return a+(v.time_spent_seconds||0)},0);
+    if(ea&&now>ea)return{status:'expired',label:'Re-quote',color:'#888',icon:'🔄',message:'Quote expired. Offer a fresh quote.',priority:1};
+    if(hUntilExpiry<24&&hUntilExpiry>0)return{status:'expiring',label:'Expiring',color:'#FF9F0A',icon:'⏰',message:'Expires in '+Math.round(hUntilExpiry)+'h. Send urgency reminder.',priority:2};
+    if(tv>=3&&us>=2)return{status:'hot',label:'Hot Lead',color:'#FF3B30',icon:'🔥',message:'Opened '+tv+'x across '+us+' sessions. Call now!',priority:3};
+    if(tv>0&&hSinceLV>24)return{status:'follow_up',label:'Follow Up',color:'#C4A55A',icon:'💬',message:'Viewed '+Math.round(hSinceLV)+'h ago ('+totalT+'s reading). Follow up.',priority:4};
+    if(tv===0&&hSinceCreated>24)return{status:'not_opened',label:'Remind',color:'#FF9F0A',icon:'👁️',message:'Sent '+Math.round(hSinceCreated)+'h ago, not opened.',priority:5};
+    if(tv>0)return{status:'viewed',label:'Viewed',color:'#30D158',icon:'✓',message:'Client has viewed. Monitoring.',priority:10};
+    return{status:'waiting',label:'Waiting',color:'#888',icon:'⏳',message:'Recently sent. Give client time.',priority:10};
+  }
+  window.sendFollowUpWhatsApp=function(status,name,dest,ref,phone,url){
+    var msg='';
+    if(status==='not_opened')msg='Hi '+name+',\n\nI sent you a personalised quote for *'+dest+'* (Ref: '+ref+') but I noticed you may not have had a chance to view it yet.\n\nHere\'s the link again:\n'+url+'\n\nPlease have a look when you get a moment — I\'d love to help you secure this deal.\n\nKind regards';
+    else if(status==='follow_up')msg='Hi '+name+',\n\nJust following up on your *'+dest+'* quote (Ref: '+ref+'). I hope you\'ve had a chance to look through it.\n\nDo you have any questions or would you like me to adjust anything? I\'m here to help.\n\nKind regards';
+    else if(status==='hot')msg='Hi '+name+',\n\nI can see you\'ve been looking at your *'+dest+'* quote — great choice!\n\nWould you like to go ahead and secure this deal? I can lock in the price for you today with just a small deposit.\n\nLet me know and I\'ll get everything sorted.\n\nKind regards';
+    else if(status==='expiring')msg='Hi '+name+',\n\nJust a quick heads up — your *'+dest+'* quote (Ref: '+ref+') expires very soon.\n\nPrices and availability can change after this, so if you\'d like to go ahead, now would be the best time.\n\nWould you like to proceed?\n\nKind regards';
+    else if(status==='expired')msg='Hi '+name+',\n\nI noticed your *'+dest+'* quote has expired. Don\'t worry — I can put together a fresh quote with the latest prices.\n\nWould you still like to go ahead? Let me know and I\'ll get a new quote ready.\n\nKind regards';
+    else msg='Hi '+name+',\n\nJust checking in about your *'+dest+'* quote (Ref: '+ref+'). Let me know if you have any questions.\n\nKind regards';
+    var waUrl=phone?'https://wa.me/'+phone+'?text='+encodeURIComponent(msg):'https://wa.me/?text='+encodeURIComponent(msg);
+    window.open(waUrl,'_blank');
+  };
   async function renderSharedQuotes(){
     var stats=$('sharedStats');var tbl=$('sharedQuotesTable');
     if(!stats||!tbl)return;
@@ -4597,27 +4623,45 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       var totalUnique=quotes.reduce(function(a,q){return a+(q.unique_views||0)},0);
       var seenCount=quotes.filter(function(q){return(q.views||0)>0}).length;
       var unseenCount=quotes.filter(function(q){return(q.views||0)===0}).length;
+      // Calculate follow-ups
+      var followUps=quotes.map(function(q){var vw=viewsByToken[q.token]||[];return{quote:q,views:vw,status:getFollowUpStatus(q,vw)}}).filter(function(f){return f.status.priority<10}).sort(function(a,b){return a.status.priority-b.status.priority});
+      // Follow-up bar
+      var fuBar=document.getElementById('followUpBar');
+      if(!fuBar){fuBar=document.createElement('div');fuBar.id='followUpBar';stats.parentElement.insertBefore(fuBar,stats)}
+      if(followUps.length){
+        fuBar.innerHTML='<div style="margin-bottom:16px;border:1px solid var(--bd);border-radius:12px;overflow:hidden"><div style="padding:10px 16px;background:var(--bg-tertiary);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd)"><div style="font-size:13px;font-weight:500;color:var(--tx)">Follow-ups Required <span style="margin-left:6px;padding:2px 8px;background:var(--gold);color:#fff;border-radius:4px;font-size:10px;font-weight:600">'+followUps.length+'</span></div><div style="font-size:10px;color:var(--tx3)">Auto-checked from view tracking</div></div><div style="max-height:280px;overflow-y:auto">'
+          +followUps.map(function(f){var qd=f.quote.quote_data||{};var cn=qd.clientName||'Client';var cf=cn.split(' ')[0];var dest=qd.tourTitle||qd.dest||'their trip';var ref=qd.quoteNo||'';var ph=((qd.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,'');var purl=f.quote.pdf_url||'';
+            return '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--bd)"><div style="font-size:18px">'+f.status.icon+'</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="font-size:12px;font-weight:500;color:var(--tx)">'+esc(cn)+'</span><span style="font-size:9px;color:var(--tx3)">'+esc(ref)+'</span><span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:600;color:#fff;background:'+f.status.color+'">'+f.status.label+'</span></div><div style="font-size:10px;color:var(--tx3)">'+f.status.message+'</div></div><button class="btn" style="font-size:9px;padding:6px 10px;background:#25D366;color:#fff;border:none;border-radius:6px;flex-shrink:0;cursor:pointer" onclick="sendFollowUpWhatsApp(\''+f.status.status+'\',\''+cf.replace(/'/g,"\\'")+'\',\''+dest.replace(/'/g,"\\'")+'\',\''+ref.replace(/'/g,"\\'")+'\',\''+ph+'\',\''+purl.replace(/'/g,"\\'")+'\')">💬 WhatsApp</button></div>'}).join('')
+          +'</div></div>';
+      }else{fuBar.innerHTML=''}
+      // Badge on shared tab
+      var shTab=document.querySelector('[data-adm="shared"]');
+      if(shTab)shTab.innerHTML='Shared Quotes'+(followUps.length?' <span style="margin-left:4px;padding:1px 6px;background:#FF3B30;color:#fff;border-radius:4px;font-size:9px;font-weight:600">'+followUps.length+'</span>':'');
+      // Stats
       stats.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:16px';
       stats.innerHTML='<div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+quotes.length+'</div><div class="l">Total</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#30D158">'+seenCount+'</div><div class="l">Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#888">'+unseenCount+'</div><div class="l">Not Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+totalViews+'</div><div class="l">Opens</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+totalUnique+'</div><div class="l">Unique</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+active.length+'</div><div class="l">Active</div></div>';
-      tbl.innerHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:11px"><thead><tr><th>Ref</th><th>Client</th><th>Seen</th><th>Opens</th><th>Unique</th><th>Avg Time</th><th>Last Open</th><th>Device</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
-        var qd=q.quote_data||{};var isExp=q.expires_at&&new Date(q.expires_at)<=now;
+      // Table with follow-up column
+      tbl.innerHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:11px"><thead><tr><th>Ref</th><th>Client</th><th>Seen</th><th>Opens</th><th>Avg Time</th><th>Last Open</th><th>Follow-up</th><th>Device</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
+        var qd=q.quote_data||{};
         var url=q.pdf_url||'https://quotegen.owtgroupltd.co.uk/#'+q.token;
         var vw=viewsByToken[q.token]||[];
         var totalO=vw.length;var uniqS=[...new Set(vw.map(function(v){return v.session_id}))].length;
         var avgT=vw.length?Math.round(vw.reduce(function(a,v){return a+(v.time_spent_seconds||0)},0)/vw.length):0;
         var lastV=vw.length?vw[0]:null;
         var hasSeen=totalO>0;
+        var fu=getFollowUpStatus(q,vw);
         var mob=vw.filter(function(v){return v.device_type==='mobile'}).length;
         var desk=vw.filter(function(v){return v.device_type==='desktop'}).length;
-        var tab=vw.filter(function(v){return v.device_type==='tablet'}).length;
+        var tabC=vw.filter(function(v){return v.device_type==='tablet'}).length;
         return '<tr style="'+(hasSeen?'':'opacity:.5')+'"><td><b>'+esc(qd.quoteNo||'—')+'</b></td><td>'+esc(qd.clientName||'—')+'</td>'
-          +'<td>'+(hasSeen?'<span style="color:#30D158;font-weight:600">👁️ Seen</span>':'<span style="color:#888">—</span>')+'</td>'
-          +'<td style="font-weight:600;color:var(--gold)">'+totalO+'</td><td>'+uniqS+'</td>'
+          +'<td>'+(hasSeen?'<span style="color:#30D158;font-weight:600">👁️</span>':'<span style="color:#888">—</span>')+'</td>'
+          +'<td style="font-weight:600;color:var(--gold)">'+totalO+'</td>'
           +'<td>'+(avgT?_fmtTime(avgT):'—')+'</td>'
           +'<td>'+(lastV?_fmtAgo(lastV.viewed_at):'—')+'</td>'
-          +'<td>'+(mob?'<span style="font-size:9px" title="Mobile">📱'+mob+'</span> ':'')+(desk?'<span style="font-size:9px" title="Desktop">💻'+desk+'</span> ':'')+(tab?'<span style="font-size:9px" title="Tablet">📟'+tab+'</span>':'')+(!totalO?'<span style="font-size:9px;color:#888">—</span>':'')+'</td>'
+          +'<td><span style="display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:4px;font-size:8px;font-weight:600;color:#fff;background:'+fu.color+'">'+fu.icon+' '+fu.label+'</span></td>'
+          +'<td>'+(mob?'<span style="font-size:9px">📱'+mob+'</span> ':'')+(desk?'<span style="font-size:9px">💻'+desk+'</span> ':'')+(tabC?'<span style="font-size:9px">📟'+tabC+'</span>':'')+(!totalO?'—':'')+'</td>'
           +'<td><div style="display:flex;gap:3px"><button class="btn ghost sm" style="font-size:8px;padding:4px 6px" onclick="navigator.clipboard.writeText(\''+url.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">Copy</button><button class="btn ghost sm" style="font-size:8px;padding:4px 6px" onclick="showQuoteAnalytics(\''+q.token+'\')">Stats</button><button class="btn ghost sm" style="font-size:8px;padding:4px 6px;color:var(--danger)" onclick="deleteSharedQuote(\''+q.token+'\')">Del</button></div></td></tr>';
-      }).join('')+'</tbody></table></div><div style="margin-top:8px;font-size:10px;color:var(--tx3)">PDFs auto-delete after 7 days. Green = client has opened the quote.</div>';
+      }).join('')+'</tbody></table></div><div style="margin-top:8px;font-size:10px;color:var(--tx3)">PDFs auto-delete after 7 days. Follow-up status auto-calculated from view tracking.</div>';
     }catch(e){tbl.innerHTML='<p style="color:var(--danger)">Error: '+esc(e.message)+'</p>'}
   }
   window.showQuoteAnalytics=async function(token){
