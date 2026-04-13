@@ -5281,6 +5281,7 @@ window.rbacDeleteUser=rbacDeleteUser;
 
   // ---- USERS ----
   // ── RBAC-aware renderUsers (uses global RBAC functions) ──
+  window.renderUsers=renderUsers;
   async function renderUsers(){
     var tb=document.getElementById('admUsersTbody');if(!tb)return;
     if(!SB.client||!isBrandManager()){tb.innerHTML='';return}
