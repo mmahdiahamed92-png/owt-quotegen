@@ -2872,37 +2872,46 @@ function autoSave(){
 // ====== SHARE: WHATSAPP & EMAIL ======
 function buildShareText(){
   if(!current)return'';
-  const b=brands.find(x=>x.id===current.brandId)||{};
-  const cur=sym(current.curr);
-  const total=current.prices.find(p=>p.total);
-  const hotelLines=current.hotels.map(h=>`• ${h.name} (${h.city}) – ${h.nights} night(s)${h.stars?' '+stars(h.stars):''}`).join('\n');
-  const dayLines=current.days.map((d,i)=>`Day ${i+1}: ${d.title}`).join('\n');
+  var b=brands.find(function(x){return x.id===current.brandId})||{};
+  var cur=sym(current.curr);
+  var total=current.prices.find(function(p){return p.total});
+  var clientFirst=(current.clientName||'').split(' ')[0]||'';
+  var dest=current.tourTitle||current.dest||'your trip';
+  var agentName=current.agent||load(LS.agent,'')||'';
+  var agentPhone=current.agentPhone||b.phone||'';
+  var brandWA=(b.whatsapp||[]).map(function(w){return typeof w==='string'?{number:w}:w}).filter(function(w){return w.number});
+  var primaryWA=brandWA.find(function(w){return w.primary})||brandWA[0];
+  var waNumber=primaryWA?primaryWA.number:'';
   return [
-    `*${b.name||'OWT Group'} – Tour Quotation*`,
-    `Quote: ${current.quoteNo}`,
-    ``,
-    `Hello ${current.clientName||''},`,
-    `Please find your bespoke quotation below:`,
-    ``,
-    `*${current.tourTitle}*`,
-    current.tourSub,
-    `📍 ${current.dest}`,
-    `✈️ Departing: ${current.departureAirport}`,
-    `📅 ${fmt(current.startDate)} – ${fmt(current.endDate)}`,
-    `👥 ${current.travelers}`,
-    ``,
-    dayLines?`*Itinerary:*\n${dayLines}\n`:'',
-    hotelLines?`*Hotels:*\n${hotelLines}\n`:'',
-    total?`*Total: ${cur}${total.amt}*`:'',
-    ``,
-    `Quote valid until ${fmt(current.validity)}.`,
-    `A full PDF brochure is attached separately.`,
-    ``,
-    `Best regards,`,
-    `${current.agent}`,
-    `${b.name||''}`,
-    `${b.contact||''}`
-  ].filter(x=>x!==undefined).join('\n');
+    '✈️ *'+esc(b.name||'OWT Group')+' — Tour Quotation*',
+    '📋 Ref: *'+current.quoteNo+'*',
+    '',
+    'Hi '+(clientFirst||'there')+',',
+    '',
+    "I've put together a bespoke quotation for your upcoming trip. Here's a summary:",
+    '',
+    '🌍 *'+dest+'*',
+    current.tourSub?'📦 '+current.tourSub:'',
+    current.dest?'📍 '+current.dest:'',
+    current.departureAirport?'✈️ Departing: '+current.departureAirport:'',
+    (current.startDate||current.endDate)?'📅 '+fmt(current.startDate)+' – '+fmt(current.endDate):'',
+    current.travelers?'👥 '+current.travelers:'',
+    '',
+    total?'💰 *Total Package Price: '+cur+total.amt+'*':'',
+    current.depositAmount?'🔒 Secure with just '+cur+parseFloat(current.depositAmount).toFixed(2)+' deposit':'',
+    '',
+    current.hotels.length?'🏨 *Accommodation:*\n'+current.hotels.map(function(h){return '• '+h.name+(h.city?' ('+h.city+')':'')+(h.nights?' – '+h.nights+' night'+(h.nights==='1'?'':'s'):'')}).join('\n')+'\n':'',
+    '📄 A full PDF brochure with complete details is attached.',
+    '',
+    'Please review and let me know if you have any questions or would like to make any changes.',
+    '',
+    'Kind regards,',
+    agentName?'*'+agentName+'*':'',
+    b.name||'',
+    agentPhone?'📞 '+agentPhone:'',
+    waNumber?'💬 WhatsApp: '+waNumber:'',
+    b.email?'✉️ '+b.email:''
+  ].filter(function(x){return x!==undefined&&x!==''}).join('\n');
 }
 function extractPhone(s){const m=(s||'').match(/[\+\d][\d\s\-\(\)]{7,}/);return m?m[0].replace(/[^\d+]/g,''):''}
 function extractEmail(s){const m=(s||'').match(/[\w\.\-]+@[\w\.\-]+\.\w+/);return m?m[0]:''}
