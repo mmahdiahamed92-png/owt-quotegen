@@ -775,6 +775,7 @@ body.viewer-mode #quoteViewer{display:block!important}
       <button class="adm-tab" data-adm="analytics">Analytics</button>
       <button class="adm-tab" data-adm="shared">Shared Quotes</button>
       <button class="adm-tab" data-adm="backup">Backup / Restore</button>
+      <button class="adm-tab" data-adm="settings">Settings</button>
       <button class="adm-tab" data-adm="log">Activity Log</button>
     </div>
 
@@ -822,24 +823,6 @@ body.viewer-mode #quoteViewer{display:block!important}
         <button class="adm-btn ghost" id="admResetTplBtn">Reset to Defaults</button>
       </div>
 
-      <div style="margin-top:24px;padding:18px;border:1px solid var(--bd-gold);border-radius:12px;background:rgba(212,175,106,.03)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M12 2a4 4 0 0 1 4 4v1a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2V6a4 4 0 0 1 4-4z"/><circle cx="12" cy="18" r="4"/></svg><span style="font-size:13px;font-weight:600;color:var(--gold);letter-spacing:.06em">AI AUTO-FILL</span></div>
-        <p style="font-size:11px;color:var(--tx3);margin:0 0 12px">Upload a booking screenshot and AI extracts all details automatically.</p>
-        <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block">AI Provider</label>
-        <select id="aiProvider" onchange="localStorage.setItem('kk_ai_provider',this.value);updateAiKeyLabel()" style="width:100%;margin-bottom:10px"></select>
-        <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block" id="aiKeyLabel">API Key</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="password" id="aiApiKey" placeholder="" style="flex:1;font-size:12px" oninput="localStorage.setItem('kk_ai_key',this.value)">
-          <button class="adm-btn" onclick="testAiKey()" style="font-size:10px">Test</button>
-        </div>
-        <div id="azureFields" style="display:none;margin-top:8px">
-          <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block">Azure Endpoint URL</label>
-          <input id="azureEndpoint" placeholder="https://your-resource.openai.azure.com" style="width:100%;font-size:12px;margin-bottom:8px" oninput="localStorage.setItem('kk_azure_endpoint',this.value)">
-          <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block">Deployment Name</label>
-          <input id="azureDeployment" placeholder="e.g. gpt-4o" style="width:100%;font-size:12px" oninput="localStorage.setItem('kk_azure_deployment',this.value)">
-        </div>
-        <div id="aiProviderHelp" style="margin-top:8px;padding:8px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-tertiary);font-size:9px;color:var(--tx3);line-height:1.5"></div>
-      </div>
     </div>
 
 
@@ -878,6 +861,35 @@ body.viewer-mode #quoteViewer{display:block!important}
       <div id="analyticsPipeline" style="margin-bottom:20px"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px" id="analyticsCharts"></div>
       <div id="analyticsRecent"></div>
+    </div>
+
+    <div class="adm-panel" id="adm-settings">
+      <h3 style="margin:0 0 12px;color:#F5F5F7">Settings</h3>
+
+      <div style="padding:18px;border:1px solid var(--bd-gold);border-radius:12px;background:rgba(212,175,106,.03);margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M12 2a4 4 0 0 1 4 4v1a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2V6a4 4 0 0 1 4-4z"/><circle cx="12" cy="18" r="4"/></svg><span style="font-size:13px;font-weight:600;color:var(--gold);letter-spacing:.06em">AI AUTO-FILL</span></div>
+        <p style="font-size:11px;color:var(--tx3);margin:0 0 12px">Upload booking screenshots and AI extracts all details. Choose your provider and enter the API key.</p>
+        <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block">AI Provider</label>
+        <select id="aiProvider" onchange="localStorage.setItem('kk_ai_provider',this.value);updateAiKeyLabel()" style="width:100%;margin-bottom:10px"></select>
+        <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block" id="aiKeyLabel">API Key</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="password" id="aiApiKey" placeholder="" style="flex:1;font-size:12px" oninput="localStorage.setItem('kk_ai_key',this.value)">
+          <button class="adm-btn" onclick="testAiKey()" style="font-size:10px">Test</button>
+        </div>
+        <div id="azureFields" style="display:none;margin-top:8px">
+          <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block">Azure Endpoint URL</label>
+          <input id="azureEndpoint" placeholder="https://your-resource.openai.azure.com" style="width:100%;font-size:12px;margin-bottom:8px" oninput="localStorage.setItem('kk_azure_endpoint',this.value)">
+          <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block">Deployment Name</label>
+          <input id="azureDeployment" placeholder="e.g. gpt-4o" style="width:100%;font-size:12px" oninput="localStorage.setItem('kk_azure_deployment',this.value)">
+        </div>
+        <div id="aiProviderHelp" style="margin-top:8px;padding:8px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-tertiary);font-size:9px;color:var(--tx3);line-height:1.5"></div>
+      </div>
+
+      <div style="padding:18px;border:1px solid var(--bd);border-radius:12px;background:var(--bg-secondary)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx2)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span style="font-size:13px;font-weight:500;color:var(--tx)">Super Admin Email</span></div>
+        <div style="padding:10px 14px;background:var(--bg-tertiary);border:1px solid var(--bd);border-radius:8px;font-size:12px;color:var(--gold);font-weight:500;letter-spacing:.02em" id="superAdminDisplay"></div>
+        <p style="font-size:10px;color:var(--tx3);margin-top:6px">This email has full access to all brands, users, and settings.</p>
+      </div>
     </div>
 
     <div class="adm-panel" id="adm-log">
@@ -5343,8 +5355,13 @@ function setupRoleAccess(){
     document.getElementById('tplExcl').value=t.excl||'';
     document.getElementById('tplTerms').value=t.terms||'';
     document.getElementById('tplMarkup').value=t.markup||0;
-    if(typeof initAiSettings==='function')initAiSettings();
   }
+  function renderSettings(){
+    if(typeof initAiSettings==='function')initAiSettings();
+    var sad=document.getElementById('superAdminDisplay');
+    if(sad)sad.textContent=SUPER_ADMIN_EMAIL;
+  }
+  document.querySelectorAll('.adm-tab').forEach(function(t){t.addEventListener('click',function(){if(t.getAttribute('data-adm')==='settings')renderSettings()})});
   document.getElementById('admSaveTplBtn').addEventListener('click',()=>{
     const t={
       incl:document.getElementById('tplIncl').value,
