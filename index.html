@@ -954,22 +954,6 @@ body.viewer-mode #quoteViewer{display:block!important}
       <div class="stat"><div class="n" id="statSent">0</div><div class="l">Sent</div></div>
       <div class="stat"><div class="n" id="statLib">0</div><div class="l">Library Entries</div></div>
     </div>
-    <!-- Shared Links Analytics -->
-    <div id="dashAnalytics" style="margin-top:18px;padding:18px;border:1px solid var(--bd-glass);border-radius:var(--r-xl);background:var(--bg-secondary);backdrop-filter:var(--blur)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div style="display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span style="font-size:13px;color:var(--gold);font-weight:600;letter-spacing:.06em">SHARED QUOTE LINKS</span></div>
-        <button class="btn ghost sm" onclick="document.getElementById('dashSharedSection').scrollIntoView({behavior:'smooth'})" style="font-size:10px">View All ↓</button>
-      </div>
-      <div id="dashLinkStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px">
-        <div style="text-align:center;padding:10px 6px;background:var(--bg-tertiary);border-radius:8px;border:1px solid var(--bd)"><div style="font-size:20px;font-weight:600;color:var(--tx)" id="dsSent">—</div><div style="font-size:8px;color:var(--tx3);font-weight:600;letter-spacing:.5px;margin-top:2px">SENT</div></div>
-        <div style="text-align:center;padding:10px 6px;background:var(--bg-tertiary);border-radius:8px;border:1px solid var(--bd)"><div style="font-size:20px;font-weight:600;color:#30D158" id="dsSeen">—</div><div style="font-size:8px;color:var(--tx3);font-weight:600;letter-spacing:.5px;margin-top:2px">SEEN</div></div>
-        <div style="text-align:center;padding:10px 6px;background:var(--bg-tertiary);border-radius:8px;border:1px solid var(--bd)"><div style="font-size:20px;font-weight:600;color:#888" id="dsUnseen">—</div><div style="font-size:8px;color:var(--tx3);font-weight:600;letter-spacing:.5px;margin-top:2px">NOT SEEN</div></div>
-        <div style="text-align:center;padding:10px 6px;background:var(--bg-tertiary);border-radius:8px;border:1px solid var(--bd)"><div style="font-size:20px;font-weight:600;color:var(--gold)" id="dsOpens">—</div><div style="font-size:8px;color:var(--tx3);font-weight:600;letter-spacing:.5px;margin-top:2px">OPENS</div></div>
-        <div style="text-align:center;padding:10px 6px;background:var(--bg-tertiary);border-radius:8px;border:1px solid var(--bd)"><div style="font-size:20px;font-weight:600;color:var(--tx)" id="dsUnique">—</div><div style="font-size:8px;color:var(--tx3);font-weight:600;letter-spacing:.5px;margin-top:2px">UNIQUE</div></div>
-      </div>
-      <div id="dashFollowUps" style="margin-top:12px"></div>
-      <div id="dashRecentViews" style="margin-top:12px"></div>
-    </div>
     <div class="dash-actions" style="margin-top:18px">
       <input id="dashSearch" placeholder="Search quotes by client, destination, number...">
       <button class="btn" onclick="newQuote()">+ New Quote</button>
@@ -3587,64 +3571,10 @@ function renderDashboard(){
       <td>${new Date(q.updatedAt).toLocaleDateString('en-GB')}</td>
       <td><button class="btn sm ghost" onclick="editQuote('${q.id}')">Open</button> <button class="btn sm danger" onclick="deleteQuote('${q.id}')">×</button></td>
     </tr>`}).join(''):'<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--tx3)">No quotes yet. Click <b style="color:var(--gold)">+ New Quote</b> to begin.</td></tr>';
-  // Load shared link analytics
-  loadDashAnalytics();
-  // Load full shared quotes table on dashboard
+  // Load full shared quotes on dashboard
   if(typeof renderSharedQuotes==='function')renderSharedQuotes();
 }
-async function loadDashAnalytics(){
-  if(!SB.client||!SB.user)return;
-  try{
-    var quotes2=await getVisibleSharedQuotes();
-    var sent=quotes2.length;
-    var seen=quotes2.filter(function(q){return(q.views||0)>0}).length;
-    var unseen=sent-seen;
-    var opens=quotes2.reduce(function(a,q){return a+(q.views||0)},0);
-    var unique=quotes2.reduce(function(a,q){return a+(q.unique_views||0)},0);
-    var el=function(id){return document.getElementById(id)};
-    if(el('dsSent'))el('dsSent').textContent=sent;
-    if(el('dsSeen'))el('dsSeen').textContent=seen;
-    if(el('dsUnseen'))el('dsUnseen').textContent=unseen;
-    if(el('dsOpens'))el('dsOpens').textContent=opens;
-    if(el('dsUnique'))el('dsUnique').textContent=unique;
-    // Fetch views for follow-up calculation
-    var allViews=[];
-    try{var vr=await SB.client.from('qg_quote_views').select('*').order('viewed_at',{ascending:false});allViews=vr.data||[]}catch(e){}
-    var viewsByToken={};allViews.forEach(function(v){if(!viewsByToken[v.token])viewsByToken[v.token]=[];viewsByToken[v.token].push(v)});
-    // Follow-ups on dashboard
-    var fuDiv=el('dashFollowUps');
-    if(fuDiv&&typeof getFollowUpStatus==='function'){
-      var followUps=quotes2.map(function(q){var vw=viewsByToken[q.token]||[];return{quote:q,views:vw,status:getFollowUpStatus(q,vw)}}).filter(function(f){return f.status.priority<10}).sort(function(a,b){return a.status.priority-b.status.priority}).slice(0,5);
-      if(followUps.length){
-        fuDiv.innerHTML='<div style="font-size:10px;color:var(--tx3);font-weight:600;letter-spacing:.08em;margin-bottom:6px">ACTION REQUIRED</div>'
-          +followUps.map(function(f){var qd=f.quote.quote_data||{};var cn=qd.clientName||'Client';var cf=cn.split(' ')[0];var dest=qd.tourTitle||qd.dest||'trip';var ref=qd.quoteNo||'';var ph=((qd.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,'');var purl=f.quote.pdf_url||'';
-            return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);font-size:11px">'
-              +'<span style="font-size:14px">'+f.status.icon+'</span>'
-              +'<div style="flex:1;min-width:0"><span style="color:var(--tx);font-weight:500">'+esc(cn)+'</span> <span style="color:var(--tx3)">· '+esc(ref)+'</span> <span style="padding:2px 6px;border-radius:4px;font-size:7px;font-weight:600;color:#fff;background:'+f.status.color+'">'+f.status.label+'</span><div style="font-size:9px;color:var(--tx3);margin-top:1px">'+f.status.message+'</div></div>'
-              +'<button style="font-size:9px;padding:5px 8px;background:#25D366;color:#fff;border:none;border-radius:6px;cursor:pointer;flex-shrink:0" onclick="sendFollowUpWhatsApp(\''+f.status.status+'\',\''+cf.replace(/'/g,"\\'")+'\',\''+dest.replace(/'/g,"\\'")+'\',\''+ref.replace(/'/g,"\\'")+'\',\''+ph+'\',\''+purl.replace(/'/g,"\\'")+'\')">💬</button></div>';
-          }).join('');
-      }
-    }
-    // Recent views
-    var recentDiv=el('dashRecentViews');
-    if(recentDiv){
-      var recentlyViewed=quotes2.filter(function(q){return q.last_viewed_at}).sort(function(a,b){return new Date(b.last_viewed_at)-new Date(a.last_viewed_at)}).slice(0,5);
-      if(recentlyViewed.length){
-        var now=Date.now();
-        recentDiv.innerHTML='<div style="font-size:10px;color:var(--tx3);font-weight:600;letter-spacing:.08em;margin-bottom:6px">RECENTLY VIEWED BY CLIENTS</div>'
-          +recentlyViewed.map(function(q){
-            var qd=q.quote_data||{};
-            var ago=Math.floor((now-new Date(q.last_viewed_at))/1000);
-            var agoTxt=ago<60?'Just now':ago<3600?Math.floor(ago/60)+'m ago':ago<86400?Math.floor(ago/3600)+'h ago':Math.floor(ago/86400)+'d ago';
-            return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:11px">'
-              +'<span style="color:#30D158;font-size:12px">👁️</span>'
-              +'<div style="flex:1;min-width:0"><span style="color:var(--tx);font-weight:500">'+esc(qd.clientName||'—')+'</span> <span style="color:var(--tx3)">· '+esc(qd.quoteNo||'')+'</span></div>'
-              +'<span style="color:var(--gold);font-size:10px;font-weight:500;flex-shrink:0">'+agoTxt+'</span></div>';
-          }).join('');
-      }
-    }
-  }catch(e){}
-}
+// loadDashAnalytics removed — renderSharedQuotes handles all shared quote data on dashboard
 $('dashSearch').addEventListener('input',renderDashboard);
 
 // ====== MANUAL QUOTE APPROVAL ======
