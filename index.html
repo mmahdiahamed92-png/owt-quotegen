@@ -1250,7 +1250,7 @@ body.viewer-mode #quoteViewer{display:block!important}
 const $=id=>document.getElementById(id);
 const LS={
   brands:'kk_brands',quotes:'kk_quotes',library:'kk_library',
-  current:'kk_current',agent:'kk_agent',seq:'kk_seq',hotels:'kk_hotels'
+  current:'kk_current',agent:'kk_agent',seq:'kk_seq',hotels:'kk_hotels',excursions:'kk_excursions'
 };
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch{return d}};
 const save=(k,v)=>{
@@ -1510,7 +1510,7 @@ if(!localStorage.getItem(LS.agent))save(LS.agent,'Jane Doe');
 if(!localStorage.getItem(LS.seq))save(LS.seq,{});
 if(!localStorage.getItem(LS.hotels))save(LS.hotels,[]);
 
-let brands=load(LS.brands,[]),quotes=load(LS.quotes,[]),library=load(LS.library,[]),hotelStore=load(LS.hotels,[]);
+let brands=load(LS.brands,[]),quotes=load(LS.quotes,[]),library=load(LS.library,[]),hotelStore=load(LS.hotels,[]),excursionStore=load(LS.excursions,[]);
 
 // ====== DEFAULT TRUST/PROTECTION CONTENT (per-brand, editable) ======
 const DEFAULT_TRUST={
@@ -1574,6 +1574,49 @@ function showHotelSuggest(i){
     });
   });
 }
+// ====== EXCURSION STORE ======
+function saveExcursionToStore(x){
+  if(!x||!x.name||!x.name.trim())return;
+  var key=x.name.trim().toLowerCase();
+  var idx=excursionStore.findIndex(function(e){return e.name.trim().toLowerCase()===key});
+  var entry={name:x.name.trim(),location:x.location||'',duration:x.duration||'',desc:x.desc||'',highlights:x.highlights||'',img:x.img||'',dims:x.dims||null};
+  if(idx>=0){
+    if(!entry.img&&excursionStore[idx].img)entry.img=excursionStore[idx].img;
+    if(!entry.dims&&excursionStore[idx].dims)entry.dims=excursionStore[idx].dims;
+    excursionStore[idx]=entry;
+  }else{
+    excursionStore.push(entry);
+  }
+  save(LS.excursions,excursionStore);
+}
+function searchExcursions(q){
+  if(!q||q.length<2)return[];
+  var ql=q.toLowerCase();
+  return excursionStore.filter(function(x){return x.name.toLowerCase().includes(ql)||(x.location||'').toLowerCase().includes(ql)}).slice(0,8);
+}
+function showExcSuggest(i){
+  var inp=document.querySelector('#excursions .item:nth-child('+(i+1)+') input.ename');
+  if(!inp)return;
+  var matches=searchExcursions(inp.value);
+  var list=document.getElementById('esug-list-'+i);
+  if(list)list.remove();
+  if(!matches.length)return;
+  var ul=document.createElement('div');
+  ul.className='hsug-list';ul.id='esug-list-'+i;
+  ul.innerHTML=matches.map(function(x,k){return '<div class="hsug-item" data-k="'+k+'">'
+    +(x.img?'<img src="'+IMG.src(x.img)+'">':'<div style="width:46px;height:36px;background:#333;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#888;font-size:9px">no img</div>')
+    +'<div class="info"><b>'+esc(x.name)+'</b><small>'+esc(x.location||'')+(x.duration?' · '+esc(x.duration):'')+'</small></div></div>'}).join('');
+  inp.parentElement.appendChild(ul);
+  ul.querySelectorAll('.hsug-item').forEach(function(el){
+    el.addEventListener('mousedown',function(e){
+      e.preventDefault();
+      var k=+el.dataset.k;var x=matches[k];
+      Object.assign(current.excursions[i],{name:x.name,location:x.location,duration:x.duration,desc:x.desc,highlights:x.highlights,img:x.img,dims:x.dims});
+      ul.remove();renderItems();render();autoSave();
+    });
+  });
+}
+function hideExcSuggest(i){var l=document.getElementById('esug-list-'+i);if(l)setTimeout(function(){l.remove()},200)}
 function hideHotelSuggest(i){setTimeout(()=>{const l=document.getElementById('hsug-list-'+i);if(l)l.remove()},200)}
 let current=null;//current quote in editor
 
@@ -2091,7 +2134,7 @@ function renderItems(){
   // hotels
   $('hotels').innerHTML=current.hotels.map((h,i)=>`
     <div class="item">
-      <div class="top"><b>Hotel ${i+1}</b><button class="del" onclick="delHotel(${i})">DELETE</button></div>
+      <div class="top"><b>Hotel ${i+1}</b><span style="font-size:9px;color:var(--gold);margin-left:auto;margin-right:8px;opacity:.6">${h.name?'✓ Saved to database':''}</span><button class="del" onclick="delHotel(${i})">DELETE</button></div>
       <div class="hsug">
         <input class="hname" placeholder="Hotel name (start typing to search saved hotels)" value="${esc(h.name)}" autocomplete="off" oninput="current.hotels[${i}].name=this.value;render();autoSave();showHotelSuggest(${i})" onfocus="showHotelSuggest(${i})" onblur="hideHotelSuggest(${i});if(current.hotels[${i}].name)saveHotelToStore(current.hotels[${i}])">
       </div>
@@ -2155,11 +2198,13 @@ function renderItems(){
   // excursions
   $('excursions').innerHTML=(current.excursions||[]).map((x,i)=>`
     <div class="item">
-      <div class="top"><b>Excursion ${i+1}</b><button class="del" onclick="delExcursion(${i})">DELETE</button></div>
+      <div class="top"><b>Excursion ${i+1}</b><span style="font-size:9px;color:var(--gold);margin-left:auto;margin-right:8px;opacity:.6">${x.name?'✓ Saved to database':''}</span><button class="del" onclick="delExcursion(${i})">DELETE</button></div>
       <label>Excursion Name</label>
-      <input placeholder="e.g. Phi Phi Islands Speedboat Tour" value="${esc(x.name)}" oninput="current.excursions[${i}].name=this.value;render();autoSave()">
+      <div class="hsug">
+      <input class="ename" placeholder="e.g. Phi Phi Islands Speedboat Tour (start typing to search saved)" value="${esc(x.name)}" autocomplete="off" oninput="current.excursions[${i}].name=this.value;render();autoSave();showExcSuggest(${i})" onfocus="showExcSuggest(${i})" onblur="hideExcSuggest(${i});if(current.excursions[${i}].name)saveExcursionToStore(current.excursions[${i}])">
+      </div>
       <div class="row">
-        <div><label>Location / Area</label><input placeholder="e.g. Phuket, Thailand" value="${esc(x.location)}" oninput="current.excursions[${i}].location=this.value;render();autoSave()"></div>
+        <div><label>Location / Area</label><input placeholder="e.g. Phuket, Thailand" value="${esc(x.location)}" oninput="current.excursions[${i}].location=this.value;render();autoSave()" onblur="if(current.excursions[${i}].name)saveExcursionToStore(current.excursions[${i}])"></div>
         <div><label>Duration</label><input placeholder="e.g. Full Day, Half Day, 3 Hours" value="${esc(x.duration)}" oninput="current.excursions[${i}].duration=this.value;render();autoSave()"></div>
       </div>
       <label>Date (optional)</label>
@@ -4043,6 +4088,10 @@ function seedDemo(){
     {name:'Jumeirah Beach Hotel',city:'Dubai',stars:'5',board:'Half Board',img:svgImg('Jumeirah Beach','#3498DB','#1B4F72')}
   );
   allHotels.forEach(saveHotelToStore);
+  // seed excursion store from library + quotes
+  var allExcursions=[];
+  lib.forEach(function(l){(l.days||[]).forEach(function(d){if(d.title&&d.desc)allExcursions.push({name:d.title,location:l.dest||l.country||'',duration:'Full Day',desc:d.desc,highlights:'',img:d.img||''})})});
+  allExcursions.forEach(saveExcursionToStore);
   // sync seq counter so future numbers continue
   const sq=load(LS.seq,{});Object.entries(seq).forEach(([k,v])=>sq[k]=Math.max(sq[k]||0,v));save(LS.seq,sq);
 }
