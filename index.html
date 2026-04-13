@@ -34,6 +34,11 @@
   --fa:'Satoshi',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 *{box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+/* Enhanced focus visibility for keyboard navigation */
+*:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+button:focus-visible,a:focus-visible,.tab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+/* Smooth scroll */
+html{scroll-behavior:smooth}
 html{color-scheme:dark}
 html,body{margin:0;padding:0;background:var(--bg-primary);color:var(--tx);font-family:var(--fb);font-size:14px;letter-spacing:-.012em}
 body{background:
@@ -399,6 +404,8 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
   .actions-bar{flex-direction:column;gap:6px;padding:12px 0 4px}
   .actions-bar .btn{width:100%;min-width:0}
   .check-grp .grp-items{grid-template-columns:1fr}
+  .loading-overlay .loading-text{font-size:12px;letter-spacing:.08em}
+  #exportMenu{left:8px!important;right:8px!important;min-width:auto!important}
   #view-admin .admin-wrap{padding:18px 14px}
   #view-admin h1{font-size:28px}
   #view-admin .adm-tabs{flex-wrap:wrap;width:100%}
@@ -429,6 +436,10 @@ body.viewer-mode{background:#f8f6f1;margin:0;padding:0}
 body.viewer-mode .nav,body.viewer-mode .editor,body.viewer-mode .editor-toolbar,body.viewer-mode #loginGate,body.viewer-mode .credit,body.viewer-mode .view{display:none!important}
 body.viewer-mode #quoteViewer{display:block!important}
 #quoteViewer{display:none;font-family:'Satoshi',sans-serif;max-width:480px;margin:0 auto;padding:0 0 100px;background:#fff;min-height:100vh;-webkit-overflow-scrolling:touch}
+/* Smooth section transitions for viewer */
+.qv-sect{animation:qvFadeIn .4s ease both}
+@keyframes qvFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.qv-sect:nth-child(2){animation-delay:.05s}.qv-sect:nth-child(3){animation-delay:.1s}.qv-sect:nth-child(4){animation-delay:.15s}.qv-sect:nth-child(5){animation-delay:.2s}
 .qv-hero{width:100%;height:260px;object-fit:cover;display:block}
 .qv-hero-ph{width:100%;height:200px;background:linear-gradient(135deg,#D4AF6A,#A8854A);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:600}
 .qv-body{padding:20px 18px}
@@ -493,8 +504,8 @@ body.viewer-mode #quoteViewer{display:block!important}
   d.innerHTML='<div style="font-size:32px">📄</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Loading your quote...</div><div style="color:#888;font-size:13px">Please wait</div>';
   document.body.appendChild(d);
   // Fetch PDF URL directly from Supabase REST API
-  var sbUrl='https://faebuflzzeetphtudycw.supabase.co';
-  var sbKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZWJ1Zmx6emVldHBodHVkeWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjQxNDcsImV4cCI6MjA4OTk0MDE0N30.WSrZbqdQz1H_ZhXh8wdttiMju7UZRIlQ-XKI60z4hSc';
+  var sbUrl=window.__SB_URL||(window.__SB_URL='https://faebuflzzeetphtudycw.supabase.co');
+  var sbKey=window.__SB_KEY||(window.__SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZWJ1Zmx6emVldHBodHVkeWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjQxNDcsImV4cCI6MjA4OTk0MDE0N30.WSrZbqdQz1H_ZhXh8wdttiMju7UZRIlQ-XKI60z4hSc');
   window.__shareTokenHandled=true;
   // Detect device & browser for tracking
   var _ua=navigator.userAgent.toLowerCase();
@@ -577,7 +588,7 @@ body.viewer-mode #quoteViewer{display:block!important}
         d.innerHTML='<div style="font-size:32px">❌</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Quote Not Found</div><div style="color:#888;font-size:13px">This link may have expired or is invalid.</div>';
       }
     }).catch(function(e){
-      d.innerHTML='<div style="font-size:32px">��️</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Error Loading Quote</div><div style="color:#888;font-size:13px">Please try again later.</div>';
+      d.innerHTML='<div style="font-size:32px">&#x26A0;&#xFE0F;</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Error Loading Quote</div><div style="color:#888;font-size:13px">Please try again later.</div>';
     });
 })();
 </script>
@@ -598,6 +609,9 @@ body.viewer-mode #quoteViewer{display:block!important}
     <div class="login-hint">OWT Group Ltd · Agent Portal</div>
   </div>
 </div>
+
+<!-- Skip to content link for keyboard users -->
+<a href="#view-dashboard" class="skip-link" style="position:absolute;top:-40px;left:0;background:var(--gold);color:#0a0a0a;padding:8px 16px;z-index:99999;font-size:12px;font-weight:600;transition:top .2s" onfocus="this.style.top='0'" onblur="this.style.top='-40px'">Skip to content</a>
 
 <style>
 /* ================= LUXURY THEME ================= */
@@ -733,18 +747,18 @@ body.viewer-mode #quoteViewer{display:block!important}
 </datalist>
 
 <!-- ============ NAV ============ -->
-<div class="nav">
-  <div class="brand">OWT Group Ltd<small>Quote Gen</small></div>
-  <div class="tabs">
-    <button class="tab active" data-view="dashboard">Dashboard</button>
-    <button class="tab" data-view="editor">Quote Editor</button>
-    <button class="tab" data-view="library">Library</button>
-    <button class="tab" data-view="brands">Brands</button>
-    <button class="tab" data-view="lnd">L&D</button>
-    <button class="tab" data-view="admin" id="navAdminTab" style="display:none">Admin</button>
+<div class="nav" role="navigation" aria-label="Main navigation">
+  <div class="brand" aria-label="OWT Group Ltd Quote Generator">OWT Group Ltd<small>Quote Gen</small></div>
+  <div class="tabs" role="tablist" aria-label="Main sections">
+    <button class="tab active" data-view="dashboard" role="tab" aria-selected="true" aria-controls="view-dashboard">Dashboard</button>
+    <button class="tab" data-view="editor" role="tab" aria-selected="false" aria-controls="view-editor">Quote Editor</button>
+    <button class="tab" data-view="library" role="tab" aria-selected="false" aria-controls="view-library">Library</button>
+    <button class="tab" data-view="brands" role="tab" aria-selected="false" aria-controls="view-brands">Brands</button>
+    <button class="tab" data-view="lnd" role="tab" aria-selected="false" aria-controls="view-lnd">L&amp;D</button>
+    <button class="tab" data-view="admin" id="navAdminTab" role="tab" aria-selected="false" aria-controls="view-admin" style="display:none">Admin</button>
   </div>
   <div class="right">
-    <div id="notifBell" style="position:relative;cursor:pointer;margin-right:10px;display:none" onclick="toggleNotifPanel()">
+    <div id="notifBell" style="position:relative;cursor:pointer;margin-right:10px;display:none" role="button" aria-label="Notifications" aria-haspopup="true" tabindex="0" onclick="toggleNotifPanel()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNotifPanel()}">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--tx2)" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <span id="notifBadge" style="display:none;position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;border-radius:8px;background:#FF3B30;color:#fff;font-size:9px;font-weight:700;text-align:center;line-height:16px;padding:0 3px">0</span>
     </div>
@@ -1296,13 +1310,16 @@ body.viewer-mode #quoteViewer{display:block!important}
       </div>
 
       <div class="actions-bar">
-        <button class="btn" onclick="saveQuote()">💾 Save</button>
-        <button class="btn ghost" onclick="downloadPDF()">📥 Download PDF</button>
-        <button class="btn ghost" onclick="shareQuoteLink()" style="border-color:var(--bd-gold);color:var(--gold)">🔗 Share Link</button>
-        <button class="btn ghost" onclick="sendWhatsApp()">📱 WhatsApp</button>
-        <button class="btn ghost" onclick="sendEmail()">✉️ Email</button>
-        <button class="btn ghost" onclick="manualApproveQuote()" style="border-color:#30D158;color:#30D158">✅ Approve</button>
-        <button class="btn ghost" onclick="openLibrary('save')">⭐ Save to Library</button>
+        <button class="btn" onclick="saveQuote()" aria-label="Save quote">💾 Save</button>
+        <button class="btn ghost" onclick="downloadPDF()" aria-label="Download PDF">📥 Download PDF</button>
+        <button class="btn ghost" onclick="shareQuoteLink()" style="border-color:var(--bd-gold);color:var(--gold)" aria-label="Share quote link">🔗 Share Link</button>
+        <button class="btn ghost" onclick="sendWhatsApp()" aria-label="Send via WhatsApp">📱 WhatsApp</button>
+        <button class="btn ghost" onclick="sendEmail()" aria-label="Send via email">✉️ Email</button>
+        <button class="btn ghost" onclick="manualApproveQuote()" style="border-color:#30D158;color:#30D158" aria-label="Approve quote">✅ Approve</button>
+        <button class="btn ghost" onclick="openLibrary('save')" aria-label="Save to library">⭐ Save to Library</button>
+        <button class="btn ghost" onclick="showTemplateModal('save')" style="border-color:rgba(100,80,200,.3);color:#9B8FFF" aria-label="Save as template">📋 Save Template</button>
+        <button class="btn ghost" onclick="showTemplateModal('load')" style="border-color:rgba(100,80,200,.3);color:#9B8FFF" aria-label="Load template">📂 Load Template</button>
+        <button class="btn ghost" onclick="showExportMenu(event)" aria-label="More export options">📤 Export ▾</button>
       </div>
     </div>
 
@@ -1397,9 +1414,9 @@ body.viewer-mode #quoteViewer{display:block!important}
 <div class="credit">Designed &amp; built by <b>Mahdi Mazahim</b> · ™ 2026</div>
 
 <!-- ============ MODAL ============ -->
-<div class="modal-bg" id="modal">
+<div class="modal-bg" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal">
-    <div class="modal-h"><h2 id="modalTitle">Library</h2><button class="modal-close" onclick="closeModal()">×</button></div>
+    <div class="modal-h"><h2 id="modalTitle">Library</h2><button class="modal-close" onclick="closeModal()" aria-label="Close dialog">×</button></div>
     <div class="modal-b" id="modalBody"></div>
   </div>
 </div>
@@ -1523,8 +1540,8 @@ const IMG={
    SUPABASE CLOUD SYNC — shared brands/library, per-agent quotes
    Images stored in Supabase Storage (public URLs, no local bloat)
    ============================================================ */
-const SB_URL='https://faebuflzzeetphtudycw.supabase.co';
-const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZWJ1Zmx6emVldHBodHVkeWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjQxNDcsImV4cCI6MjA4OTk0MDE0N30.WSrZbqdQz1H_ZhXh8wdttiMju7UZRIlQ-XKI60z4hSc';
+const SB_URL=window.__SB_URL||'https://faebuflzzeetphtudycw.supabase.co';
+const SB_KEY=window.__SB_KEY||'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZWJ1Zmx6emVldHBodHVkeWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjQxNDcsImV4cCI6MjA4OTk0MDE0N30.WSrZbqdQz1H_ZhXh8wdttiMju7UZRIlQ-XKI60z4hSc';
 const SB={
   client:null,user:null,
   init(){
@@ -1782,15 +1799,27 @@ let current=null;//current quote in editor
 document.querySelectorAll('.nav .tab').forEach(t=>t.onclick=()=>switchView(t.dataset.view));
 function switchView(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.nav .tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav .tab').forEach(x=>{x.classList.remove('active');x.setAttribute('aria-selected','false')});
   $('view-'+v).classList.add('active');
-  document.querySelector(`.tab[data-view="${v}"]`).classList.add('active');
+  var activeTab=document.querySelector(`.tab[data-view="${v}"]`);
+  if(activeTab){activeTab.classList.add('active');activeTab.setAttribute('aria-selected','true')}
   if(v==='dashboard')renderDashboard();
   if(v==='library')renderLibrary();
   if(v==='brands')renderBrands();
   if(v==='editor'){if(!current)pickCompanyForNewQuote();else render();}
   if(v==='lnd')renderLnD();
 }
+// Keyboard navigation for tabs (arrow keys)
+document.querySelector('.tabs')?.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+    var tabs=[...this.querySelectorAll('.tab:not([style*="display:none"])')];
+    var cur=tabs.findIndex(function(t){return t.classList.contains('active')});
+    if(cur<0)return;
+    var next=e.key==='ArrowRight'?(cur+1)%tabs.length:(cur-1+tabs.length)%tabs.length;
+    tabs[next].focus();tabs[next].click();
+    e.preventDefault();
+  }
+});
 
 // ====== HELPERS ======
 const esc=s=>(s||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
@@ -4206,6 +4235,8 @@ function saveEditLibrary(id){
   save(LS.library,library);closeModal();renderLibrary();
 }
 function closeModal(){$('modal').classList.remove('open')}
+// Close modal with Escape key
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('modal').classList.contains('open'))closeModal()});
 
 // ====== BRANDS ======
 let _brandsWarmed=false;
@@ -5557,6 +5588,315 @@ function setupRoleAccess(){
 }catch(e){console.error('AUTH IIFE CRASH:',e);var el=document.getElementById('loginErr');if(el)el.textContent='Init error: '+e.message;alert('Startup error: '+e.message)}})();
 </script>
 
+<!-- ============ ENHANCED FEATURES: Loading States, Templates, Export, Offline ============ -->
+<style>
+/* Loading overlay for async operations */
+.loading-overlay{position:fixed;inset:0;background:rgba(6,6,10,.85);backdrop-filter:blur(12px);z-index:99998;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;opacity:0;pointer-events:none;transition:opacity .3s}
+.loading-overlay.active{opacity:1;pointer-events:auto}
+.loading-spinner{width:48px;height:48px;border:3px solid rgba(212,175,106,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--gold);font-size:14px;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
+.loading-sub{color:var(--tx3);font-size:11px;letter-spacing:.06em}
+/* Skeleton loader for dashboard cards */
+.skeleton{background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* Button loading state */
+.btn.loading{position:relative;color:transparent!important;pointer-events:none}
+.btn.loading::after{content:'';position:absolute;inset:0;margin:auto;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+/* Offline indicator */
+.offline-bar{position:fixed;top:0;left:0;right:0;background:linear-gradient(135deg,#FF9F0A,#FF6B3D);color:#fff;text-align:center;padding:8px;font-size:11px;font-weight:600;letter-spacing:.08em;z-index:99999;transform:translateY(-100%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.offline-bar.show{transform:translateY(0)}
+/* Template badge */
+.tpl-badge{display:inline-block;padding:3px 8px;background:rgba(100,80,200,.15);color:#9B8FFF;border:1px solid rgba(100,80,200,.25);border-radius:100px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+</style>
+
+<div class="loading-overlay" id="globalLoader">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loaderText">Processing...</div>
+  <div class="loading-sub" id="loaderSub"></div>
+</div>
+<div class="offline-bar" id="offlineBar">You are offline — changes saved locally and will sync when reconnected</div>
+
+<script>
+// ====== LOADING STATE MANAGER ======
+var Loader={
+  show:function(text,sub){
+    $('loaderText').textContent=text||'Processing...';
+    $('loaderSub').textContent=sub||'';
+    $('globalLoader').classList.add('active');
+  },
+  hide:function(){$('globalLoader').classList.remove('active')},
+  btn:function(el,loading){
+    if(!el)return;
+    if(loading){el.classList.add('loading');el.disabled=true}
+    else{el.classList.remove('loading');el.disabled=false}
+  }
+};
+// Wrap existing functions with loading states
+(function(){
+  // Wrap shareQuoteLink
+  var _origShare=window.shareQuoteLink;
+  if(_origShare)window.shareQuoteLink=async function(){
+    var btn=document.querySelector('.actions-bar .btn[onclick*="shareQuoteLink"]');
+    Loader.btn(btn,true);
+    try{await _origShare()}catch(e){alert('Share error: '+e.message)}finally{Loader.btn(btn,false)}
+  };
+  // Wrap downloadPDF
+  var _origDownload=window.downloadPDF;
+  if(_origDownload)window.downloadPDF=async function(){
+    var btn=document.querySelector('.actions-bar .btn[onclick*="downloadPDF"]');
+    Loader.btn(btn,true);
+    try{await _origDownload()}catch(e){alert('PDF error: '+e.message)}finally{Loader.btn(btn,false)}
+  };
+  // Wrap saveQuote
+  var _origSave=window.saveQuote;
+  if(_origSave)window.saveQuote=async function(){
+    var btn=document.querySelector('.actions-bar .btn[onclick*="saveQuote"]');
+    Loader.btn(btn,true);
+    try{await _origSave()}catch(e){}finally{Loader.btn(btn,false)}
+  };
+})();
+
+// ====== OFFLINE SUPPORT ======
+var OfflineManager={
+  init:function(){
+    window.addEventListener('online',function(){
+      $('offlineBar').classList.remove('show');
+      // Attempt to sync pending changes
+      OfflineManager.syncPending();
+    });
+    window.addEventListener('offline',function(){
+      $('offlineBar').classList.add('show');
+    });
+    if(!navigator.onLine)$('offlineBar').classList.add('show');
+  },
+  syncPending:function(){
+    // Auto-save triggers cloud sync when online
+    if(typeof autoSave==='function'&&typeof current!=='undefined'&&current){
+      try{autoSave()}catch(e){}
+    }
+  }
+};
+OfflineManager.init();
+// Register service worker for offline caching
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+
+// ====== TEMPLATE SYSTEM ======
+var Templates={
+  LS_KEY:'kk_templates',
+  getAll:function(){try{return JSON.parse(localStorage.getItem(this.LS_KEY)||'[]')}catch(e){return[]}},
+  save:function(name,data){
+    var templates=this.getAll();
+    var tpl={id:'tpl_'+Date.now().toString(36),name:name,createdAt:Date.now(),data:JSON.parse(JSON.stringify(data))};
+    // Strip unique identifiers from template
+    delete tpl.data.id;delete tpl.data.quoteNo;delete tpl.data.createdAt;delete tpl.data.updatedAt;
+    tpl.data.clientName='';tpl.data.clientContact='';tpl.data.status='draft';
+    templates.unshift(tpl);
+    localStorage.setItem(this.LS_KEY,JSON.stringify(templates));
+    return tpl;
+  },
+  delete:function(id){
+    var templates=this.getAll().filter(function(t){return t.id!==id});
+    localStorage.setItem(this.LS_KEY,JSON.stringify(templates));
+  },
+  apply:function(tplId){
+    var tpl=this.getAll().find(function(t){return t.id===tplId});
+    if(!tpl||!current)return;
+    var preserve={id:current.id,quoteNo:current.quoteNo,createdAt:current.createdAt,clientName:current.clientName,clientContact:current.clientContact,brandId:current.brandId};
+    Object.assign(current,tpl.data,preserve);
+    current.updatedAt=Date.now();
+    if(typeof loadCurrentToForm==='function')loadCurrentToForm();
+    if(typeof renderItems==='function')renderItems();
+    if(typeof render==='function')render();
+    if(typeof autoSave==='function')autoSave();
+    closeModal();
+  }
+};
+function showTemplateModal(mode){
+  if(!current&&mode==='save'){alert('Open a quote first');return}
+  $('modal').classList.add('open');
+  if(mode==='save'){
+    $('modalTitle').textContent='Save as Template';
+    $('modalBody').innerHTML='<p style="color:var(--tx2);font-size:12px;margin:0 0 14px">Save this quote as a reusable template. Client details will be stripped.</p>'
+      +'<label>Template Name</label>'
+      +'<input id="tplName" placeholder="e.g. Disney Paris Family 5-Night" value="'+(typeof esc==='function'?esc(current.tourTitle||current.dest||''):'')+'">'
+      +'<div style="display:flex;gap:8px;margin-top:14px">'
+      +'<button class="btn" style="flex:1" onclick="confirmSaveTemplate()">Save Template</button>'
+      +'<button class="btn ghost" style="flex:1" onclick="closeModal()">Cancel</button></div>';
+  }else{
+    $('modalTitle').textContent='Load Template';
+    var templates=Templates.getAll();
+    if(!templates.length){
+      $('modalBody').innerHTML='<div class="empty"><h3>No templates yet</h3><p>Save a quote as a template to reuse its structure for future quotes.</p></div>';
+      return;
+    }
+    $('modalBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px">'
+      +templates.map(function(t){
+        var d=t.data||{};
+        return '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--glass);border:1px solid var(--bd);border-radius:12px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor=\'var(--gold)\'" onmouseout="this.style.borderColor=\'var(--bd)\'">'
+          +'<div style="flex:1"><div style="color:var(--tx);font-size:13px;font-weight:600">'+esc(t.name)+'</div>'
+          +'<div style="color:var(--tx3);font-size:10px;margin-top:3px">'+(d.dest||'No destination')+' · '+(d.hotels?d.hotels.length:0)+' hotels · Created '+new Date(t.createdAt).toLocaleDateString('en-GB')+'</div></div>'
+          +'<button class="btn sm" onclick="Templates.apply(\''+t.id+'\')">Use</button>'
+          +'<button class="btn sm danger" onclick="event.stopPropagation();Templates.delete(\''+t.id+'\');showTemplateModal(\'load\')">×</button></div>';
+      }).join('')+'</div>';
+  }
+}
+function confirmSaveTemplate(){
+  var name=($('tplName')||{}).value;
+  if(!name||!name.trim()){alert('Enter a template name');return}
+  Templates.save(name.trim(),current);
+  closeModal();
+  if(typeof showToast==='function')showToast('Template Saved','Template "'+name.trim()+'" saved successfully',{icon:'📋',duration:4000});
+  else alert('Template saved!');
+}
+
+// ====== EXPORT OPTIONS ======
+var ExportManager={
+  // Export as email-ready HTML (single page, inline styles)
+  async exportEmailHTML(){
+    if(!current){alert('Open a quote first');return}
+    Loader.show('Generating Email HTML...');
+    try{
+      var preview=$('preview');if(!preview)throw new Error('Preview not available');
+      var pages=preview.querySelectorAll('.page');if(!pages.length)throw new Error('Preview is empty');
+      var html='<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>'+(esc(current.tourTitle||current.quoteNo||'Quote'))+'</title></head><body style="margin:0;padding:20px;background:#f5f5f5;font-family:Satoshi,Helvetica,Arial,sans-serif">';
+      html+='<div style="max-width:700px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)">';
+      pages.forEach(function(page){html+=page.outerHTML});
+      html+='</div></body></html>';
+      // Clean up styles for email
+      html=html.replace(/var\(--fh\)/g,"'Satoshi',Helvetica,Arial,sans-serif");
+      html=html.replace(/var\(--fb\)/g,"'Satoshi',Helvetica,Arial,sans-serif");
+      html=html.replace(/var\(--fa\)/g,"'Satoshi',Helvetica,Arial,sans-serif");
+      var blob=new Blob([html],{type:'text/html'});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=url;a.download=(current.quoteNo||'quote')+'_email.html';a.click();
+      URL.revokeObjectURL(url);
+      if(typeof showToast==='function')showToast('Email HTML Exported','File downloaded — paste into email client',{icon:'✉️',duration:4000});
+    }catch(e){alert('Export error: '+e.message)}finally{Loader.hide()}
+  },
+  // Export as plain text summary
+  exportTextSummary(){
+    if(!current){alert('Open a quote first');return}
+    var c=current;var curr=typeof sym==='function'?sym(c.curr||'GBP'):'£';
+    var lines=[];
+    lines.push('TRAVEL QUOTE — '+(c.tourTitle||c.dest||''));
+    lines.push('Quote No: '+(c.quoteNo||''));
+    lines.push('Date: '+new Date().toLocaleDateString('en-GB'));
+    lines.push('');
+    lines.push('CLIENT: '+(c.clientName||''));
+    lines.push('Contact: '+(c.clientContact||''));
+    lines.push('Travelers: '+(c.travelers||''));
+    lines.push('');
+    if(c.dest)lines.push('DESTINATION: '+c.dest);
+    if(c.startDate||c.endDate)lines.push('DATES: '+(c.startDate||'')+' to '+(c.endDate||''));
+    lines.push('');
+    if(c.hotels&&c.hotels.length){
+      lines.push('ACCOMMODATION:');
+      c.hotels.forEach(function(h,i){
+        lines.push('  '+(i+1)+'. '+(h.name||'Hotel')+(h.city?' — '+h.city:'')+(h.nights?' ('+h.nights+' nights)':'')+(h.board?' — '+h.board:''));
+      });
+      lines.push('');
+    }
+    if(c.flightsInc){
+      lines.push('FLIGHTS:');
+      if(c.flightOutFrom)lines.push('  Outbound: '+c.flightOutFrom+' → '+c.flightOutTo+(c.flightOutDate?' on '+c.flightOutDate:''));
+      if(c.flightRetFrom)lines.push('  Return: '+c.flightRetFrom+' → '+c.flightRetTo+(c.flightRetDate?' on '+c.flightRetDate:''));
+      lines.push('');
+    }
+    if(c.excursions&&c.excursions.length){
+      lines.push('EXCURSIONS:');
+      c.excursions.forEach(function(x,i){lines.push('  '+(i+1)+'. '+(x.name||'Excursion')+(x.location?' — '+x.location:''))});
+      lines.push('');
+    }
+    if(c.prices&&c.prices.length){
+      lines.push('PRICING:');
+      c.prices.forEach(function(p){lines.push('  '+(p.label||'Item')+': '+curr+(p.amt||'0')+(p.total?' (TOTAL)':''))});
+      lines.push('');
+    }
+    if(c.incl){lines.push('INCLUDED:');c.incl.split('\n').forEach(function(l){if(l.trim())lines.push('  ✓ '+l.trim())});lines.push('')}
+    if(c.excl){lines.push('NOT INCLUDED:');c.excl.split('\n').forEach(function(l){if(l.trim())lines.push('  ✗ '+l.trim())});lines.push('')}
+    lines.push('---');
+    lines.push('Generated by OWT Group Quote Generator');
+    var text=lines.join('\n');
+    var blob=new Blob([text],{type:'text/plain'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download=(c.quoteNo||'quote')+'_summary.txt';a.click();
+    URL.revokeObjectURL(url);
+    if(typeof showToast==='function')showToast('Text Summary Exported','Plain text file downloaded',{icon:'📝',duration:4000});
+  },
+  // Export as CSV (for spreadsheet import)
+  exportCSV(){
+    if(!current){alert('Open a quote first');return}
+    var c=current;
+    var rows=[['Field','Value']];
+    rows.push(['Quote Number',c.quoteNo||'']);
+    rows.push(['Client Name',c.clientName||'']);
+    rows.push(['Client Contact',c.clientContact||'']);
+    rows.push(['Destination',c.dest||'']);
+    rows.push(['Tour Title',c.tourTitle||'']);
+    rows.push(['Start Date',c.startDate||'']);
+    rows.push(['End Date',c.endDate||'']);
+    rows.push(['Travelers',c.travelers||'']);
+    rows.push(['Status',c.status||'draft']);
+    if(c.hotels)c.hotels.forEach(function(h,i){
+      rows.push(['Hotel '+(i+1),h.name+' — '+(h.city||'')+' — '+(h.nights||'')+' nights — '+(h.board||'')]);
+    });
+    if(c.prices)c.prices.forEach(function(p){
+      rows.push([(p.total?'TOTAL: ':'')+p.label,p.amt||'0']);
+    });
+    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c||'').replace(/"/g,'""')+'"'}).join(',')}).join('\n');
+    var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download=(c.quoteNo||'quote')+'.csv';a.click();
+    URL.revokeObjectURL(url);
+    if(typeof showToast==='function')showToast('CSV Exported','Spreadsheet file downloaded',{icon:'📊',duration:4000});
+  }
+};
+
+// ====== EXPORT MENU ======
+function showExportMenu(e){
+  e.stopPropagation();
+  var existing=document.getElementById('exportMenu');if(existing)existing.remove();
+  var btn=e.target.closest('.btn');
+  var rect=btn.getBoundingClientRect();
+  var menu=document.createElement('div');menu.id='exportMenu';
+  menu.style.cssText='position:fixed;bottom:'+(window.innerHeight-rect.top+6)+'px;left:'+rect.left+'px;min-width:200px;background:var(--bg-secondary);backdrop-filter:blur(20px);border:1px solid var(--bd-glass);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:999;overflow:hidden;animation:lxFadeUp .2s ease';
+  menu.innerHTML=[
+    {icon:'✉️',label:'Email-Ready HTML',fn:'ExportManager.exportEmailHTML()'},
+    {icon:'📝',label:'Text Summary',fn:'ExportManager.exportTextSummary()'},
+    {icon:'📊',label:'CSV Spreadsheet',fn:'ExportManager.exportCSV()'}
+  ].map(function(item){
+    return '<div style="padding:10px 16px;cursor:pointer;font-size:12px;color:var(--tx);display:flex;align-items:center;gap:10px;transition:background .15s;border-bottom:1px solid var(--bd)" onmouseover="this.style.background=\'var(--glass-h)\'" onmouseout="this.style.background=\'transparent\'" onclick="'+item.fn+';document.getElementById(\'exportMenu\').remove()"><span>'+item.icon+'</span><span>'+item.label+'</span></div>';
+  }).join('');
+  document.body.appendChild(menu);
+  setTimeout(function(){document.addEventListener('click',function _close(){document.getElementById('exportMenu')?.remove();document.removeEventListener('click',_close)})},10);
+}
+
+// ====== KEYBOARD SHORTCUTS ======
+document.addEventListener('keydown',function(e){
+  // Ctrl+S / Cmd+S to save
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){
+    e.preventDefault();
+    if(typeof saveQuote==='function'&&current)saveQuote();
+  }
+  // Ctrl+P / Cmd+P to download PDF
+  if((e.ctrlKey||e.metaKey)&&e.key==='p'){
+    e.preventDefault();
+    if(typeof downloadPDF==='function'&&current)downloadPDF();
+  }
+  // Ctrl+N / Cmd+N for new quote
+  if((e.ctrlKey||e.metaKey)&&e.key==='n'){
+    e.preventDefault();
+    if(typeof pickCompanyForNewQuote==='function'){switchView('editor');pickCompanyForNewQuote()}
+  }
+});
+</script>
+
 <!-- QUOTE VIEWER (client-facing mobile page) -->
 <div id="quoteViewer"></div>
 <script>
@@ -5871,7 +6211,7 @@ function setupRoleAccess(){
       // Save on page close
       window.addEventListener('beforeunload',function(){
         if(!_trackViewId)return;
-        var url='https://faebuflzzeetphtudycw.supabase.co/rest/v1/qg_quote_views?id=eq.'+_trackViewId;
+        var url=SB_URL+'/rest/v1/qg_quote_views?id=eq.'+_trackViewId;
         fetch(url,{method:'PATCH',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({sections_viewed:_sectionTimes}),keepalive:true}).catch(function(){});
       });
     }
