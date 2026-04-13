@@ -1834,13 +1834,14 @@ function createQuoteForBrand(brandId){
   closeModal();
 }
 function pickCompanyForNewQuote(){
-  if(!brands.length){alert('No companies set up yet. Please add a company first in the Companies tab.');switchView('brands');return}
+  var vb=getVisibleBrands();
+  if(!vb.length){alert('No companies available. Please contact your administrator.');return}
   $('modal').classList.add('open');
   $('modalTitle').textContent='Select Company for New Quote';
   $('modalBody').innerHTML=`
     <p style="color:var(--tx2);margin:0 0 18px;font-size:13px;line-height:1.6">Choose which company this quote is being prepared for. The quote format, logo, branding and default terms will automatically update to match.</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
-      ${brands.map(b=>{var c=b.brandColor||'#C4A55A';var c2=adjustColor(c,-20);var ini=(b.name||'BR').split(' ').map(function(w){return w[0]}).join('').substring(0,3).toUpperCase();return `<div class="brand-card" draggable="true" data-brand-id="${b.id}" ondragstart="brandDragStart(event,'${b.id}')" ondragover="brandDragOver(event)" ondrop="event.preventDefault();brandDrop(event,'${b.id}');pickCompanyForNewQuote()" ondragend="brandDragEnd(event)" onclick="createQuoteForBrand('${b.id}')">
+      ${vb.map(b=>{var c=b.brandColor||'#C4A55A';var c2=adjustColor(c,-20);var ini=(b.name||'BR').split(' ').map(function(w){return w[0]}).join('').substring(0,3).toUpperCase();return `<div class="brand-card" draggable="true" data-brand-id="${b.id}" ondragstart="brandDragStart(event,'${b.id}')" ondragover="brandDragOver(event)" ondrop="event.preventDefault();brandDrop(event,'${b.id}');pickCompanyForNewQuote()" ondragend="brandDragEnd(event)" onclick="createQuoteForBrand('${b.id}')">
         <div style="height:80px;background:linear-gradient(135deg,rgba(212,175,106,.12),rgba(20,20,28,.4));display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border-bottom:1px solid var(--bd)">
           <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(212,175,106,.1),transparent 70%)"></div>
           <div style="position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:100px;background:rgba(20,20,28,.6);border:1px solid var(--bd-gold);font-size:8px;color:var(--gold);font-weight:600;letter-spacing:.1em">${esc((b.code||'—').toUpperCase())}</div>
@@ -1883,7 +1884,8 @@ function deleteAllQuotes(){
 
 // ====== BRAND DROPDOWN ======
 function renderBrandDropdown(){
-  $('brandId').innerHTML=brands.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
+  var vb=getVisibleBrands();
+  $('brandId').innerHTML=vb.map(b=>`<option value="${b.id}">${esc(b.name)}</option>`).join('');
 }
 function onBrandChange(){
   if(!current)return;
@@ -3438,12 +3440,13 @@ function saveQuote(){
 // ====== DASHBOARD ======
 function renderDashboard(){
   $('navAgent').textContent=load(LS.agent,'—');
-  $('statTotal').textContent=quotes.length;
-  $('statDraft').textContent=quotes.filter(q=>q.status==='draft').length;
-  $('statSent').textContent=quotes.filter(q=>q.status==='sent').length;
+  var vq=getVisibleQuotes();
+  $('statTotal').textContent=vq.length;
+  $('statDraft').textContent=vq.filter(q=>q.status==='draft').length;
+  $('statSent').textContent=vq.filter(q=>q.status==='sent').length;
   $('statLib').textContent=library.length;
   const search=($('dashSearch').value||'').toLowerCase();
-  const list=quotes.filter(q=>!search||(q.clientName+q.dest+q.quoteNo+q.tourTitle).toLowerCase().includes(search))
+  const list=vq.filter(q=>!search||(q.clientName+q.dest+q.quoteNo+q.tourTitle).toLowerCase().includes(search))
     .sort((a,b)=>b.updatedAt-a.updatedAt);
   $('qtbody').innerHTML=list.length?list.map(q=>{
     const b=brands.find(x=>x.id===q.brandId);
@@ -4610,6 +4613,51 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 })();
 
 /* ============================================================
+   ROLE-BASED ACCESS CONTROL
+   ============================================================ */
+var SUPER_ADMIN_EMAIL='admin@owtgroupltd.co.uk';
+window.currentUserRole=null;
+async function getUserRole(){
+  if(!SB.user)return null;
+  var email=SB.user.email.toLowerCase();
+  if(email===SUPER_ADMIN_EMAIL.toLowerCase())return{role:'super_admin',assignedBrands:'__all__',name:'Super Admin'};
+  try{
+    var res=await SB.client.from('qg_users').select('*').eq('email',email).single();
+    if(res.error||!res.data)return null;
+    if(!res.data.active)return{role:'frozen',assignedBrands:[],name:res.data.name};
+    return{role:res.data.role,assignedBrands:res.data.assigned_brands||[],name:res.data.name||email,id:res.data.id};
+  }catch(e){return null}
+}
+function getVisibleBrands(){
+  if(!window.currentUserRole)return brands;
+  if(window.currentUserRole.role==='super_admin'||window.currentUserRole.assignedBrands==='__all__')return brands;
+  var assigned=window.currentUserRole.assignedBrands||[];
+  return brands.filter(function(b){return assigned.includes(b.id)});
+}
+function getVisibleQuotes(){
+  if(!window.currentUserRole)return quotes;
+  if(window.currentUserRole.role==='super_admin'||window.currentUserRole.assignedBrands==='__all__')return quotes;
+  var assigned=window.currentUserRole.assignedBrands||[];
+  return quotes.filter(function(q){return assigned.includes(q.brandId)});
+}
+function isSuperAdmin(){return window.currentUserRole&&window.currentUserRole.role==='super_admin'}
+function isBrandAdmin(){return window.currentUserRole&&window.currentUserRole.role==='brand_admin'}
+function isAgent(){return window.currentUserRole&&window.currentUserRole.role==='agent'}
+function setupRoleAccess(){
+  var role=window.currentUserRole?.role;
+  // Agents: hide Admin tab
+  if(role==='agent'){
+    var at=document.getElementById('navAdminTab');if(at)at.style.display='none';
+  }
+  // Show role badge in header
+  var chip=document.getElementById('navUserChip');
+  if(chip&&window.currentUserRole){
+    var rl=role==='super_admin'?'Super Admin':role==='brand_admin'?'Brand Admin':'Agent';
+    chip.innerHTML='<b>'+esc(window.currentUserRole.name||'')+'</b> <span style="font-size:8px;padding:2px 6px;border-radius:4px;background:'+(role==='super_admin'?'rgba(212,175,106,.15);color:#C4A55A':role==='brand_admin'?'rgba(43,76,126,.15);color:#5B9BD5':'var(--bg-tertiary);color:var(--tx3)')+'">'+rl+'</span>';
+  }
+}
+
+/* ============================================================
    AUTH + ADMIN PANEL SYSTEM (Supabase Auth + cloud sync)
    ============================================================ */
 (function(){try{
@@ -4643,11 +4691,24 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   const btn=document.getElementById('loginBtn');
 
   async function showApp(){
-    gate.classList.add('hidden');
     const email=SB.user?.email||'Agent';
     const name=SB.user?.user_metadata?.name||email.split('@')[0];
+    // Check user role
+    errEl.textContent='Checking access...';
+    window.currentUserRole=await getUserRole();
+    // If no role and not super admin — still allow access as agent (backwards compat)
+    if(!window.currentUserRole){
+      window.currentUserRole={role:'agent',assignedBrands:'__all__',name:name};
+    }
+    if(window.currentUserRole.role==='frozen'){
+      errEl.textContent='';
+      document.getElementById('loginGate').innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh"><div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:16px">❄️</div><div style="font-size:18px;color:#fff;margin-bottom:8px">Account Frozen</div><div style="font-size:13px;color:#888">Your account has been frozen. Contact your administrator.</div></div></div>';
+      return;
+    }
+    gate.classList.add('hidden');
     document.getElementById('navUserName').textContent=name;
     document.getElementById('navAdminTab').style.display='';
+    setupRoleAccess();
     // Pull data from cloud
     try{
       errEl.textContent='Syncing data from cloud...';
