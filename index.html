@@ -4864,20 +4864,24 @@ window.currentUserRole=null;
 // ── Role detection after auth ──
 async function getUserRole(){
   if(!SB.user)return null;
-  var email=SB.user.email.toLowerCase();
+  var email=(SB.user.email||'').toLowerCase().trim();
+  console.log('[RBAC] getUserRole for:',email,'super_admin_email:',SUPER_ADMIN_EMAIL.toLowerCase());
   // Super admin — hardcoded, always works
-  if(email===SUPER_ADMIN_EMAIL.toLowerCase()){
-    try{await SB.client.from('qg_users').upsert({email:email,name:'Super Admin',role:'super_admin',assigned_brands:[],active:true,last_login:new Date().toISOString()},{onConflict:'email'})}catch(e){}
+  if(email===SUPER_ADMIN_EMAIL.toLowerCase().trim()){
+    console.log('[RBAC] Super admin match!');
+    try{await SB.client.from('qg_users').upsert({email:email,name:'Super Admin',role:'super_admin',assigned_brands:[],active:true,last_login:new Date().toISOString()},{onConflict:'email'})}catch(e){console.warn('[RBAC] upsert warn:',e)}
     return{role:'super_admin',assignedBrands:'__all__',name:'Super Admin',email:email,activeBrand:'all'};
   }
+  // Check qg_users table for other users
   try{
     var res=await SB.client.from('qg_users').select('*').eq('email',email).single();
+    console.log('[RBAC] qg_users lookup:',res.data?.role,res.error?.message);
     if(res.error||!res.data)return{role:'denied',message:'Your account has not been set up. Please contact your administrator.'};
     if(!res.data.active)return{role:'frozen',assignedBrands:[],name:res.data.name};
-    await SB.client.from('qg_users').update({last_login:new Date().toISOString()}).eq('email',email);
+    try{await SB.client.from('qg_users').update({last_login:new Date().toISOString()}).eq('email',email)}catch(e){}
     var ab=res.data.assigned_brands||[];
     return{role:res.data.role,assignedBrands:ab,name:res.data.name||email,email:email,id:res.data.id,activeBrand:ab.length===1?ab[0]:'all'};
-  }catch(e){return null}
+  }catch(e){console.error('[RBAC] getUserRole error:',e);return null}
 }
 
 // ── Permission helpers ──
@@ -5182,9 +5186,10 @@ window.rbacDeleteUser=rbacDeleteUser;
     // Check user role via 4-tier RBAC
     errEl.textContent='Checking access...';
     window.currentUserRole=await getUserRole();
+    console.log('[RBAC] showApp result:',JSON.stringify(window.currentUserRole));
     // Handle denied/frozen/null
     if(!window.currentUserRole){
-      showAccessDenied('Unable to verify your account. Please contact your administrator.');
+      showAccessDenied('Unable to verify your account. Please contact your administrator. (Debug: getUserRole returned null for '+email+')');
       return;
     }
     if(window.currentUserRole.role==='denied'){
