@@ -405,6 +405,8 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
   .actions-bar .btn{width:100%;min-width:0}
   .check-grp .grp-items{grid-template-columns:1fr}
   .loading-overlay .loading-text{font-size:12px;letter-spacing:.08em}
+  #brandSwitcherBar{padding:6px 12px!important}
+  #brandSwitcherBar button{padding:4px 10px!important;font-size:9px!important}
   #exportMenu{left:8px!important;right:8px!important;min-width:auto!important}
   #view-admin .admin-wrap{padding:18px 14px}
   #view-admin h1{font-size:28px}
@@ -772,10 +774,10 @@ body.viewer-mode #quoteViewer{display:block!important}
         <button onclick="switchView('admin');setTimeout(function(){document.querySelector('.adm-tab[data-adm=\\'shared\\']')?.click()},100);toggleNotifPanel()" style="font-size:10px;color:var(--gold);background:none;border:none;cursor:pointer;font-weight:600">View All in Shared Quotes →</button>
       </div>
     </div>
-    <span>Agent:</span><span class="agent" id="navAgent">—</span>
-    <span class="user-chip" id="navUserChip" title="Click to sign out">User: <b id="navUserName">—</b></span>
+    <span class="user-chip" id="navUserChip" title="Click to sign out"><b id="navUserName">—</b></span>
   </div>
 </div>
+<div id="brandSwitcherBar" style="display:none;background:rgba(12,12,16,.6);backdrop-filter:blur(12px);border-bottom:1px solid var(--bd);padding:6px 28px;z-index:49"></div>
 
 <!-- ============ ADMIN VIEW ============ -->
 <div class="view" id="view-admin">
@@ -3511,7 +3513,7 @@ function saveQuote(){
 
 // ====== DASHBOARD ======
 function renderDashboard(){
-  $('navAgent').textContent=load(LS.agent,'—');
+  if($('navAgent'))$('navAgent').textContent=load(LS.agent,'—');
   var vq=getVisibleQuotes();
   $('statTotal').textContent=vq.length;
   $('statDraft').textContent=vq.filter(q=>q.status==='draft').length;
@@ -4835,8 +4837,10 @@ function loadAirlineFromCurrent(){
   else if(v){sel.value='__custom__';custom.style.display='block';custom.value=v}
   else{sel.value='';custom.style.display='none'}
 }
-$('navAgent').textContent=load(LS.agent,'Jane Doe');
-$('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){save(LS.agent,n);$('navAgent').textContent=n;if(current){current.agent=n;$('agent').value=n;render()}}};
+if($('navAgent')){
+  $('navAgent').textContent=load(LS.agent,'Jane Doe');
+  $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){save(LS.agent,n);$('navAgent').textContent=n;if(current){current.agent=n;$('agent').value=n;render()}}};
+}
 // ====== ASYNC BOOTSTRAP — init IndexedDB, migrate, then render ======
 (async function bootstrap(){
   try{
@@ -4964,22 +4968,20 @@ async function getVisibleSharedQuotes(){
 
 // ── Brand Switcher ──
 function renderBrandSwitcher(){
-  var container=$('brandSwitcher');
-  if(!container){
-    container=document.createElement('div');container.id='brandSwitcher';
-    var navRight=document.querySelector('.nav .right');
-    if(navRight)navRight.insertBefore(container,navRight.firstChild);
-  }
+  var bar=$('brandSwitcherBar');
+  if(!bar)return;
   var vb=getVisibleBrands();
   // Don't show for single-brand non-admin users
-  if(vb.length<=1&&!isSuperAdmin()){container.innerHTML='';return}
+  if(vb.length<=1&&!isSuperAdmin()){bar.style.display='none';bar.innerHTML='';return}
   var active=window.currentUserRole?.activeBrand||'all';
-  container.innerHTML='<div style="display:flex;gap:3px;margin-right:12px">'
-    +'<button onclick="switchActiveBrand(\'all\')" style="padding:4px 10px;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid '+(active==='all'?'var(--gold)':'var(--bd)')+';background:'+(active==='all'?'var(--gold)':'transparent')+';color:'+(active==='all'?'#0a0a0a':'var(--tx2)')+';transition:all .2s">All</button>'
+  bar.style.display='block';
+  bar.innerHTML='<div style="display:flex;align-items:center;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none">'
+    +'<span style="font-size:9px;color:var(--tx3);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-right:4px;white-space:nowrap">Brand:</span>'
+    +'<button onclick="switchActiveBrand(\'all\')" style="padding:5px 14px;border-radius:8px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid '+(active==='all'?'var(--gold)':'var(--bd)')+';background:'+(active==='all'?'var(--gold)':'transparent')+';color:'+(active==='all'?'#0a0a0a':'var(--tx2)')+';transition:all .2s">All Brands</button>'
     +vb.map(function(b){
       var isActive=active===b.id;var c=b.brandColor||'#C4A55A';
-      return '<button onclick="switchActiveBrand(\''+esc(b.id)+'\')" style="padding:4px 10px;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid '+(isActive?c:'var(--bd)')+';background:'+(isActive?c:'transparent')+';color:'+(isActive?'#fff':'var(--tx2)')+';transition:all .2s;display:flex;align-items:center;gap:3px">'
-        +'<span style="width:5px;height:5px;border-radius:50%;background:'+c+';flex-shrink:0"></span>'+esc(b.name||b.id)+'</button>';
+      return '<button onclick="switchActiveBrand(\''+esc(b.id)+'\')" style="padding:5px 14px;border-radius:8px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid '+(isActive?c:'var(--bd)')+';background:'+(isActive?c:'transparent')+';color:'+(isActive?'#fff':'var(--tx2)')+';transition:all .2s;display:flex;align-items:center;gap:4px">'
+        +'<span style="width:6px;height:6px;border-radius:50%;background:'+c+';flex-shrink:0"></span>'+esc(b.name||b.id)+'</button>';
     }).join('')+'</div>';
 }
 function switchActiveBrand(brandId){
@@ -5017,11 +5019,10 @@ function setupRoleAccess(){
   var chip=$('navUserChip');
   if(chip&&window.currentUserRole){
     var roleLabels={super_admin:'Super Admin',brand_manager:'Brand Manager',senior_agent:'Senior Agent',agent:'Agent'};
-    var roleColors={super_admin:'rgba(212,175,106,.15);color:#C4A55A',brand_manager:'rgba(43,76,126,.15);color:#5B9BD5',senior_agent:'rgba(48,209,88,.12);color:#30D158',agent:'var(--bg-tertiary);color:var(--tx3)'};
+    var roleColors={super_admin:'#C4A55A',brand_manager:'#5B9BD5',senior_agent:'#30D158',agent:'#888'};
     var rl=roleLabels[role]||role;
-    var brandNames=isSuperAdmin()?'All Brands':getVisibleBrands().map(function(b){return b.name}).join(', ')||'No brands';
-    chip.innerHTML='<b>'+esc(window.currentUserRole.name||'')+'</b> <span style="font-size:8px;padding:2px 6px;border-radius:4px;background:'+(roleColors[role]||'var(--bg-tertiary);color:var(--tx3)')+'">'+rl+'</span>'
-      +'<span style="font-size:7px;color:var(--tx3);margin-left:4px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle">'+esc(brandNames)+'</span>';
+    var clr=roleColors[role]||'#888';
+    chip.innerHTML='<b>'+esc(window.currentUserRole.name||'')+'</b> <span style="font-size:8px;padding:2px 7px;border-radius:4px;background:'+clr+'22;color:'+clr+';font-weight:600;letter-spacing:.03em">'+rl+'</span>';
   }
   // Render brand switcher
   renderBrandSwitcher();
