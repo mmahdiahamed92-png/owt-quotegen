@@ -1,5 +1,5 @@
 // OWTQuotegen Service Worker — Offline Support
-const CACHE_NAME = 'owtquotegen-v1';
+const CACHE_NAME = 'owtquotegen-v2';
 const ASSETS_TO_CACHE = [
   './',
   './Index.html',
@@ -43,6 +43,8 @@ self.addEventListener('fetch', function(event) {
   // Skip non-GET requests and Supabase API calls (always need fresh data)
   if (event.request.method !== 'GET') return;
   if (url.hostname.includes('supabase.co')) return;
+  // Skip navigation requests with hash (share links — clients need fresh page)
+  if (event.request.mode === 'navigate') return;
 
   event.respondWith(
     fetch(event.request).then(function(response) {
