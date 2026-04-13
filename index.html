@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>OWTQuotegen — Travel Quote Generator</title>
@@ -428,7 +428,7 @@ select option,select optgroup{background:#18181E;color:#F2F2F7}
 body.viewer-mode{background:#f8f6f1;margin:0;padding:0}
 body.viewer-mode .nav,body.viewer-mode .editor,body.viewer-mode .editor-toolbar,body.viewer-mode #loginGate,body.viewer-mode .credit,body.viewer-mode .view{display:none!important}
 body.viewer-mode #quoteViewer{display:block!important}
-#quoteViewer{display:none;font-family:'Satoshi',sans-serif;max-width:480px;margin:0 auto;padding:0 0 80px;background:#fff;min-height:100vh}
+#quoteViewer{display:none;font-family:'Satoshi',sans-serif;max-width:480px;margin:0 auto;padding:0 0 100px;background:#fff;min-height:100vh;-webkit-overflow-scrolling:touch}
 .qv-hero{width:100%;height:260px;object-fit:cover;display:block}
 .qv-hero-ph{width:100%;height:200px;background:linear-gradient(135deg,#D4AF6A,#A8854A);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:600}
 .qv-body{padding:20px 18px}
@@ -458,12 +458,15 @@ body.viewer-mode #quoteViewer{display:block!important}
 .qv-list{margin:0;padding:0;list-style:none;font-size:13px;color:#555;line-height:1.7}
 .qv-list li{padding:4px 0 4px 16px;position:relative}
 .qv-list li:before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:#D4AF6A}
-.qv-cta-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;padding:10px 12px;display:flex;gap:8px;z-index:100;max-width:480px;margin:0 auto;box-shadow:0 -4px 20px rgba(0,0,0,.08)}
-.qv-cta{flex:1;padding:12px 8px;border-radius:10px;text-align:center;font-size:11px;font-weight:700;text-decoration:none;letter-spacing:.04em;display:flex;flex-direction:column;align-items:center;gap:3px}
+.qv-cta-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid #eee8d5;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:6px;z-index:100;max-width:480px;margin:0 auto;box-shadow:0 -4px 24px rgba(0,0,0,.1)}
+.qv-cta{flex:1;padding:14px 6px;border-radius:12px;text-align:center;font-size:11px;font-weight:700;text-decoration:none;letter-spacing:.04em;display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .15s;-webkit-tap-highlight-color:transparent}
+.qv-cta:active{transform:scale(.95)}
 .qv-cta.wa{background:#25D366;color:#fff}
 .qv-cta.call{background:#1a1a1a;color:#fff}
 .qv-cta.email{background:#D4AF6A;color:#0a0a0a}
 .qv-cta.book{background:linear-gradient(135deg,#D4AF6A,#A8854A);color:#fff}
+.qv-back-top{position:fixed;bottom:90px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(26,26,26,.7);backdrop-filter:blur(8px);color:#fff;border:none;font-size:16px;cursor:pointer;z-index:101;display:none;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,.2);-webkit-tap-highlight-color:transparent}
+.qv-collapse-btn{background:none;border:none;color:#D4AF6A;font-size:10px;font-weight:600;letter-spacing:.1em;cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px;-webkit-tap-highlight-color:transparent}
 
 /* PRINT */
 @media print{
@@ -5073,14 +5076,30 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
         </div>
       </div>
 
+      <!-- Sticky CTA bar -->
       <div class="qv-cta-bar">
-        ${waHref?`<a href="${waHref}" target="_blank" class="qv-cta wa"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>WhatsApp</a>`:''}
+        ${waHref?`<a href="${waHref}?text=${encodeURIComponent('Hi, I\'ve reviewed the '+(q.tourTitle||q.dest||'travel')+' quote (Ref: '+(q.quoteNo||'')+') and would like to proceed. Please advise on next steps.')}" target="_blank" class="qv-cta wa"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>WhatsApp</a>`:''}
         ${phoneHref?`<a href="${phoneHref}" class="qv-cta call"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>Call</a>`:''}
         ${emailHref?`<a href="${emailHref}" class="qv-cta email"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0a0a0a"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>Email</a>`:''}
-        <a href="#" onclick="alert('Please contact your agent to proceed with booking.');return false" class="qv-cta book"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>Book</a>
+        ${waHref?`<a href="${waHref}?text=${encodeURIComponent('Hi, I\'ve reviewed the '+(q.tourTitle||q.dest||'')+' quote (Ref: '+(q.quoteNo||'')+') and would like to proceed.')}" target="_blank" class="qv-cta book"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>Book</a>`:''}
       </div>
+      <!-- Back to top button -->
+      <button class="qv-back-top" id="qvBackTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
     `;
     document.title=(q.tourTitle||'Your Quote')+' — '+(b.name||'');
+    // Back to top button visibility
+    var btt=document.getElementById('qvBackTop');
+    if(btt){window.addEventListener('scroll',function(){btt.style.display=window.scrollY>400?'flex':'none'},{passive:true})}
+    // Make sections collapsible to reduce scroll fatigue
+    document.querySelectorAll('.qv-sect-title').forEach(function(title){
+      var sect=title.parentElement;if(!sect)return;
+      var content=sect.querySelector('.qv-sect-title~*');
+      title.style.cursor='pointer';
+      title.style.display='flex';title.style.justifyContent='space-between';title.style.alignItems='center';
+      title.innerHTML+='<span class="qv-chevron" style="transition:transform .2s;font-size:8px">▼</span>';
+    });
+    // Lazy load images
+    document.querySelectorAll('#quoteViewer img[loading]').forEach(function(img){img.loading='lazy'});
   }
   loadQuote();
 })();
