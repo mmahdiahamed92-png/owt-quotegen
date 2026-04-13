@@ -4994,7 +4994,9 @@ function setupRoleAccess(){
         if(!error&&data&&data.length){
           tb.innerHTML=data.map(function(u){
             var isMe=u.email===myEmail;
+            var isSA=u.email.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase();
             var actions=isMe?'<span style="color:var(--success);font-size:11px">● You</span>':
+              isSA?'<span style="color:var(--gold);font-size:10px">🔒 Super Admin</span>':
               '<button class="adm-btn ghost" style="padding:4px 10px;font-size:10px" onclick="resetAgentPw(\''+u.id+'\',\''+esc(u.email)+'\')">Reset PW</button> '+
               '<button class="adm-btn danger" style="padding:4px 10px;font-size:10px" onclick="deleteAgent(\''+u.id+'\',\''+esc(u.email)+'\')">Delete</button>';
             return '<tr><td><b>'+esc(u.email)+'</b></td><td>'+esc(u.name||'')+'</td><td>'+fmtTs(u.created_at)+'</td><td>'+(u.last_sign_in?fmtTs(u.last_sign_in):'Never')+'</td><td style="text-align:right">'+actions+'</td></tr>';
@@ -5006,6 +5008,7 @@ function setupRoleAccess(){
     tb.innerHTML='<tr><td><b>'+esc(myEmail)+'</b></td><td>'+esc(SB.user?.user_metadata?.name||'')+'</td><td>'+(SB.user?.created_at?fmtTs(SB.user.created_at):'—')+'</td><td>'+(SB.user?.last_sign_in_at?fmtTs(SB.user.last_sign_in_at):'—')+'</td><td style="text-align:right"><span style="color:var(--success);font-size:11px">● You</span></td></tr>';
   }
   window.deleteAgent=async function(id,email){
+    if(email.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase()){alert('Cannot delete the Super Admin account.');return}
     if(!confirm('Delete agent '+email+'? This cannot be undone.'))return;
     try{
       var{error}=await SB.client.rpc('delete_agent',{agent_id:id});
