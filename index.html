@@ -3556,6 +3556,17 @@ function renderDashboard(){
   $('statDraft').textContent=vq.filter(q=>q.status==='draft').length;
   $('statSent').textContent=vq.filter(q=>q.status==='sent').length;
   $('statLib').textContent=library.length;
+  // Show brand filter indicator
+  var dashSub=document.querySelector('#view-dashboard .sub');
+  if(dashSub&&window.currentUserRole){
+    var role=window.currentUserRole.role;
+    var activeBrand=getActiveBrandFilter();
+    var brandLabel='';
+    if(role==='super_admin'){brandLabel=activeBrand?(brands.find(function(b){return b.id===activeBrand})||{}).name||'':'All Brands'}
+    else{var vb=getVisibleBrands();brandLabel=activeBrand?(brands.find(function(b){return b.id===activeBrand})||{}).name||'':vb.map(function(b){return b.name}).join(', ')}
+    if(brandLabel)dashSub.innerHTML='Showing data for <b style="color:var(--gold)">'+esc(brandLabel)+'</b>';
+    else dashSub.textContent='Manage your tour quotes and destination library';
+  }
   const search=($('dashSearch').value||'').toLowerCase();
   const list=vq.filter(q=>!search||(q.clientName+q.dest+q.quoteNo+q.tourTitle).toLowerCase().includes(search))
     .sort((a,b)=>b.updatedAt-a.updatedAt);
