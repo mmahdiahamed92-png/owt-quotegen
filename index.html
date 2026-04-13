@@ -1863,6 +1863,22 @@ const nl=s=>esc(s).replace(/\n/g,'<br>');
 const lines=s=>(s||'').split('\n').filter(x=>x.trim()).map(x=>`<li>${esc(x)}</li>`).join('');
 const fmt=d=>d?new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
 const stars=n=>'★'.repeat(+n||0)+'☆'.repeat(5-(+n||0));
+// ── Universal WhatsApp helpers ──
+const waClean=n=>(n||'').replace(/[^\d]/g,'');
+function getBrandWhatsApp(brandId){
+  var brand=brands.find(function(b){return b.id===brandId});
+  if(!brand||!brand.whatsapp||!brand.whatsapp.length)return null;
+  var list=brand.whatsapp.map(function(w){return typeof w==='string'?{number:w,link:'',primary:false}:w}).filter(function(w){return w.number});
+  if(!list.length)return null;
+  var primary=list.find(function(w){return w.primary})||list[0];
+  var clean=waClean(primary.number);
+  return{number:primary.number,clean:clean,link:primary.link||('https://wa.me/'+clean),brandName:brand.name||'',brandId:brandId};
+}
+function buildWhatsAppUrl(brandId,message){
+  var wa=getBrandWhatsApp(brandId);
+  if(!wa)return'#';
+  return wa.link+(message?'?text='+encodeURIComponent(message):'');
+}
 const fileToData=(f,cb)=>{
   const r=new FileReader();
   r.onload=e=>{
@@ -3284,7 +3300,7 @@ async function shareQuoteLink(){
       +'</div>'
       +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
       +'<button class="btn" style="flex:1;min-width:120px" onclick="navigator.clipboard.writeText(\''+shareUrl.replace(/'/g,"\\'")+'\');this.textContent=\'✓ Copied!\'">📋 Copy Link</button>'
-      +'<button class="btn ghost" style="flex:1;min-width:120px;border-color:#25D366;color:#25D366" onclick="window.open(\'https://wa.me/'+clientPhone+'?text=\'+encodeURIComponent(document.getElementById(\'__waMsg\').value))">📱 WhatsApp</button>'
+      +'<button class="btn ghost" style="flex:1;min-width:120px;border-color:#25D366;color:#25D366" onclick="var _wm=document.getElementById(\'__waMsg\').value;var _wu=buildWhatsAppUrl(\''+esc(current.brandId)+'\',_wm);if(_wu===\'#\')_wu=\'https://wa.me/'+clientPhone+'?text=\'+encodeURIComponent(_wm);window.open(_wu)">📱 WhatsApp</button>'
       +'<button class="btn ghost" style="flex:1;min-width:120px" onclick="window.location.href=\'mailto:'+emailTo+'?subject='+emailSubj+'&body='+emailBody+'\'">✉️ Email</button>'
       +'</div>'
       +'<textarea id="__waMsg" style="width:100%;margin-top:12px;font-size:11px;min-height:80px;resize:vertical">'+waMsg.replace(/"/g,'&quot;')+'</textarea>'
@@ -3486,17 +3502,19 @@ function sendWhatsApp(){
   if(!phone){phone=prompt('Enter client WhatsApp number with country code (e.g. +447700900111):');if(!phone)return;phone=phone.replace(/[^\d+]/g,'')}
   if(phone.startsWith('+'))phone=phone.slice(1);
   const text=buildShareText();
+  // Use brand's primary WhatsApp link, fallback to client phone
+  var brandWA=getBrandWhatsApp(current.brandId);
+  var waTarget=brandWA?brandWA.clean:phone;
   // Try Web Share API with file (mobile/Chrome)
   generatePDF().then(({file,blob,filename})=>{
     if(navigator.canShare&&navigator.canShare({files:[file]})){
       navigator.share({files:[file],text,title:`Quote ${current.quoteNo}`}).catch(()=>{
-        // user cancelled or error — fallback
-        downloadAndOpenWA(blob,filename,phone,text);
+        downloadAndOpenWA(blob,filename,waTarget,text);
       });
     }else{
-      downloadAndOpenWA(blob,filename,phone,text);
+      downloadAndOpenWA(blob,filename,waTarget,text);
     }
-  }).catch(e=>{alert('PDF generation failed. Opening WhatsApp with text only.');window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`,'_blank')});
+  }).catch(e=>{alert('PDF generation failed. Opening WhatsApp with text only.');window.open(`https://wa.me/${waTarget}?text=${encodeURIComponent(text)}`,'_blank')});
 }
 function downloadAndOpenWA(blob,filename,phone,text){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
@@ -3773,7 +3791,7 @@ function renderNotifPanel(){
       +'<div style="font-size:10px;color:var(--tx3);margin-top:2px">'+esc(n.message)+'</div>'
       +'<div style="font-size:9px;color:var(--tx3);margin-top:3px">'+agoTxt+'</div>'
       +'</div>'
-      +(n.phone?'<button style="font-size:9px;padding:5px 8px;background:#25D366;color:#fff;border:none;border-radius:6px;cursor:pointer;flex-shrink:0;margin-top:2px" onclick="event.stopPropagation();sendFollowUpWhatsApp(\''+n.fuStatus+'\',\''+esc(n.clientFirst||'')+'\',\''+esc(n.dest||'')+'\',\''+esc(n.ref||'')+'\',\''+n.phone+'\',\''+esc(n.pdfUrl||'')+'\')">💬</button>':'')
+      +(n.phone||n.brandId?'<button style="font-size:9px;padding:5px 8px;background:#25D366;color:#fff;border:none;border-radius:6px;cursor:pointer;flex-shrink:0;margin-top:2px" onclick="event.stopPropagation();sendFollowUpWhatsApp(\''+n.fuStatus+'\',\''+esc(n.clientFirst||'')+'\',\''+esc(n.dest||'')+'\',\''+esc(n.ref||'')+'\',\''+(n.phone||'')+'\',\''+esc(n.pdfUrl||'')+'\',\''+esc(n.brandId||'')+'\')">💬</button>':'')
       +'</div>';
   }).join('');
 }
@@ -3799,7 +3817,7 @@ function addNotification(n){
   var _toastOpts={icon:n.icon,duration:8000};
   if(n.priority<=3){_toastOpts.border='#FF3B30';_toastOpts.titleColor='#FF3B30';_toastOpts.bg='rgba(255,59,48,.08)';_toastOpts.duration=12000}
   else if(n.priority<=5){_toastOpts.border='#FF9F0A';_toastOpts.titleColor='#FF9F0A'}
-  if(n.phone){_toastOpts.action="sendFollowUpWhatsApp('"+n.fuStatus+"','"+esc(n.clientFirst||'')+"','"+esc(n.dest||'')+"','"+esc(n.ref||'')+"','"+n.phone+"','"+esc(n.pdfUrl||'')+"')"}
+  if(n.phone||n.brandId){_toastOpts.action="sendFollowUpWhatsApp('"+n.fuStatus+"','"+esc(n.clientFirst||'')+"','"+esc(n.dest||'')+"','"+esc(n.ref||'')+"','"+(n.phone||'')+"','"+esc(n.pdfUrl||'')+"','"+esc(n.brandId||'')+"')"}
   showToast(n.title,n.message,_toastOpts);
   // Sound for hot leads
   if(n.priority<=5&&_notifSound)try{_notifSound.play()}catch(e){}
@@ -3867,7 +3885,7 @@ async function checkForNewViews(){
         message:qd.quoteNo+' · '+dest+' · '+(v.device_type==='mobile'?'📱 on mobile':'💻 on desktop'),
         ts:new Date(v.viewed_at).getTime(),read:false,priority:6,
         fuStatus:'follow_up',clientFirst:clientFirst,dest:dest,ref:qd.quoteNo||'',
-        phone:((qd.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,''),pdfUrl:q.pdf_url||''
+        phone:((qd.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,''),pdfUrl:q.pdf_url||'',brandId:_resolveBrandId(q)
       });
     });
     // Check follow-up statuses
@@ -5483,7 +5501,7 @@ window.rbacDeleteUser=rbacDeleteUser;
     if(tv>0)return{status:'viewed',label:'Viewed',color:'#30D158',icon:'✓',message:'Client has viewed. Monitoring.',priority:10};
     return{status:'waiting',label:'Waiting',color:'#888',icon:'⏳',message:'Recently sent. Give client time.',priority:10};
   }
-  window.sendFollowUpWhatsApp=function(status,name,dest,ref,phone,url){
+  window.sendFollowUpWhatsApp=function(status,name,dest,ref,phone,url,brandId){
     var msg='';
     if(status==='approved')msg='Hi '+name+',\n\nThank you for approving your *'+dest+'* quote (Ref: '+ref+')! Great choice.\n\nTo secure your booking, I just need to collect a small deposit. Would you like to pay by:\n\n• Bank transfer\n• Card payment over the phone\n• Payment link\n\nLet me know which works best and I\'ll get everything confirmed.\n\nKind regards';
     else if(status==='not_opened')msg='Hi '+name+',\n\nI sent you a personalised quote for *'+dest+'* (Ref: '+ref+') but I noticed you may not have had a chance to view it yet.\n\nHere\'s the link again:\n'+url+'\n\nPlease have a look when you get a moment — I\'d love to help you secure this deal.\n\nKind regards';
@@ -5492,7 +5510,15 @@ window.rbacDeleteUser=rbacDeleteUser;
     else if(status==='expiring')msg='Hi '+name+',\n\nJust a quick heads up — your *'+dest+'* quote (Ref: '+ref+') expires very soon.\n\nPrices and availability can change after this, so if you\'d like to go ahead, now would be the best time.\n\nWould you like to proceed?\n\nKind regards';
     else if(status==='expired')msg='Hi '+name+',\n\nI noticed your *'+dest+'* quote has expired. Don\'t worry — I can put together a fresh quote with the latest prices.\n\nWould you still like to go ahead? Let me know and I\'ll get a new quote ready.\n\nKind regards';
     else msg='Hi '+name+',\n\nJust checking in about your *'+dest+'* quote (Ref: '+ref+'). Let me know if you have any questions.\n\nKind regards';
-    var waUrl=phone?'https://wa.me/'+phone+'?text='+encodeURIComponent(msg):'https://wa.me/?text='+encodeURIComponent(msg);
+    // Use brand's primary WhatsApp, fall back to client phone
+    var waUrl;
+    if(brandId){
+      waUrl=buildWhatsAppUrl(brandId,msg);
+    }else if(phone){
+      waUrl='https://wa.me/'+phone+'?text='+encodeURIComponent(msg);
+    }else{
+      waUrl='https://wa.me/?text='+encodeURIComponent(msg);
+    }
     window.open(waUrl,'_blank');
   };
   window.renderSharedQuotes=renderSharedQuotes;
@@ -5523,8 +5549,8 @@ window.rbacDeleteUser=rbacDeleteUser;
       if(!fuBar&&_fuParent&&_fuParent.parentElement){fuBar=document.createElement('div');fuBar.id='followUpBar';_fuParent.parentElement.insertBefore(fuBar,_fuParent)}
       if(followUps.length){
         fuBar.innerHTML='<div style="margin-bottom:16px;border:1px solid var(--bd);border-radius:12px;overflow:hidden"><div style="padding:10px 16px;background:var(--bg-tertiary);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd)"><div style="font-size:13px;font-weight:500;color:var(--tx)">Follow-ups Required <span style="margin-left:6px;padding:2px 8px;background:var(--gold);color:#fff;border-radius:4px;font-size:10px;font-weight:600">'+followUps.length+'</span></div><div style="font-size:10px;color:var(--tx3)">Auto-checked from view tracking</div></div><div style="max-height:280px;overflow-y:auto">'
-          +followUps.map(function(f){var qd=f.quote.quote_data||{};var cn=qd.clientName||'Client';var cf=cn.split(' ')[0];var dest=qd.tourTitle||qd.dest||'their trip';var ref=qd.quoteNo||'';var ph=((qd.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,'');var purl=f.quote.pdf_url||'';
-            return '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--bd)"><div style="font-size:18px">'+f.status.icon+'</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="font-size:12px;font-weight:500;color:var(--tx)">'+esc(cn)+'</span><span style="font-size:9px;color:var(--tx3)">'+esc(ref)+'</span><span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:600;color:#fff;background:'+f.status.color+'">'+f.status.label+'</span></div><div style="font-size:10px;color:var(--tx3)">'+f.status.message+'</div></div><button class="btn" style="font-size:9px;padding:6px 10px;background:#25D366;color:#fff;border:none;border-radius:6px;flex-shrink:0;cursor:pointer" onclick="sendFollowUpWhatsApp(\''+f.status.status+'\',\''+cf.replace(/'/g,"\\'")+'\',\''+dest.replace(/'/g,"\\'")+'\',\''+ref.replace(/'/g,"\\'")+'\',\''+ph+'\',\''+purl.replace(/'/g,"\\'")+'\')">💬 WhatsApp</button></div>'}).join('')
+          +followUps.map(function(f){var qd=f.quote.quote_data||{};var cn=qd.clientName||'Client';var cf=cn.split(' ')[0];var dest=qd.tourTitle||qd.dest||'their trip';var ref=qd.quoteNo||'';var ph=((qd.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,'');var purl=f.quote.pdf_url||'';var fBid=_resolveBrandId(f.quote);var fBrand=(brands.find(function(b){return b.id===fBid})||{}).name||'';
+            return '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--bd)"><div style="font-size:18px">'+f.status.icon+'</div><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="font-size:12px;font-weight:500;color:var(--tx)">'+esc(cn)+'</span><span style="font-size:9px;color:var(--tx3)">'+esc(ref)+'</span><span style="padding:2px 6px;border-radius:4px;font-size:8px;font-weight:600;color:#fff;background:'+f.status.color+'">'+f.status.label+'</span></div><div style="font-size:10px;color:var(--tx3)">'+f.status.message+'</div></div><div style="display:flex;align-items:center;gap:4px;flex-shrink:0"><span style="font-size:8px;color:var(--tx3)">'+esc(fBrand)+'</span><button class="btn" style="font-size:9px;padding:6px 10px;background:#25D366;color:#fff;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:3px" onclick="sendFollowUpWhatsApp(\''+f.status.status+'\',\''+cf.replace(/'/g,"\\'")+'\',\''+dest.replace(/'/g,"\\'")+'\',\''+ref.replace(/'/g,"\\'")+'\',\''+ph+'\',\''+purl.replace(/'/g,"\\'")+'\',\''+esc(fBid)+'\')">💬 WhatsApp</button></div></div>'}).join('')
           +'</div></div>';
       }else{fuBar.innerHTML=''}
       // Badge on shared tab
