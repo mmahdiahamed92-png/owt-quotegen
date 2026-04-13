@@ -525,6 +525,141 @@ body.viewer-mode #quoteViewer{display:block!important}
   fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h)+'&select=*',{headers:{'apikey':sbKey,'Authorization':'Bearer '+sbKey}})
     .then(function(r){return r.json()})
     .then(function(rows){
+      // ── HTML MODE: render live quote page ──
+      if(rows&&rows.length&&rows[0].mode==='html'&&rows[0].full_quote){
+        var row=rows[0];var q=row.full_quote;var b=row.brand_data||{};var qd=row.quote_data||{};
+        var isApproved=row.approved===true;
+        // Record view
+        fetch(sbUrl+'/rest/v1/qg_quote_views',{method:'POST',headers:_hdrs,body:JSON.stringify({token:h,session_id:_sesId,device_type:_devType,browser:_browser,screen_width:window.innerWidth,time_spent_seconds:0,referrer:document.referrer||'direct'})}).catch(function(){});
+        var upd={views:(rows[0].views||0)+1,last_viewed_at:new Date().toISOString()};
+        if(_isNew){upd.unique_views=(rows[0].unique_views||0)+1;sessionStorage.setItem('qv_counted_'+h,'1')}
+        fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h),{method:'PATCH',headers:_hdrs,body:JSON.stringify(upd)}).catch(function(){});
+        // Build HTML quote page
+        var cur=({GBP:'£',EUR:'€',USD:'$',TRY:'₺',THB:'฿'})[q.curr]||q.curr+' ';
+        var totalRow=(q.prices||[]).find(function(p){return p.total});
+        var totalAmt=totalRow?cur+(totalRow.amt||'0'):'';
+        var waList=(b.whatsapp||[]).map(function(w){return typeof w==='string'?{number:w}:w}).filter(function(w){return w.number});
+        var primaryWA=waList.find(function(w){return w.primary})||waList[0];
+        var waHref=primaryWA?(primaryWA.link||'https://wa.me/'+(primaryWA.number||'').replace(/[^\d]/g,'')):'';
+        var phoneHref=b.phone?'tel:'+b.phone.replace(/[^\d+]/g,''):'';
+        function _esc(s2){var el2=document.createElement('div');el2.textContent=s2;return el2.innerHTML}
+        function _fmtD(dt){if(!dt)return'';try{return new Date(dt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}catch(e2){return dt}}
+        function _stars(n){return '★'.repeat(+n||0)+'☆'.repeat(5-(+n||0))}
+        var heroHTML=q.heroSrc?'<img src="'+_esc(q.heroSrc)+'" style="width:100%;max-height:240px;object-fit:cover;display:block">':'<div style="height:160px;background:linear-gradient(135deg,#D4AF6A,#A8854A);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:600">'+_esc(q.tourTitle||q.dest||'Your Quote')+'</div>';
+        var hotelsHTML=(q.hotels||[]).map(function(ht){
+          return '<div style="border:1px solid #eee8d5;border-radius:12px;overflow:hidden;margin-bottom:12px;background:#fff">'
+            +(ht.img?'<img src="'+_esc(ht.img)+'" style="width:100%;height:160px;object-fit:cover;display:block">':'')
+            +'<div style="padding:14px 16px">'
+            +'<div style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:2px">'+_esc(ht.name||'Hotel')+'</div>'
+            +(ht.stars?'<div style="color:#D4AF6A;font-size:12px;margin-bottom:4px">'+_stars(ht.stars)+'</div>':'')
+            +(ht.city?'<div style="font-size:12px;color:#888;margin-bottom:6px">'+_esc(ht.city)+'</div>':'')
+            +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">'
+            +(ht.nights?'<span style="padding:3px 10px;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);border-radius:100px;font-size:10px;color:#8B6B3A;font-weight:600">'+_esc(ht.nights)+' Nights</span>':'')
+            +(ht.board?'<span style="padding:3px 10px;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);border-radius:100px;font-size:10px;color:#8B6B3A;font-weight:600">'+_esc(ht.board)+'</span>':'')
+            +(ht.roomType?'<span style="padding:3px 10px;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);border-radius:100px;font-size:10px;color:#8B6B3A;font-weight:600">'+_esc(ht.roomType)+'</span>':'')
+            +'</div></div></div>';
+        }).join('');
+        var flightsHTML='';
+        if(q.flightsInc){
+          flightsHTML='<div style="margin-bottom:16px"><div style="font-size:11px;color:#D4AF6A;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee8d5">Flights</div>';
+          if(q.flightOutFrom)flightsHTML+='<div style="background:#fafaf7;border:1px solid #eee8d5;border-radius:10px;padding:12px 14px;margin-bottom:8px"><div style="font-size:10px;color:#8B6B3A;font-weight:600;letter-spacing:.1em;margin-bottom:6px">OUTBOUND</div><div style="font-size:15px;font-weight:600;color:#1a1a1a">'+_esc(q.flightOutFrom)+' → '+_esc(q.flightOutTo)+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+_fmtD(q.flightOutDate)+(q.flightOutTime?' at '+_esc(q.flightOutTime):'')+(q.flightOutNo?' · '+_esc(q.flightOutNo):'')+(q.flightAirline?' · '+_esc(q.flightAirline):'')+'</div></div>';
+          if(q.flightRetFrom)flightsHTML+='<div style="background:#fafaf7;border:1px solid #eee8d5;border-radius:10px;padding:12px 14px;margin-bottom:8px"><div style="font-size:10px;color:#8B6B3A;font-weight:600;letter-spacing:.1em;margin-bottom:6px">RETURN</div><div style="font-size:15px;font-weight:600;color:#1a1a1a">'+_esc(q.flightRetFrom)+' → '+_esc(q.flightRetTo)+'</div><div style="font-size:11px;color:#888;margin-top:3px">'+_fmtD(q.flightRetDate)+(q.flightRetTime?' at '+_esc(q.flightRetTime):'')+(q.flightRetNo?' · '+_esc(q.flightRetNo):'')+'</div></div>';
+          flightsHTML+='</div>';
+        }
+        var excursionsHTML=(q.excursions||[]).length?'<div style="margin-bottom:16px"><div style="font-size:11px;color:#D4AF6A;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee8d5">Excursions</div>'+(q.excursions||[]).map(function(x){
+          return '<div style="border:1px solid #eee8d5;border-radius:12px;overflow:hidden;margin-bottom:10px;background:#fff">'
+            +(x.img?'<img src="'+_esc(x.img)+'" style="width:100%;height:140px;object-fit:cover;display:block">':'')
+            +'<div style="padding:12px 14px"><div style="font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:2px">'+_esc(x.name||'')+'</div>'
+            +(x.location?'<div style="font-size:11px;color:#888;margin-bottom:4px">'+_esc(x.location)+'</div>':'')
+            +(x.duration?'<span style="padding:2px 8px;background:rgba(212,175,106,.1);border:1px solid rgba(212,175,106,.2);border-radius:100px;font-size:9px;color:#8B6B3A;font-weight:600">'+_esc(x.duration)+'</span>':'')
+            +(x.desc?'<div style="font-size:12px;color:#555;margin-top:6px;line-height:1.5">'+_esc(x.desc)+'</div>':'')
+            +'</div></div>';
+        }).join('')+'</div>':'';
+        var inclHTML=(q.incl||'').trim()?'<div style="margin-bottom:16px"><div style="font-size:11px;color:#D4AF6A;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee8d5">What\'s Included</div><ul style="margin:0;padding:0;list-style:none;font-size:13px;color:#555;line-height:1.7">'+(q.incl||'').split('\n').filter(function(l){return l.trim()}).map(function(l){return '<li style="padding:3px 0 3px 16px;position:relative"><span style="position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:#30D158"></span>'+_esc(l.trim())+'</li>'}).join('')+'</ul></div>':'';
+        var exclHTML=(q.excl||'').trim()?'<div style="margin-bottom:16px"><div style="font-size:11px;color:#888;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee">Not Included</div><ul style="margin:0;padding:0;list-style:none;font-size:12px;color:#999;line-height:1.7">'+(q.excl||'').split('\n').filter(function(l){return l.trim()}).map(function(l){return '<li style="padding:2px 0 2px 16px;position:relative"><span style="position:absolute;left:0;top:8px;width:5px;height:5px;border-radius:50%;background:#ccc"></span>'+_esc(l.trim())+'</li>'}).join('')+'</ul></div>':'';
+        var pricingHTML='<div style="margin-bottom:16px"><div style="font-size:11px;color:#D4AF6A;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee8d5">Pricing</div>'
+          +(q.prices||[]).filter(function(p){return!p.total&&p.label}).map(function(p){return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0ebe0;font-size:13px"><span style="color:#555">'+_esc(p.label)+'</span><span style="color:#1a1a1a;font-weight:600">'+cur+_esc(p.amt||'0')+'</span></div>'}).join('')
+          +(totalAmt?'<div style="margin-top:12px;padding:16px;background:linear-gradient(135deg,#1a1a1a,#2a2520);border-radius:12px;text-align:center"><div style="font-size:9px;color:#D4AF6A;text-transform:uppercase;letter-spacing:.2em;margin-bottom:4px">Total Package Price</div><div style="font-size:28px;font-weight:700;color:#fff;letter-spacing:-.02em">'+totalAmt+'</div></div>':'')
+          +'</div>';
+        var approvalHTML='';
+        if(isApproved){
+          approvalHTML='<div style="padding:20px;border:2px solid rgba(48,209,88,0.25);border-radius:14px;background:rgba(48,209,88,0.04);text-align:center;margin-bottom:16px"><div style="font-size:28px;margin-bottom:8px">✅</div><div style="font-size:18px;font-weight:600;color:#2f9e44;margin-bottom:4px">Quote Approved</div><div style="font-size:13px;color:#888">Approved by '+_esc(row.approved_name||'')+' on '+(row.approved_at?new Date(row.approved_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'')+'</div></div>';
+        }else{
+          approvalHTML='<div id="htmlApprovalSection" style="padding:20px;border:1.5px solid #eee8d5;border-radius:14px;background:#fff;margin-bottom:16px">'
+            +'<div style="text-align:center;margin-bottom:14px"><div style="font-size:17px;font-weight:600;color:#1a1a1a;margin-bottom:4px">Happy with this quote?</div><div style="font-size:12px;color:#888;line-height:1.5;max-width:280px;margin:0 auto">Approve to confirm your interest. Your agent will contact you to arrange payment.</div></div>'
+            +'<input type="text" id="htmlApprovalName" placeholder="Your full name" value="'+_esc(qd.clientName||'')+'" style="display:block;width:100%;padding:14px 16px;border:1.5px solid #eee8d5;border-radius:10px;font-size:15px;text-align:center;color:#1a1a1a;background:#fafaf7;margin-bottom:12px;box-sizing:border-box">'
+            +'<label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #eee8d5;border-radius:10px;background:#fafaf7;margin-bottom:14px;cursor:pointer"><input type="checkbox" id="htmlApprovalTerms" style="width:20px;height:20px;min-width:20px;min-height:20px;margin:0;accent-color:#30D158;cursor:pointer;flex-shrink:0"><span style="font-size:12px;color:#666;line-height:1.5;flex:1">I confirm I have read the quote and would like to proceed.</span></label>'
+            +'<button id="htmlApproveBtn" onclick="window.__htmlApprove()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;background:linear-gradient(135deg,#30D158,#28A745);border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:600;cursor:pointer;opacity:0.4;pointer-events:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>I Approve This Quote</button>'
+            +'<div style="text-align:center;font-size:11px;color:#ccc;margin-top:8px">This is not a payment</div></div>';
+        }
+        // Render the full HTML quote page
+        d.innerHTML='<div style="max-width:480px;margin:0 auto;font-family:Satoshi,Helvetica,Arial,sans-serif;background:#fff;min-height:100vh">'
+          +heroHTML
+          +'<div style="padding:20px 18px 100px">'
+          // Brand + title
+          +(b.logo?'<div style="text-align:center;margin-bottom:12px"><img src="'+_esc(b.logo)+'" style="height:36px;width:auto"></div>':'')
+          +'<div style="text-align:center;margin-bottom:16px"><div style="font-size:24px;font-weight:700;color:#1a1a1a;line-height:1.15;letter-spacing:-.02em">'+_esc(q.tourTitle||q.dest||'Your Travel Quote')+'</div>'
+          +(q.tourSub?'<div style="font-size:13px;color:#888;margin-top:4px;font-style:italic">'+_esc(q.tourSub)+'</div>':'')
+          +'<div style="font-size:11px;color:#999;margin-top:6px">Quote: '+_esc(q.quoteNo||'')+' · '+_fmtD(q.quoteDate)+'</div></div>'
+          // Client details
+          +'<div style="background:#fafaf7;border:1px solid #eee8d5;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#444;line-height:1.7">'
+          +(q.clientName?'<div><b style="font-size:10px;color:#1a1a1a;text-transform:uppercase;letter-spacing:.04em">Client:</b> '+_esc(q.clientName)+'</div>':'')
+          +(q.travelers?'<div><b style="font-size:10px;color:#1a1a1a;text-transform:uppercase;letter-spacing:.04em">Travelers:</b> '+_esc(q.travelers)+'</div>':'')
+          +(q.startDate?'<div><b style="font-size:10px;color:#1a1a1a;text-transform:uppercase;letter-spacing:.04em">Dates:</b> '+_fmtD(q.startDate)+(q.endDate?' – '+_fmtD(q.endDate):'')+'</div>':'')
+          +'</div>'
+          // Flights
+          +flightsHTML
+          // Hotels
+          +((q.hotels||[]).length?'<div style="margin-bottom:16px"><div style="font-size:11px;color:#D4AF6A;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee8d5">Accommodation</div>'+hotelsHTML+'</div>':'')
+          // Excursions
+          +excursionsHTML
+          // Pricing
+          +pricingHTML
+          // Inclusions / Exclusions
+          +inclHTML+exclHTML
+          // Approval
+          +approvalHTML
+          // Contact buttons
+          +'<div style="display:flex;gap:8px;margin-bottom:16px">'
+          +(waHref?'<a href="'+waHref+'" target="_blank" style="flex:1;padding:14px;background:#25D366;border-radius:10px;color:#fff;text-decoration:none;font-size:14px;font-weight:600;text-align:center">💬 WhatsApp</a>':'')
+          +(phoneHref?'<a href="'+phoneHref+'" style="flex:1;padding:14px;background:#1a1a1a;border-radius:10px;color:#D4AF6A;text-decoration:none;font-size:14px;font-weight:600;text-align:center">📞 Call</a>':'')
+          +'</div>'
+          // Terms
+          +((q.terms||'').trim()?'<details style="margin-bottom:16px;border:1px solid #eee;border-radius:10px;overflow:hidden"><summary style="padding:12px 14px;font-size:12px;color:#888;cursor:pointer;font-weight:600">Terms & Conditions</summary><div style="padding:12px 14px;font-size:11px;color:#999;line-height:1.7;white-space:pre-wrap;border-top:1px solid #eee">'+_esc(q.terms)+'</div></details>':'')
+          // Footer
+          +'<div style="text-align:center;padding:16px 0;font-size:10px;color:#ccc">'+_esc(b.name||'')+(b.contact?' · '+_esc(b.contact):'')+'</div>'
+          +'</div></div>';
+        d.style.background='#fff';d.style.color='#1a1a1a';d.style.padding='0';
+        document.title=_esc(q.tourTitle||'Your Quote')+' — '+_esc(b.name||'');
+        // Approval logic for HTML mode
+        if(!isApproved){
+          setTimeout(function(){
+            var ni2=document.getElementById('htmlApprovalName');
+            var tb2=document.getElementById('htmlApprovalTerms');
+            var ab2=document.getElementById('htmlApproveBtn');
+            function chk2(){if(!ni2||!tb2||!ab2)return;var ok=ni2.value.trim().length>=2&&tb2.checked;ab2.style.opacity=ok?'1':'0.4';ab2.style.pointerEvents=ok?'auto':'none'}
+            if(ni2)ni2.addEventListener('input',chk2);
+            if(tb2){tb2.addEventListener('change',chk2);tb2.addEventListener('click',chk2)}
+            chk2();
+          },200);
+          window.__htmlApprove=function(){
+            var ni2=document.getElementById('htmlApprovalName');
+            var tb2=document.getElementById('htmlApprovalTerms');
+            var ab2=document.getElementById('htmlApproveBtn');
+            if(!ni2||ni2.value.trim().length<2){alert('Please enter your full name');return}
+            if(!tb2||!tb2.checked){alert('Please tick the checkbox');return}
+            if(!confirm('Are you sure you want to approve this quote?'))return;
+            ab2.style.opacity='0.4';ab2.style.pointerEvents='none';ab2.innerHTML='Processing...';
+            fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h),{method:'PATCH',headers:_hdrs,body:JSON.stringify({approved:true,approved_at:new Date().toISOString(),approved_name:ni2.value.trim()})})
+              .then(function(){
+                var sec=document.getElementById('htmlApprovalSection');
+                if(sec){sec.innerHTML='<div style="text-align:center;padding:16px"><div style="font-size:32px;margin-bottom:8px">✅</div><div style="font-size:18px;font-weight:600;color:#2f9e44">Quote Approved!</div><div style="font-size:13px;color:#888;margin-top:4px">Thank you, '+_esc(ni2.value.trim())+'</div><div style="font-size:12px;color:#999;margin-top:6px">Your agent will be in touch to arrange payment.</div></div>';sec.style.border='2px solid rgba(48,209,88,.3)';sec.style.background='rgba(48,209,88,.04)'}
+              }).catch(function(){alert('Something went wrong. Please try again.');ab2.style.opacity='1';ab2.style.pointerEvents='auto';ab2.innerHTML='I Approve This Quote'});
+          };
+        }
+        return;// Stop — don't fall through to PDF flow
+      }
+      // ── PDF MODE (existing flow) ──
       if(rows&&rows.length&&rows[0].pdf_url){
         // Record view event
         fetch(sbUrl+'/rest/v1/qg_quote_views',{method:'POST',headers:_hdrs,body:JSON.stringify({token:h,session_id:_sesId,device_type:_devType,browser:_browser,screen_width:window.innerWidth,time_spent_seconds:0,referrer:document.referrer||'direct'})}).catch(function(){});
@@ -1361,7 +1496,8 @@ body.viewer-mode #quoteViewer{display:block!important}
       <div class="actions-bar">
         <button class="btn" onclick="saveQuote()" aria-label="Save quote">💾 Save</button>
         <button class="btn ghost" onclick="downloadPDF()" aria-label="Download PDF">📥 Download PDF</button>
-        <button class="btn ghost" onclick="shareQuoteLink()" style="border-color:var(--bd-gold);color:var(--gold)" aria-label="Share quote link">🔗 Share Link</button>
+        <button class="btn ghost" onclick="shareQuoteLink()" style="border-color:var(--bd-gold);color:var(--gold)" aria-label="Share quote link">🔗 Share PDF Link</button>
+        <button class="btn ghost" onclick="shareQuoteAsHTML()" style="border-color:#5B9BD5;color:#5B9BD5" aria-label="Share as HTML page">🌐 HTML Link</button>
         <button class="btn ghost" onclick="sendWhatsApp()" aria-label="Send via WhatsApp">📱 WhatsApp</button>
         <button class="btn ghost" onclick="sendEmail()" aria-label="Send via email">✉️ Email</button>
         <button class="btn ghost" onclick="manualApproveQuote()" style="border-color:#30D158;color:#30D158" aria-label="Approve quote">✅ Approve</button>
@@ -6249,6 +6385,84 @@ function showExportMenu(e){
   }).join('');
   document.body.appendChild(menu);
   setTimeout(function(){document.addEventListener('click',function _close(){document.getElementById('exportMenu')?.remove();document.removeEventListener('click',_close)})},10);
+}
+
+// ====== HTML SHARE MODE (parallel to PDF) ======
+async function shareQuoteAsHTML(){
+  if(!current){alert('Open a quote first');return}
+  if(!SB.user){alert('Please log in to share quotes');return}
+  syncFormToCurrent();
+  var b=brands.find(function(x){return x.id===current.brandId})||{};
+  var modal=$('modal');modal.classList.add('open');
+  $('modalTitle').textContent='Generating HTML Link...';
+  $('modalBody').innerHTML='<div style="text-align:center;padding:40px"><div style="font-size:32px;margin-bottom:12px">🌐</div><p style="color:var(--tx2)">Creating live HTML quote page...</p></div>';
+  try{
+    var token='q_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+    // Check if this quote already has an HTML share link
+    var existing=await SB.client.from('qg_shared_quotes').select('token').eq('mode','html').eq('quote_data->>quoteNo',current.quoteNo);
+    if(existing.data&&existing.data.length){
+      token=existing.data[0].token;// Reuse existing token so the link stays the same
+    }
+    // Build full quote snapshot + brand data for rendering
+    var fullQuote=JSON.parse(JSON.stringify(current));
+    // Resolve hero image if it's an idb:// reference
+    if(fullQuote.heroSrc&&fullQuote.heroSrc.startsWith('idb://')){
+      try{var resolved=await IMG.get(fullQuote.heroSrc);if(resolved)fullQuote.heroSrc=await SB.uploadImage(resolved)}catch(e){}
+    }
+    // Resolve hotel images
+    for(var hi=0;hi<(fullQuote.hotels||[]).length;hi++){
+      var hImg=fullQuote.hotels[hi].img;
+      if(hImg&&hImg.startsWith('idb://')){try{var r2=await IMG.get(hImg);if(r2)fullQuote.hotels[hi].img=await SB.uploadImage(r2)}catch(e){}}
+      else if(hImg&&hImg.startsWith('data:')){try{fullQuote.hotels[hi].img=await SB.uploadImage(hImg)}catch(e){}}
+    }
+    // Resolve excursion images
+    for(var ei=0;ei<(fullQuote.excursions||[]).length;ei++){
+      var eImg=fullQuote.excursions[ei].img;
+      if(eImg&&eImg.startsWith('idb://')){try{var r3=await IMG.get(eImg);if(r3)fullQuote.excursions[ei].img=await SB.uploadImage(r3)}catch(e){}}
+      else if(eImg&&eImg.startsWith('data:')){try{fullQuote.excursions[ei].img=await SB.uploadImage(eImg)}catch(e){}}
+    }
+    // Resolve brand logo
+    var brandData=JSON.parse(JSON.stringify(b));
+    if(brandData.logo&&brandData.logo.startsWith('idb://')){try{var r4=await IMG.get(brandData.logo);if(r4)brandData.logo=await SB.uploadImage(r4)}catch(e){}}
+    else if(brandData.logo&&brandData.logo.startsWith('data:')){try{brandData.logo=await SB.uploadImage(brandData.logo)}catch(e){}}
+
+    var expiresAt=new Date(Date.now()+30*864e5).toISOString();// 30 days for HTML links
+    var dbRes=await SB.client.from('qg_shared_quotes').upsert({
+      token:token,mode:'html',
+      quote_data:{quoteNo:current.quoteNo,clientName:current.clientName,tourTitle:current.tourTitle,dest:current.dest,agent:current.agent,brandId:current.brandId,clientContact:current.clientContact},
+      brand_data:brandData,
+      full_quote:fullQuote,
+      pdf_url:null,storage_path:null,
+      expires_at:expiresAt,views:0
+    },{onConflict:'token'});
+    if(dbRes.error)throw dbRes.error;
+
+    var shareUrl='https://quotegen.owtgroupltd.co.uk/#'+token;
+    try{await navigator.clipboard.writeText(shareUrl)}catch(e){}
+
+    var clientName=current.clientName||'';
+    var dest=current.tourTitle||current.dest||'your trip';
+    var waMsg='Hi'+(clientName?' '+clientName:'')+',\n\nYour personalised travel quote for *'+dest+'* is ready to view:\n\n'+shareUrl+'\n\nPlease review and let us know if you have any questions.\n\nKind regards,\n'+(current.agent||b.name||'');
+
+    $('modalTitle').textContent='HTML Link Ready';
+    $('modalBody').innerHTML='<div style="text-align:center;padding:10px 0">'
+      +'<div style="font-size:42px;margin-bottom:12px">🌐</div>'
+      +'<p style="color:var(--tx2);font-size:13px;margin:0 0 6px">Your <b>live HTML quote page</b> is ready. This link always shows the latest version.</p>'
+      +'<p style="color:var(--tx3);font-size:11px;margin:0 0 16px">Unlike PDF links, you can update the quote and re-share — the same link will reflect changes.</p>'
+      +'<div style="background:var(--bg-tertiary);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px;word-break:break-all">'
+      +'<a href="'+shareUrl+'" target="_blank" style="color:#5B9BD5;font-size:13px;font-weight:600;text-decoration:underline">'+shareUrl+'</a></div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      +'<button class="btn" style="flex:1;min-width:120px" onclick="navigator.clipboard.writeText(\''+shareUrl.replace(/'/g,"\\'")+'\');this.textContent=\'✓ Copied!\'">📋 Copy Link</button>'
+      +'<button class="btn ghost" style="flex:1;min-width:120px;border-color:#25D366;color:#25D366" onclick="var _wm=document.getElementById(\'__waMsg2\').value;var _wu=buildWhatsAppUrl(\''+esc(current.brandId)+'\',_wm);if(_wu===\'#\')_wu=\'https://wa.me/?text=\'+encodeURIComponent(_wm);window.open(_wu)">📱 WhatsApp</button>'
+      +'<button class="btn ghost" style="flex:1;min-width:120px" onclick="window.open(\''+shareUrl+'\',\'_blank\')">👁 Preview</button></div>'
+      +'<textarea id="__waMsg2" style="width:100%;margin-top:12px;font-size:11px;min-height:80px;resize:vertical">'+waMsg.replace(/"/g,'&quot;')+'</textarea>'
+      +'<p style="color:var(--tx3);font-size:10px;margin-top:6px">Edit the message above before sending via WhatsApp</p>'
+      +'<div style="margin-top:12px;padding:10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-tertiary)">'
+      +'<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx2)"><span style="color:#5B9BD5">●</span> HTML mode — live page, always up to date</div>'
+      +'<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx3);margin-top:4px"><span style="color:var(--gold)">●</span> To send a static PDF instead, use "Share PDF Link"</div></div></div>';
+  }catch(e){
+    $('modalBody').innerHTML='<div style="text-align:center;padding:20px;color:var(--danger)">Error: '+esc(e.message)+'</div>';
+  }
 }
 
 // ====== KEYBOARD SHORTCUTS ======
