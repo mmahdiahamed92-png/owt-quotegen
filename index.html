@@ -3328,7 +3328,7 @@ function switchLibTab(tab){
   document.querySelectorAll('.lib-panel').forEach(function(p){p.style.display='none'});
   document.querySelectorAll('.lib-tab').forEach(function(t){t.style.background='var(--bg-tertiary)';t.style.color='var(--tx2)';t.style.borderColor='var(--bd)'});
   if(tab==='destinations'){$('libPanelDestinations').style.display='block'}
-  else if(tab==='images'){$('libPanelImages').style.display='block';if(typeof renderAdmImgLib==='function')renderAdmImgLib()}
+  else if(tab==='images'){$('libPanelImages').style.display='block';if(window.renderAdmImgLib)window.renderAdmImgLib()}
   var at=document.querySelector('.lib-tab[data-lib="'+tab+'"]');
   if(at){at.style.background='var(--gold)';at.style.color='#fff';at.style.borderColor='var(--bd-gold)'}
 }
@@ -4286,7 +4286,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   };
   document.querySelectorAll('.adm-tab').forEach(function(t){t.addEventListener('click',function(){if(t.getAttribute('data-adm')==='shared')renderSharedQuotes()})});
 
-  function renderAdmImgLib(){
+  window.renderAdmImgLib=function(){
     const q=($('admImgSearch')?.value||'').trim();
     const items=IMGLIB.search(q,'all');
     $('admImgCount').textContent=items.length+' images';
@@ -4298,7 +4298,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       </div>
     </div>`).join('')||'<p style="grid-column:1/-1;text-align:center;color:var(--tx3);font-size:12px;padding:20px">No images in library</p>';
     var pv=$('admImgPreview');if(pv)pv.style.display='none';
-  }
+  };
   window.previewAdmImg=function(id){
     var e=IMGLIB.lib.find(function(x){return x.id===id});if(!e)return;
     var pv=$('admImgPreview');if(!pv)return;
@@ -4321,9 +4321,9 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       +'<input id="admImgEditTags" value="'+esc((e.tags||[]).join(', '))+'" placeholder="e.g. pool, luxury, beach" style="margin-bottom:8px;font-size:12px">'
       +'<div style="font-size:10px;color:var(--tx3);margin-bottom:4px"><b style="color:var(--tx2)">Uploaded by:</b> '+esc(e.uploadedBy||'—')+' · <b style="color:var(--tx2)">Used:</b> '+(e.usedCount||0)+'x'+(e.dims&&e.dims.w?' · <b style="color:var(--tx2)">Size:</b> '+e.dims.w+'×'+e.dims.h+'px':'')+'</div>'
       +'<div style="display:flex;gap:8px;margin-top:10px">'
-      +'<button class="adm-btn" onclick="saveAdmImgEdit(\''+e.id+'\')">💾 Save Changes</button>'
-      +'<button class="adm-btn danger" onclick="if(confirm(\'Delete this image permanently?\')){IMGLIB.del(\''+e.id+'\');renderAdmImgLib()}">🗑 Delete</button>'
-      +'<button class="adm-btn ghost" onclick="$(\'admImgPreview\').style.display=\'none\'">Close</button>'
+      +'<button class="btn" onclick="saveAdmImgEdit(\''+e.id+'\')">💾 Save Changes</button>'
+      +'<button class="btn ghost" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm(\'Delete this image permanently?\')){IMGLIB.del(\''+e.id+'\');renderAdmImgLib()}">🗑 Delete</button>'
+      +'<button class="btn ghost" onclick="$(\'admImgPreview\').style.display=\'none\'">Close</button>'
       +'</div></div></div>';
     pv.scrollIntoView({behavior:'smooth',block:'nearest'});
   };
