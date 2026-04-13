@@ -1171,8 +1171,7 @@ body.viewer-mode #quoteViewer{display:block!important}
       <div class="dash-actions">
         <input id="libSearch" placeholder="Search by destination, country, tag..." oninput="renderLibrary()">
       </div>
-      <div id="libRegionTabs" style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--bd);overflow-x:auto"></div>
-      <div id="libGrid"></div>
+      <div id="libGrid" class="libgrid"></div>
     </div>
 
     <div id="libPanelImages" class="lib-panel" style="display:none">
@@ -3333,70 +3332,22 @@ function switchLibTab(tab){
   var at=document.querySelector('.lib-tab[data-lib="'+tab+'"]');
   if(at){at.style.background='var(--gold)';at.style.color='#fff';at.style.borderColor='var(--bd-gold)'}
 }
-var _libRegion='all';
-var _libExpanded={};
-function setLibRegion(r){_libRegion=r;renderLibrary()}
-function toggleLibCountry(c){_libExpanded[c]=!_libExpanded[c];renderLibrary()}
 function renderLibrary(){
   var s=($('libSearch').value||'').toLowerCase();
-  // Group all entries by country
-  var countryMap={};
-  library.forEach(function(l){
-    var c=(l.country||'Other').trim();
-    if(!countryMap[c])countryMap[c]=[];
-    countryMap[c].push(l);
+  var list=library.filter(function(l){
+    if(!s)return true;
+    return(l.name+l.country+(l.tags||[]).join(' ')+(l.dest||'')).toLowerCase().includes(s);
   });
-  var countryKeys=Object.keys(countryMap).sort();
-  // Render region tabs
-  var tabs=$('libRegionTabs');
-  if(tabs){
-    tabs.innerHTML='<button onclick="setLibRegion(\'all\')" style="padding:10px 20px;font-size:11px;font-weight:600;letter-spacing:.06em;border:none;border-bottom:2px solid '+(_libRegion==='all'?'var(--gold)':'transparent')+';background:none;color:'+(_libRegion==='all'?'var(--gold)':'var(--tx3)')+';cursor:pointer;white-space:nowrap;transition:all .2s">All ('+library.length+')</button>'
-      +countryKeys.map(function(c){
-        return '<button onclick="setLibRegion(\''+c.replace(/'/g,"\\'")+'\')" style="padding:10px 20px;font-size:11px;font-weight:600;letter-spacing:.06em;border:none;border-bottom:2px solid '+(_libRegion===c?'var(--gold)':'transparent')+';background:none;color:'+(_libRegion===c?'var(--gold)':'var(--tx3)')+';cursor:pointer;white-space:nowrap;transition:all .2s">'+esc(c)+' ('+countryMap[c].length+')</button>';
-      }).join('');
-  }
-  // Filter
-  var filtered=countryKeys.filter(function(c){return _libRegion==='all'||c===_libRegion});
-  if(s)filtered=filtered.filter(function(c){return countryMap[c].some(function(l){return(l.name+l.country+(l.tags||[]).join(' ')+(l.dest||'')).toLowerCase().includes(s)})});
-  if(!filtered.length){$('libGrid').innerHTML='<div class="empty"><h3>No destinations found</h3><p>Save destinations from the quote editor to build your shared library.</p></div>';return}
-  // Render country cards
-  $('libGrid').innerHTML='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px">'
-    +filtered.map(function(country){
-      var entries=countryMap[country];
-      if(s)entries=entries.filter(function(l){return(l.name+l.country+(l.tags||[]).join(' ')+(l.dest||'')).toLowerCase().includes(s)});
-      var heroEntry=entries[0];
-      var heroImg=heroEntry.heroSrc?IMG.src(heroEntry.heroSrc):'';
-      var isOpen=!!_libExpanded[country];
-      var subDests=entries.map(function(l){return(l.dest||l.name||'').split(',')[0].trim()}).filter(function(v,i,a){return v&&a.indexOf(v)===i});
-      return '<div style="grid-column:1/-1">'
-        // Country card
-        +'<div onclick="toggleLibCountry(\''+country.replace(/'/g,"\\'")+'\')" style="position:relative;border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid '+(isOpen?'var(--gold)':'var(--bd)')+';transition:all .3s;margin-bottom:'+(isOpen?'0':'0')+'px">'
-        +'<div style="height:140px;background:'+(heroImg?'url('+heroImg+') center/cover':'linear-gradient(135deg,rgba(212,175,106,.3),rgba(168,133,74,.5))')+';position:relative">'
-        +'<div style="position:absolute;inset:0;background:linear-gradient(transparent 30%,rgba(0,0,0,.7))"></div>'
-        +'<div style="position:absolute;top:10px;right:10px;padding:4px 10px;border-radius:100px;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);font-size:9px;color:#fff;font-weight:600">'+entries.length+' package'+(entries.length>1?'s':'')+'</div>'
-        +'<div style="position:absolute;bottom:0;left:0;right:0;padding:14px 18px">'
-        +'<div style="font-family:var(--fh);font-size:22px;color:#fff;font-weight:600;letter-spacing:-.01em;text-shadow:0 2px 8px rgba(0,0,0,.5)">'+esc(country)+'</div>'
-        +(subDests.length?'<div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:3px">'+subDests.slice(0,5).map(function(d){return esc(d)}).join(' · ')+(subDests.length>5?' +'+String(subDests.length-5)+' more':'')+'</div>':'')
-        +'</div></div>'
-        +'<div style="background:var(--bg-secondary);padding:6px 14px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:10px;color:var(--gold);font-weight:600;letter-spacing:.06em">'
-        +(isOpen?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg> HIDE PACKAGES':'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg> VIEW PACKAGES')
-        +'</div></div>'
-        // Expanded packages
-        +(isOpen?'<div style="border:1px solid var(--bd-gold);border-top:none;border-radius:0 0 14px 14px;padding:14px;background:var(--bg-secondary);margin-bottom:8px">'
-        +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">'
-        +entries.map(function(l){
-          var destName=(l.dest||l.name||'').split(',')[0].trim();
-          return '<div class="libcard">'
-            +(l.heroSrc?'<img src="'+IMG.src(l.heroSrc)+'" style="width:100%;height:110px;object-fit:cover">':'<div class="ph" style="height:110px">'+esc(destName)+'</div>')
-            +'<div class="b"><b>'+esc(destName||l.name)+'</b><small>'+esc(l.tourTitle||'')+' · '+esc(l.tourSub||'')+'</small>'
-            +'<div class="tags">'+(l.tags||[]).map(function(t){return '<span class="tag">'+esc(t)+'</span>'}).join('')+'</div>'
-            +'<div style="display:flex;gap:6px;margin-top:8px">'
-            +'<button class="btn sm" style="flex:1" onclick="event.stopPropagation();editLibrary(\''+l.id+'\')">✏️ Edit</button>'
-            +'<button class="btn ghost sm" style="flex:1" onclick="event.stopPropagation();delLib(\''+l.id+'\')">Remove</button>'
-            +'</div></div></div>';
-        }).join('')+'</div></div>':'')
-        +'</div>';
-    }).join('')+'</div>';
+  $('libGrid').innerHTML=list.length?list.map(function(l){
+    return '<div class="libcard">'
+      +(l.heroSrc?'<img src="'+IMG.src(l.heroSrc)+'" style="width:100%;height:120px;object-fit:cover">':'<div class="ph">'+esc(l.name)+'</div>')
+      +'<div class="b"><b>'+esc(l.name)+'</b><small>'+esc(l.country||'')+' · by '+esc(l.createdBy||'')+'</small>'
+      +'<div class="tags">'+(l.tags||[]).map(function(t){return '<span class="tag">'+esc(t)+'</span>'}).join('')+'</div>'
+      +'<div style="display:flex;gap:6px;margin-top:8px">'
+      +'<button class="btn sm" style="flex:1" onclick="editLibrary(\''+l.id+'\')">✏️ Edit</button>'
+      +'<button class="btn ghost sm" style="flex:1" onclick="delLib(\''+l.id+'\')">Remove</button>'
+      +'</div></div></div>';
+  }).join(''):'<div class="empty"><h3>Library is empty</h3><p>Save destinations from the quote editor to build your shared library.</p></div>';
 }
 function delLib(id){if(!confirm('Remove from library?'))return;library=library.filter(x=>x.id!==id);save(LS.library,library);renderLibrary()}
 
