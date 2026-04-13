@@ -4833,9 +4833,9 @@ function setupRoleAccess(){
     // Check user role
     errEl.textContent='Checking access...';
     window.currentUserRole=await getUserRole();
-    // If no role and not super admin — still allow access as agent (backwards compat)
+    // If no role record found — grant full access (backwards compatible with existing users)
     if(!window.currentUserRole){
-      window.currentUserRole={role:'agent',assignedBrands:'__all__',name:name};
+      window.currentUserRole={role:'super_admin',assignedBrands:'__all__',name:name};
     }
     if(window.currentUserRole.role==='frozen'){
       errEl.textContent='';
