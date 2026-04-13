@@ -772,6 +772,7 @@ body.viewer-mode #quoteViewer{display:block!important}
       <button class="adm-tab active" data-adm="users">Users</button>
       <button class="adm-tab" data-adm="quotes">Quotes</button>
       <button class="adm-tab" data-adm="templates">Pricing / Templates</button>
+      <button class="adm-tab" data-adm="analytics">Analytics</button>
       <button class="adm-tab" data-adm="shared">Shared Quotes</button>
       <button class="adm-tab" data-adm="backup">Backup / Restore</button>
       <button class="adm-tab" data-adm="log">Activity Log</button>
@@ -843,6 +844,21 @@ body.viewer-mode #quoteViewer{display:block!important}
         <button class="adm-btn danger" id="admBackupWipe">⚠ Wipe All Data</button>
       </div>
       <div id="admBackupInfo" style="margin-top:22px;padding:16px 18px;background:rgba(8,8,12,.5);border:1px solid rgba(255,255,255,.06);border-radius:12px;font-size:12px;color:#A1A1A6;line-height:1.8"></div>
+    </div>
+
+    <div class="adm-panel" id="adm-analytics">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div><h3 style="margin:0;color:#F5F5F7">Quote Analytics</h3><p style="color:#A1A1A6;font-size:12px;margin:2px 0 0">Performance dashboard</p></div>
+        <div style="display:flex;gap:4px" id="analyticsPeriod">
+          <button class="adm-btn ghost" onclick="setAnalyticsPeriod('week')" id="apWeek" style="font-size:10px;padding:5px 10px">This Week</button>
+          <button class="adm-btn" onclick="setAnalyticsPeriod('month')" id="apMonth" style="font-size:10px;padding:5px 10px">This Month</button>
+          <button class="adm-btn ghost" onclick="setAnalyticsPeriod('all')" id="apAll" style="font-size:10px;padding:5px 10px">All Time</button>
+        </div>
+      </div>
+      <div id="analyticsStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:20px"></div>
+      <div id="analyticsPipeline" style="margin-bottom:20px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px" id="analyticsCharts"></div>
+      <div id="analyticsRecent"></div>
     </div>
 
     <div class="adm-panel" id="adm-log">
@@ -4861,6 +4877,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     window.open(waUrl,'_blank');
   };
   async function renderSharedQuotes(){
+    window._sharedQuotesCache=null;
     var stats=$('sharedStats');var tbl=$('sharedQuotesTable');
     if(!stats||!tbl)return;
     if(!SB.user||!SB.client){tbl.innerHTML='<p style="color:var(--tx3)">Log in to view shared quotes.</p>';return}
@@ -4870,7 +4887,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       var allViews=[];
       try{var vr=await SB.client.from('qg_quote_views').select('*').order('viewed_at',{ascending:false});allViews=vr.data||[]}catch(e){}
       var viewsByToken={};allViews.forEach(function(v){if(!viewsByToken[v.token])viewsByToken[v.token]=[];viewsByToken[v.token].push(v)});
-      var quotes=res.data||[];var now=new Date();
+      var quotes=res.data||[];window._sharedQuotesCache=quotes;var now=new Date();
       var active=quotes.filter(function(q){return !q.expires_at||new Date(q.expires_at)>now});
       var totalViews=quotes.reduce(function(a,q){return a+(q.views||0)},0);
       var totalUnique=quotes.reduce(function(a,q){return a+(q.unique_views||0)},0);
@@ -4970,7 +4987,63 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       renderSharedQuotes();
     }catch(e){alert('Failed: '+e.message)}
   };
-  document.querySelectorAll('.adm-tab').forEach(function(t){t.addEventListener('click',function(){if(t.getAttribute('data-adm')==='shared')renderSharedQuotes()})});
+  document.querySelectorAll('.adm-tab').forEach(function(t){t.addEventListener('click',function(){if(t.getAttribute('data-adm')==='shared')renderSharedQuotes();if(t.getAttribute('data-adm')==='analytics')renderAnalytics()})});
+
+  // ====== ANALYTICS DASHBOARD ======
+  var analyticsPeriod='month';
+  window.setAnalyticsPeriod=function(p){
+    analyticsPeriod=p;
+    document.querySelectorAll('#analyticsPeriod button').forEach(function(b){b.className='adm-btn ghost'});
+    var btn=document.getElementById('ap'+p.charAt(0).toUpperCase()+p.slice(1));
+    if(btn)btn.className='adm-btn';
+    renderAnalytics();
+  };
+  window.renderAnalytics=async function(){
+    if(!window._sharedQuotesCache&&SB.user&&SB.client){
+      try{var r=await SB.client.from('qg_shared_quotes').select('*').order('created_at',{ascending:false});window._sharedQuotesCache=r.data||[]}catch(e){window._sharedQuotesCache=[]}
+    }
+    var now=new Date();var startDate;
+    if(analyticsPeriod==='week'){startDate=new Date(now);startDate.setDate(startDate.getDate()-7)}
+    else if(analyticsPeriod==='month'){startDate=new Date(now);startDate.setMonth(startDate.getMonth()-1)}
+    else{startDate=new Date('2020-01-01')}
+    var allQ=quotes||[];
+    var pQ=allQ.filter(function(q){var c=q.createdAt||q.updatedAt||0;if(!c)return analyticsPeriod==='all';return new Date(c)>=startDate});
+    var shd=window._sharedQuotesCache||[];
+    var pS=shd.filter(function(sq){return sq.created_at&&new Date(sq.created_at)>=startDate});
+    var totalQ=pQ.length;var totalS=pS.length;
+    var viewed=pS.filter(function(sq){return(sq.views||0)>0}).length;
+    var approved=pS.filter(function(sq){return sq.approved}).length;
+    var viewRate=totalS>0?Math.round(viewed/totalS*100):0;
+    var approvalRate=viewed>0?Math.round(approved/viewed*100):0;
+    var totalPipe=0;var appPipe=0;
+    pS.forEach(function(sq){var qd=sq.quote_data||{};var prices=qd.prices||[];var tr=prices.find(function(p){return p.total});var amt=tr?parseFloat((tr.amt||'0').toString().replace(/[^0-9.]/g,'')):0;totalPipe+=amt;if(sq.approved)appPipe+=amt});
+    var cur='£';var fc=function(n){return cur+n.toLocaleString('en-GB',{maximumFractionDigits:0})};
+    // Stats
+    var s=$('analyticsStats');if(s)s.innerHTML='<div class="stat" style="padding:16px"><div class="n" style="font-size:28px">'+totalQ+'</div><div class="l">Quotes Created</div></div><div class="stat" style="padding:16px"><div class="n" style="font-size:28px">'+totalS+'</div><div class="l">Links Sent</div></div><div class="stat" style="padding:16px"><div class="n" style="font-size:28px;color:#30D158">'+viewed+'</div><div class="l">Viewed</div></div><div class="stat" style="padding:16px"><div class="n" style="font-size:28px;color:var(--gold)">'+viewRate+'%</div><div class="l">View Rate</div></div><div class="stat" style="padding:16px"><div class="n" style="font-size:28px;color:#2f9e44">'+approved+'</div><div class="l">Approved</div></div><div class="stat" style="padding:16px"><div class="n" style="font-size:28px;color:#2f9e44">'+approvalRate+'%</div><div class="l">Approval Rate</div></div>';
+    // Pipeline
+    var mx=totalQ||1;
+    var steps=[{l:'Quotes Created',c:totalQ,cl:'#555',ic:'📄'},{l:'Links Sent',c:totalS,cl:'#8B6B3A',ic:'🔗'},{l:'Viewed by Client',c:viewed,cl:'#FF9F0A',ic:'👁️'},{l:'Approved',c:approved,cl:'#30D158',ic:'✅'}];
+    var p=$('analyticsPipeline');if(p)p.innerHTML='<div style="border:1px solid var(--bd);border-radius:12px;padding:16px;background:var(--bg-secondary)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:13px;font-weight:500;color:var(--tx)">Sales Pipeline</div><div style="font-size:11px;color:var(--gold);font-weight:500">Pipeline: '+fc(totalPipe)+'</div></div>'
+      +steps.map(function(st){var pct=mx>0?Math.max(5,Math.round(st.c/mx*100)):5;return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px"><span style="font-size:11px;color:var(--tx2)">'+st.ic+' '+st.l+'</span><span style="font-size:12px;font-weight:600;color:var(--tx)">'+st.c+'</span></div><div style="height:22px;background:var(--bg-tertiary);border-radius:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+st.cl+';border-radius:6px;transition:width .5s"></div></div></div>'}).join('')
+      +'<div style="display:flex;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"><div style="flex:1;text-align:center"><div style="font-size:18px;font-weight:600;color:var(--tx)">'+fc(totalPipe)+'</div><div style="font-size:9px;color:var(--tx3)">Total Pipeline</div></div><div style="flex:1;text-align:center"><div style="font-size:18px;font-weight:600;color:#30D158">'+fc(appPipe)+'</div><div style="font-size:9px;color:var(--tx3)">Approved</div></div><div style="flex:1;text-align:center"><div style="font-size:18px;font-weight:600;color:var(--gold)">'+fc(totalPipe-appPipe)+'</div><div style="font-size:9px;color:var(--tx3)">Pending</div></div></div></div>';
+    // Destinations + Brands
+    var destC={};pQ.forEach(function(q){var k=(q.dest||q.tourTitle||'Unknown').split(',')[0].trim();destC[k]=(destC[k]||0)+1});
+    var brandC={};pQ.forEach(function(q){var bn=(brands.find(function(b){return b.id===q.brandId})||{}).name||'Unknown';brandC[bn]=(brandC[bn]||0)+1});
+    var topD=Object.entries(destC).sort(function(a,b){return b[1]-a[1]}).slice(0,8);
+    var topB=Object.entries(brandC).sort(function(a,b){return b[1]-a[1]}).slice(0,8);
+    var mxD=topD.length?topD[0][1]:1;var mxB=topB.length?topB[0][1]:1;
+    var colors=['#C4A55A','#2B4C7E','#8B2D2D','#1D9E75','#4A3080','#7B2D3D','#6B4C2A','#2D5A3D'];
+    var ch=$('analyticsCharts');if(ch)ch.innerHTML='<div style="border:1px solid var(--bd);border-radius:12px;padding:16px;background:var(--bg-secondary)"><div style="font-size:13px;font-weight:500;color:var(--tx);margin-bottom:12px">Top Destinations</div>'
+      +(topD.length?topD.map(function(d){return '<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span style="color:var(--tx2)">'+esc(d[0])+'</span><span style="color:var(--tx);font-weight:500">'+d[1]+'</span></div><div style="height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.round(d[1]/mxD*100)+'%;background:var(--gold);border-radius:3px"></div></div></div>'}).join(''):'<p style="font-size:11px;color:var(--tx3);text-align:center">No data</p>')
+      +'</div><div style="border:1px solid var(--bd);border-radius:12px;padding:16px;background:var(--bg-secondary)"><div style="font-size:13px;font-weight:500;color:var(--tx);margin-bottom:12px">Top Brands</div>'
+      +(topB.length?topB.map(function(b,i){return '<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span style="color:var(--tx2)">'+esc(b[0])+'</span><span style="color:var(--tx);font-weight:500">'+b[1]+'</span></div><div style="height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.round(b[1]/mxB*100)+'%;background:'+colors[i%colors.length]+';border-radius:3px"></div></div></div>'}).join(''):'<p style="font-size:11px;color:var(--tx3);text-align:center">No data</p>')
+      +'</div>';
+    // Recent quotes
+    var recent=pQ.sort(function(a,b){return(b.updatedAt||0)-(a.updatedAt||0)}).slice(0,10);
+    var rc=$('analyticsRecent');if(rc)rc.innerHTML='<div style="border:1px solid var(--bd);border-radius:12px;padding:16px;background:var(--bg-secondary)"><div style="font-size:13px;font-weight:500;color:var(--tx);margin-bottom:12px">Recent Quotes</div>'
+      +(recent.length?'<div style="overflow-x:auto"><table class="qtable" style="font-size:11px"><thead><tr><th>Ref</th><th>Client</th><th>Destination</th><th>Brand</th><th>Price</th><th>Status</th></tr></thead><tbody>'
+      +recent.map(function(q){var bn=(brands.find(function(b){return b.id===q.brandId})||{}).name||'—';var tr=(q.prices||[]).find(function(p){return p.total});var pr=tr?'£'+(tr.amt||'0'):'—';var sh=(window._sharedQuotesCache||[]).find(function(sq){return(sq.quote_data?.quoteNo||'')===(q.quoteNo||'')});var st='<span style="color:#888">Draft</span>';if(sh){if(sh.approved)st='<span style="color:#30D158;font-weight:600">✅ Approved</span>';else if((sh.views||0)>0)st='<span style="color:#FF9F0A">👁️ Viewed</span>';else st='<span style="color:#2B4C7E">🔗 Sent</span>'}return '<tr><td><b>'+esc(q.quoteNo||'—')+'</b></td><td>'+esc(q.clientName||'—')+'</td><td>'+esc((q.dest||q.tourTitle||'—').split(',')[0])+'</td><td>'+esc(bn)+'</td><td style="font-weight:500">'+pr+'</td><td>'+st+'</td></tr>'}).join('')+'</tbody></table></div>':'<p style="font-size:11px;color:var(--tx3);text-align:center">No quotes</p>')+'</div>';
+  };
 
   window.renderAdmImgLib=function(){
     const q=($('admImgSearch')?.value||'').trim();
