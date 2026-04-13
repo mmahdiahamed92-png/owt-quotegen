@@ -958,7 +958,7 @@ body.viewer-mode #quoteViewer{display:block!important}
     <div id="dashAnalytics" style="margin-top:18px;padding:18px;border:1px solid var(--bd-glass);border-radius:var(--r-xl);background:var(--bg-secondary);backdrop-filter:var(--blur)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span style="font-size:13px;color:var(--gold);font-weight:600;letter-spacing:.06em">SHARED QUOTE LINKS</span></div>
-        <button class="btn ghost sm" onclick="switchView('admin');setTimeout(function(){document.querySelector('.adm-tab[data-adm=\\'shared\\']')?.click()},100)" style="font-size:10px">View All →</button>
+        <button class="btn ghost sm" onclick="document.getElementById('dashSharedSection').scrollIntoView({behavior:'smooth'})" style="font-size:10px">View All ↓</button>
       </div>
       <div id="dashLinkStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px">
         <div style="text-align:center;padding:10px 6px;background:var(--bg-tertiary);border-radius:8px;border:1px solid var(--bd)"><div style="font-size:20px;font-weight:600;color:var(--tx)" id="dsSent">—</div><div style="font-size:8px;color:var(--tx3);font-weight:600;letter-spacing:.5px;margin-top:2px">SENT</div></div>
@@ -979,6 +979,17 @@ body.viewer-mode #quoteViewer{display:block!important}
       <thead><tr><th>Quote #</th><th>Brand</th><th>Client</th><th>Destination</th><th>Dates</th><th>Status</th><th>Updated</th><th></th></tr></thead>
       <tbody id="qtbody"></tbody>
     </table>
+
+    <!-- Shared Quote Links — full panel on dashboard -->
+    <div id="dashSharedSection" style="margin-top:28px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <h2 style="font-family:var(--fh);font-size:28px;font-weight:500;letter-spacing:-.02em;margin:0">Shared Quotes</h2>
+      </div>
+      <p style="color:var(--tx2);font-size:13px;margin:0 0 16px">Track all quote links sent to clients. Follow-up status auto-calculated from view tracking.</p>
+      <div id="dashSharedStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:16px"></div>
+      <div id="dashSharedTable"></div>
+    </div>
   </div>
 </div>
 
@@ -3578,6 +3589,8 @@ function renderDashboard(){
     </tr>`}).join(''):'<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--tx3)">No quotes yet. Click <b style="color:var(--gold)">+ New Quote</b> to begin.</td></tr>';
   // Load shared link analytics
   loadDashAnalytics();
+  // Load full shared quotes table on dashboard
+  if(typeof renderSharedQuotes==='function')renderSharedQuotes();
 }
 async function loadDashAnalytics(){
   if(!SB.client||!SB.user)return;
@@ -5507,11 +5520,15 @@ window.rbacDeleteUser=rbacDeleteUser;
     var waUrl=phone?'https://wa.me/'+phone+'?text='+encodeURIComponent(msg):'https://wa.me/?text='+encodeURIComponent(msg);
     window.open(waUrl,'_blank');
   };
+  window.renderSharedQuotes=renderSharedQuotes;
   async function renderSharedQuotes(){
     window._sharedQuotesCache=null;
-    var stats=$('sharedStats');var tbl=$('sharedQuotesTable');
-    if(!stats||!tbl)return;
-    if(!SB.user||!SB.client){tbl.innerHTML='<p style="color:var(--tx3)">Log in to view shared quotes.</p>';return}
+    // Render into both admin panel and dashboard
+    var stats=$('sharedStats')||$('dashSharedStats');
+    var tbl=$('sharedQuotesTable')||$('dashSharedTable');
+    var dashStats=$('dashSharedStats');var dashTbl=$('dashSharedTable');
+    if(!stats&&!dashStats)return;
+    if(!SB.user||!SB.client){if(tbl)tbl.innerHTML='<p style="color:var(--tx3)">Log in to view shared quotes.</p>';if(dashTbl)dashTbl.innerHTML='';return}
     try{
       var quotes=await getVisibleSharedQuotes();
       var allViews=[];
@@ -5525,9 +5542,10 @@ window.rbacDeleteUser=rbacDeleteUser;
       var unseenCount=quotes.filter(function(q){return(q.views||0)===0}).length;
       // Calculate follow-ups
       var followUps=quotes.map(function(q){var vw=viewsByToken[q.token]||[];return{quote:q,views:vw,status:getFollowUpStatus(q,vw)}}).filter(function(f){return f.status.priority<10}).sort(function(a,b){return a.status.priority-b.status.priority});
-      // Follow-up bar
+      // Follow-up bar — insert before stats in whichever container is active
+      var _fuParent=dashStats||stats;
       var fuBar=document.getElementById('followUpBar');
-      if(!fuBar){fuBar=document.createElement('div');fuBar.id='followUpBar';stats.parentElement.insertBefore(fuBar,stats)}
+      if(!fuBar&&_fuParent&&_fuParent.parentElement){fuBar=document.createElement('div');fuBar.id='followUpBar';_fuParent.parentElement.insertBefore(fuBar,_fuParent)}
       if(followUps.length){
         fuBar.innerHTML='<div style="margin-bottom:16px;border:1px solid var(--bd);border-radius:12px;overflow:hidden"><div style="padding:10px 16px;background:var(--bg-tertiary);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd)"><div style="font-size:13px;font-weight:500;color:var(--tx)">Follow-ups Required <span style="margin-left:6px;padding:2px 8px;background:var(--gold);color:#fff;border-radius:4px;font-size:10px;font-weight:600">'+followUps.length+'</span></div><div style="font-size:10px;color:var(--tx3)">Auto-checked from view tracking</div></div><div style="max-height:280px;overflow-y:auto">'
           +followUps.map(function(f){var qd=f.quote.quote_data||{};var cn=qd.clientName||'Client';var cf=cn.split(' ')[0];var dest=qd.tourTitle||qd.dest||'their trip';var ref=qd.quoteNo||'';var ph=((qd.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,'');var purl=f.quote.pdf_url||'';
@@ -5537,12 +5555,13 @@ window.rbacDeleteUser=rbacDeleteUser;
       // Badge on shared tab
       var shTab=document.querySelector('[data-adm="shared"]');
       if(shTab)shTab.innerHTML='Shared Quotes'+(followUps.length?' <span style="margin-left:4px;padding:1px 6px;background:#FF3B30;color:#fff;border-radius:4px;font-size:9px;font-weight:600">'+followUps.length+'</span>':'');
-      // Stats
-      stats.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:16px';
+      // Stats — write to both dashboard and admin targets
       var approvedCount=quotes.filter(function(q){return q.approved}).length;
-      stats.innerHTML='<div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+quotes.length+'</div><div class="l">Total</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#30D158">'+approvedCount+'</div><div class="l">Approved</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#30D158">'+seenCount+'</div><div class="l">Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#888">'+unseenCount+'</div><div class="l">Not Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+totalViews+'</div><div class="l">Opens</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+active.length+'</div><div class="l">Active</div></div>';
+      var statsHTML='<div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+quotes.length+'</div><div class="l">Total</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#30D158">'+approvedCount+'</div><div class="l">Approved</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#30D158">'+seenCount+'</div><div class="l">Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#888">'+unseenCount+'</div><div class="l">Not Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+totalViews+'</div><div class="l">Opens</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+active.length+'</div><div class="l">Active</div></div>';
+      var _applyStats=function(el){if(!el)return;el.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:16px';el.innerHTML=statsHTML};
+      _applyStats(stats);_applyStats(dashStats);
       // Table with follow-up column
-      tbl.innerHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:11px"><thead><tr><th>Ref</th><th>Client</th><th>Approval</th><th>Seen</th><th>Opens</th><th>Last Open</th><th>Follow-up</th><th>Device</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
+      var tableHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:11px"><thead><tr><th>Ref</th><th>Client</th><th>Approval</th><th>Seen</th><th>Opens</th><th>Last Open</th><th>Follow-up</th><th>Device</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
         var qd=q.quote_data||{};
         var url=q.pdf_url||'https://quotegen.owtgroupltd.co.uk/#'+q.token;
         var vw=viewsByToken[q.token]||[];
@@ -5564,7 +5583,10 @@ window.rbacDeleteUser=rbacDeleteUser;
           +'<td>'+(mob?'<span style="font-size:9px">📱'+mob+'</span> ':'')+(desk?'<span style="font-size:9px">💻'+desk+'</span> ':'')+(tabC?'<span style="font-size:9px">📟'+tabC+'</span>':'')+(!totalO?'—':'')+'</td>'
           +'<td><div style="display:flex;gap:3px"><button class="btn ghost sm" style="font-size:8px;padding:4px 6px" onclick="navigator.clipboard.writeText(\''+url.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">Copy</button><button class="btn ghost sm" style="font-size:8px;padding:4px 6px" onclick="showQuoteAnalytics(\''+q.token+'\')">Stats</button><button class="btn ghost sm" style="font-size:8px;padding:4px 6px;color:var(--danger)" onclick="deleteSharedQuote(\''+q.token+'\')">Del</button></div></td></tr>';
       }).join('')+'</tbody></table></div><div style="margin-top:8px;font-size:10px;color:var(--tx3)">PDFs auto-delete after 7 days. Follow-up status auto-calculated from view tracking.</div>';
-    }catch(e){tbl.innerHTML='<p style="color:var(--danger)">Error: '+esc(e.message)+'</p>'}
+      // Write table to both admin and dashboard
+      if(tbl)tbl.innerHTML=tableHTML;
+      if(dashTbl&&dashTbl!==tbl)dashTbl.innerHTML=tableHTML;
+    }catch(e){var errMsg='<p style="color:var(--danger)">Error: '+esc(e.message)+'</p>';if(tbl)tbl.innerHTML=errMsg;if(dashTbl)dashTbl.innerHTML=errMsg}
   }
   window.showQuoteAnalytics=async function(token){
     $('modal').classList.add('open');$('modalTitle').textContent='Quote Analytics';
