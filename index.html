@@ -2084,7 +2084,10 @@ function delDay(i){current.days.splice(i,1);renderItems();render();autoSave()}
 function delHotel(i){current.hotels.splice(i,1);renderItems();render();autoSave()}
 function delPrice(i){current.prices.splice(i,1);renderItems();render();autoSave()}
 
+var DEFAULT_ROOM_FEATS=['Free WiFi','Air conditioning','Smart TV','Mini fridge','Tea & coffee maker'];
 function renderItems(){
+  // Auto-apply default room features to hotels missing them
+  current.hotels.forEach(function(h){if(!h.roomFeatures||!h.roomFeatures.length)h.roomFeatures=DEFAULT_ROOM_FEATS.slice()});
   // hotels
   $('hotels').innerHTML=current.hotels.map((h,i)=>`
     <div class="item">
