@@ -509,7 +509,7 @@ body.viewer-mode #quoteViewer{display:block!important}
   if(!_sesId){_sesId='ses_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);sessionStorage.setItem('qv_session',_sesId)}
   var _isNew=!sessionStorage.getItem('qv_counted_'+h);
   var _hdrs={'apikey':sbKey,'Authorization':'Bearer '+sbKey,'Content-Type':'application/json','Prefer':'return=minimal'};
-  fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h)+'&select=pdf_url,views,unique_views',{headers:{'apikey':sbKey,'Authorization':'Bearer '+sbKey}})
+  fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h)+'&select=*',{headers:{'apikey':sbKey,'Authorization':'Bearer '+sbKey}})
     .then(function(r){return r.json()})
     .then(function(rows){
       if(rows&&rows.length&&rows[0].pdf_url){
@@ -519,8 +519,60 @@ body.viewer-mode #quoteViewer{display:block!important}
         var upd={views:(rows[0].views||0)+1,last_viewed_at:new Date().toISOString()};
         if(_isNew){upd.unique_views=(rows[0].unique_views||0)+1;sessionStorage.setItem('qv_counted_'+h,'1')}
         fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h),{method:'PATCH',headers:_hdrs,body:JSON.stringify(upd)}).catch(function(){});
-        // Redirect to PDF
-        window.location.replace(rows[0].pdf_url);
+        // Show approval page instead of instant redirect
+        var row=rows[0];var qd=row.quote_data||{};var bd=row.brand_data||{};
+        var isApproved=row.approved===true;
+        var clientName=qd.clientName||'';var clientFirst=clientName.split(' ')[0]||'there';
+        var dest=qd.tourTitle||qd.dest||'your trip';
+        d.innerHTML='<div style="max-width:480px;margin:0 auto;padding:20px;font-family:Satoshi,sans-serif;min-height:100vh;display:flex;flex-direction:column">'
+          +'<div style="text-align:center;margin-bottom:16px"><div style="font-size:14px;font-weight:500;color:#1a1a1a">'+(bd.name||'OWT Group')+'</div></div>'
+          +'<div style="text-align:center;margin-bottom:20px"><div style="font-size:22px;font-weight:600;color:#1a1a1a;margin-bottom:4px">'+esc(dest)+'</div><div style="font-size:12px;color:#888">Quote: '+esc(qd.quoteNo||'')+'</div></div>'
+          +'<a href="'+row.pdf_url+'" target="_blank" style="display:block;padding:16px;background:linear-gradient(135deg,#1a1a1a,#2a2520);border-radius:12px;color:#fff;text-decoration:none;font-size:15px;font-weight:600;text-align:center;margin-bottom:20px">📄 View Your Quote PDF</a>'
+          +(isApproved
+            ?'<div style="padding:20px;background:rgba(48,209,88,0.06);border:2px solid rgba(48,209,88,0.2);border-radius:12px;text-align:center"><div style="font-size:28px;margin-bottom:8px">✅</div><div style="font-size:18px;font-weight:600;color:#2f9e44;margin-bottom:4px">Quote Approved</div><div style="font-size:13px;color:#888">Approved'+(row.approved_name?' by '+esc(row.approved_name):'')+' on '+(row.approved_at?new Date(row.approved_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'')+'</div><div style="font-size:12px;color:#999;margin-top:8px">Your agent will be in touch to arrange payment.</div></div>'
+            :'<div id="approvalSection" style="padding:20px;border:2px solid #eee8d5;border-radius:12px;text-align:center">'
+            +'<div style="font-size:16px;font-weight:500;color:#1a1a1a;margin-bottom:4px">Happy with this quote?</div>'
+            +'<div style="font-size:12px;color:#888;margin-bottom:16px;line-height:1.5">Approve to confirm you want this deal. Your agent will then contact you to arrange payment.</div>'
+            +'<input type="text" id="approvalName" placeholder="Your full name" value="'+esc(clientName)+'" style="width:100%;max-width:300px;padding:12px 16px;border:1px solid #eee8d5;border-radius:8px;font-size:14px;text-align:center;color:#1a1a1a;background:#fafaf7;margin-bottom:12px;box-sizing:border-box">'
+            +'<div style="display:flex;align-items:flex-start;justify-content:center;gap:8px;margin-bottom:16px"><input type="checkbox" id="approvalTerms" style="margin-top:3px;cursor:pointer"><label for="approvalTerms" style="font-size:11px;color:#888;text-align:left;cursor:pointer;max-width:280px">I confirm I have read the quote and would like to proceed. I understand my agent will contact me to arrange payment.</label></div>'
+            +'<button id="approveBtn" onclick="window.__approveQuote()" style="width:100%;max-width:300px;padding:14px;background:linear-gradient(135deg,#30D158,#28A745);border:none;border-radius:10px;color:#fff;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin:0 auto;opacity:0.4;pointer-events:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>I Approve This Quote</button>'
+            +'<div style="font-size:10px;color:#ccc;margin-top:8px">This is not a payment · Your agent will contact you next</div>'
+            +'</div>')
+          +'<div style="flex:1"></div>'
+          +'<div style="text-align:center;padding:20px 0;font-size:10px;color:#ccc">'+(bd.name||'OWT Group')+'</div>'
+          +'</div>';
+        d.style.background='#f8f6f1';d.style.color='#1a1a1a';
+        // Enable approve button logic
+        if(!isApproved){
+          setTimeout(function(){
+            var ni=document.getElementById('approvalName');
+            var tb=document.getElementById('approvalTerms');
+            var ab=document.getElementById('approveBtn');
+            function chk(){if(!ni||!tb||!ab)return;var ok=ni.value.trim().length>=2&&tb.checked;ab.style.opacity=ok?'1':'0.4';ab.style.pointerEvents=ok?'auto':'none'}
+            if(ni)ni.addEventListener('input',chk);
+            if(tb)tb.addEventListener('change',chk);
+            chk();
+          },100);
+        }
+        // Approve function
+        window.__approveQuote=function(){
+          var ni=document.getElementById('approvalName');
+          var tb=document.getElementById('approvalTerms');
+          var ab=document.getElementById('approveBtn');
+          if(!ni||!tb)return;
+          if(ni.value.trim().length<2){alert('Please enter your full name');return}
+          if(!tb.checked){alert('Please agree to the terms');return}
+          if(!confirm('Are you sure you want to approve this quote?'))return;
+          ab.style.opacity='0.4';ab.style.pointerEvents='none';ab.innerHTML='Processing...';
+          fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h),{method:'PATCH',headers:_hdrs,body:JSON.stringify({approved:true,approved_at:new Date().toISOString(),approved_name:ni.value.trim()})})
+            .then(function(){
+              var sec=document.getElementById('approvalSection');
+              if(sec){sec.style.border='2px solid rgba(48,209,88,0.3)';sec.style.background='rgba(48,209,88,0.04)';
+                sec.innerHTML='<div style="font-size:36px;margin-bottom:10px">✅</div><div style="font-size:20px;font-weight:600;color:#2f9e44;margin-bottom:6px">Quote Approved!</div><div style="font-size:14px;color:#555;margin-bottom:4px">Thank you, <b>'+esc(ni.value.trim())+'</b></div><div style="font-size:13px;color:#888;line-height:1.5;max-width:320px;margin:0 auto">Your travel agent will be in touch shortly to arrange payment and confirm your booking.</div><div style="font-size:11px;color:#bbb;margin-top:12px">Approved on '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+'</div>'}
+            }).catch(function(){alert('Something went wrong. Please try again.');ab.style.opacity='1';ab.style.pointerEvents='auto';ab.innerHTML='I Approve This Quote'});
+        };
+        function esc(s){var d2=document.createElement('div');d2.textContent=s;return d2.innerHTML}
+        return;// Don't redirect — show approval page
       }else{
         d.innerHTML='<div style="font-size:32px">❌</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Quote Not Found</div><div style="color:#888;font-size:13px">This link may have expired or is invalid.</div>';
       }
@@ -3593,6 +3645,16 @@ async function checkForNewViews(){
           phone:((qd.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,''),pdfUrl:q.pdf_url||''
         });
       }
+      // Check for new approvals
+      if(q.approved&&q.approved_at){
+        addNotification({
+          key:'approved_'+q.token,icon:'🎉',title:(qd.clientName||'Client')+' approved their quote!',
+          message:(qd.quoteNo||'')+' — '+(qd.tourTitle||qd.dest||'')+'. Collect payment now!',
+          ts:new Date(q.approved_at).getTime(),read:false,priority:0,
+          fuStatus:'approved',clientFirst:(qd.clientName||'').split(' ')[0],dest:qd.tourTitle||qd.dest||'',ref:qd.quoteNo||'',
+          phone:((qd.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,''),pdfUrl:q.pdf_url||''
+        });
+      }
     });
     localStorage.setItem('kk_lastNotifCheck',String(Date.now()));
   }catch(e){}
@@ -4769,6 +4831,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   var _fmtTime=function(s){if(!s)return'—';if(s<60)return s+'s';if(s<3600)return Math.floor(s/60)+'m '+s%60+'s';return Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'m'};
   var _fmtAgo=function(d){if(!d)return'—';var s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'};
   window.getFollowUpStatus=function(q,views){
+    if(q.approved)return{status:'approved',label:'Approved',color:'#30D158',icon:'✅',message:'Approved'+(q.approved_at?' on '+new Date(q.approved_at).toLocaleDateString('en-GB'):'')+'.'+(q.approved_name?' By '+q.approved_name+'.':'')+' Collect payment.',priority:0};
     var now=new Date();var ca=new Date(q.created_at);var ea=q.expires_at?new Date(q.expires_at):null;
     var hSinceCreated=(now-ca)/36e5;var hUntilExpiry=ea?(ea-now)/36e5:999;
     var tv=(views||[]).length;var us=[...new Set((views||[]).map(function(v){return v.session_id}))].length;
@@ -4785,7 +4848,8 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   }
   window.sendFollowUpWhatsApp=function(status,name,dest,ref,phone,url){
     var msg='';
-    if(status==='not_opened')msg='Hi '+name+',\n\nI sent you a personalised quote for *'+dest+'* (Ref: '+ref+') but I noticed you may not have had a chance to view it yet.\n\nHere\'s the link again:\n'+url+'\n\nPlease have a look when you get a moment — I\'d love to help you secure this deal.\n\nKind regards';
+    if(status==='approved')msg='Hi '+name+',\n\nThank you for approving your *'+dest+'* quote (Ref: '+ref+')! Great choice.\n\nTo secure your booking, I just need to collect a small deposit. Would you like to pay by:\n\n• Bank transfer\n• Card payment over the phone\n• Payment link\n\nLet me know which works best and I\'ll get everything confirmed.\n\nKind regards';
+    else if(status==='not_opened')msg='Hi '+name+',\n\nI sent you a personalised quote for *'+dest+'* (Ref: '+ref+') but I noticed you may not have had a chance to view it yet.\n\nHere\'s the link again:\n'+url+'\n\nPlease have a look when you get a moment — I\'d love to help you secure this deal.\n\nKind regards';
     else if(status==='follow_up')msg='Hi '+name+',\n\nJust following up on your *'+dest+'* quote (Ref: '+ref+'). I hope you\'ve had a chance to look through it.\n\nDo you have any questions or would you like me to adjust anything? I\'m here to help.\n\nKind regards';
     else if(status==='hot')msg='Hi '+name+',\n\nI can see you\'ve been looking at your *'+dest+'* quote — great choice!\n\nWould you like to go ahead and secure this deal? I can lock in the price for you today with just a small deposit.\n\nLet me know and I\'ll get everything sorted.\n\nKind regards';
     else if(status==='expiring')msg='Hi '+name+',\n\nJust a quick heads up — your *'+dest+'* quote (Ref: '+ref+') expires very soon.\n\nPrices and availability can change after this, so if you\'d like to go ahead, now would be the best time.\n\nWould you like to proceed?\n\nKind regards';
@@ -4826,9 +4890,10 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
       if(shTab)shTab.innerHTML='Shared Quotes'+(followUps.length?' <span style="margin-left:4px;padding:1px 6px;background:#FF3B30;color:#fff;border-radius:4px;font-size:9px;font-weight:600">'+followUps.length+'</span>':'');
       // Stats
       stats.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:16px';
-      stats.innerHTML='<div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+quotes.length+'</div><div class="l">Total</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#30D158">'+seenCount+'</div><div class="l">Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#888">'+unseenCount+'</div><div class="l">Not Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+totalViews+'</div><div class="l">Opens</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+totalUnique+'</div><div class="l">Unique</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+active.length+'</div><div class="l">Active</div></div>';
+      var approvedCount=quotes.filter(function(q){return q.approved}).length;
+      stats.innerHTML='<div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+quotes.length+'</div><div class="l">Total</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#30D158">'+approvedCount+'</div><div class="l">Approved</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#30D158">'+seenCount+'</div><div class="l">Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#888">'+unseenCount+'</div><div class="l">Not Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+totalViews+'</div><div class="l">Opens</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+active.length+'</div><div class="l">Active</div></div>';
       // Table with follow-up column
-      tbl.innerHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:11px"><thead><tr><th>Ref</th><th>Client</th><th>Seen</th><th>Opens</th><th>Avg Time</th><th>Last Open</th><th>Follow-up</th><th>Device</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
+      tbl.innerHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:11px"><thead><tr><th>Ref</th><th>Client</th><th>Approval</th><th>Seen</th><th>Opens</th><th>Last Open</th><th>Follow-up</th><th>Device</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
         var qd=q.quote_data||{};
         var url=q.pdf_url||'https://quotegen.owtgroupltd.co.uk/#'+q.token;
         var vw=viewsByToken[q.token]||[];
@@ -4841,6 +4906,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
         var desk=vw.filter(function(v){return v.device_type==='desktop'}).length;
         var tabC=vw.filter(function(v){return v.device_type==='tablet'}).length;
         return '<tr style="'+(hasSeen?'':'opacity:.5')+'"><td><b>'+esc(qd.quoteNo||'—')+'</b></td><td>'+esc(qd.clientName||'—')+'</td>'
+          +'<td>'+(q.approved?'<span style="display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:4px;font-size:8px;font-weight:600;color:#fff;background:#30D158">✅ APPROVED</span>'+(q.approved_name?'<div style="font-size:7px;color:var(--tx3);margin-top:1px">'+esc(q.approved_name)+'</div>':''):'<span style="font-size:9px;color:#888">Pending</span>')+'</td>'
           +'<td>'+(hasSeen?'<span style="color:#30D158;font-weight:600">👁️</span>':'<span style="color:#888">—</span>')+'</td>'
           +'<td style="font-weight:600;color:var(--gold)">'+totalO+'</td>'
           +'<td>'+(avgT?_fmtTime(avgT):'—')+'</td>'
