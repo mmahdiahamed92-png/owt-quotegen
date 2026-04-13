@@ -821,6 +821,25 @@ body.viewer-mode #quoteViewer{display:block!important}
         <button class="adm-btn" id="admSaveTplBtn">Save Templates</button>
         <button class="adm-btn ghost" id="admResetTplBtn">Reset to Defaults</button>
       </div>
+
+      <div style="margin-top:24px;padding:18px;border:1px solid var(--bd-gold);border-radius:12px;background:rgba(212,175,106,.03)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M12 2a4 4 0 0 1 4 4v1a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2V6a4 4 0 0 1 4-4z"/><circle cx="12" cy="18" r="4"/></svg><span style="font-size:13px;font-weight:600;color:var(--gold);letter-spacing:.06em">AI AUTO-FILL</span></div>
+        <p style="font-size:11px;color:var(--tx3);margin:0 0 12px">Upload a booking screenshot and AI extracts all details automatically.</p>
+        <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block">AI Provider</label>
+        <select id="aiProvider" onchange="localStorage.setItem('kk_ai_provider',this.value);updateAiKeyLabel()" style="width:100%;margin-bottom:10px"></select>
+        <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block" id="aiKeyLabel">API Key</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="password" id="aiApiKey" placeholder="" style="flex:1;font-size:12px" oninput="localStorage.setItem('kk_ai_key',this.value)">
+          <button class="adm-btn" onclick="testAiKey()" style="font-size:10px">Test</button>
+        </div>
+        <div id="azureFields" style="display:none;margin-top:8px">
+          <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block">Azure Endpoint URL</label>
+          <input id="azureEndpoint" placeholder="https://your-resource.openai.azure.com" style="width:100%;font-size:12px;margin-bottom:8px" oninput="localStorage.setItem('kk_azure_endpoint',this.value)">
+          <label style="font-size:11px;color:var(--tx2);margin-bottom:4px;display:block">Deployment Name</label>
+          <input id="azureDeployment" placeholder="e.g. gpt-4o" style="width:100%;font-size:12px" oninput="localStorage.setItem('kk_azure_deployment',this.value)">
+        </div>
+        <div id="aiProviderHelp" style="margin-top:8px;padding:8px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg-tertiary);font-size:9px;color:var(--tx3);line-height:1.5"></div>
+      </div>
     </div>
 
 
@@ -917,6 +936,7 @@ body.viewer-mode #quoteViewer{display:block!important}
     <div class="etb-left">Quote Editor</div>
     <div class="etb-right">
       <button class="etb-btn" onclick="openLibrary('load')">📚 Load from Library</button>
+      <button class="etb-btn" onclick="showAiFillModal()" style="border-color:var(--bd-gold);color:var(--gold)">🤖 AI Fill</button>
       <button class="etb-btn" onclick="openLibrary('save')">⭐ Save to Library</button>
       <button class="etb-btn primary" onclick="switchView('dashboard')">← Back to Dashboard</button>
     </div>
@@ -3519,6 +3539,123 @@ async function loadDashAnalytics(){
 }
 $('dashSearch').addEventListener('input',renderDashboard);
 
+// ====== AI AUTO-FILL SYSTEM ======
+function initAiSettings(){
+  var prov=$('aiProvider');if(!prov)return;
+  var cur=localStorage.getItem('kk_ai_provider')||'claude';
+  prov.innerHTML='<option value="claude"'+(cur==='claude'?' selected':'')+'>Anthropic Claude</option><option value="openai"'+(cur==='openai'?' selected':'')+'>OpenAI ChatGPT</option><option value="copilot"'+(cur==='copilot'?' selected':'')+'>Microsoft Copilot (Azure)</option>';
+  var k=$('aiApiKey');if(k)k.value=localStorage.getItem('kk_ai_key')||'';
+  var ae=$('azureEndpoint');if(ae)ae.value=localStorage.getItem('kk_azure_endpoint')||'';
+  var ad=$('azureDeployment');if(ad)ad.value=localStorage.getItem('kk_azure_deployment')||'';
+  updateAiKeyLabel();
+}
+function updateAiKeyLabel(){
+  var p=localStorage.getItem('kk_ai_provider')||'claude';
+  var l=$('aiKeyLabel'),inp=$('aiApiKey'),az=$('azureFields'),h=$('aiProviderHelp');
+  if(p==='claude'){if(l)l.textContent='Anthropic API Key';if(inp)inp.placeholder='sk-ant-api03-...';if(az)az.style.display='none';if(h)h.innerHTML='Get key from <b>console.anthropic.com</b> → API Keys. Uses Claude Sonnet.'}
+  else if(p==='openai'){if(l)l.textContent='OpenAI API Key';if(inp)inp.placeholder='sk-proj-...';if(az)az.style.display='none';if(h)h.innerHTML='Get key from <b>platform.openai.com</b> → API Keys. Uses GPT-4o.'}
+  else if(p==='copilot'){if(l)l.textContent='Azure API Key';if(inp)inp.placeholder='Azure API key';if(az)az.style.display='block';if(h)h.innerHTML='Get key from <b>Azure Portal</b> → OpenAI resource → Keys. Enter endpoint + deployment above.'}
+}
+async function testAiKey(){
+  var p=localStorage.getItem('kk_ai_provider')||'claude';
+  var k=localStorage.getItem('kk_ai_key');if(!k){alert('Enter an API key first');return}
+  try{
+    var res;
+    if(p==='claude'){res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:50,messages:[{role:'user',content:'Say OK'}]})})}
+    else if(p==='openai'){res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},body:JSON.stringify({model:'gpt-4o',max_tokens:50,messages:[{role:'user',content:'Say OK'}]})})}
+    else if(p==='copilot'){var ep=localStorage.getItem('kk_azure_endpoint');var dp=localStorage.getItem('kk_azure_deployment')||'gpt-4o';if(!ep){alert('Enter Azure endpoint URL');return}res=await fetch(ep+'/openai/deployments/'+dp+'/chat/completions?api-version=2024-02-15-preview',{method:'POST',headers:{'Content-Type':'application/json','api-key':k},body:JSON.stringify({max_tokens:50,messages:[{role:'user',content:'Say OK'}]})})}
+    if(res&&res.ok)alert('✅ API key is valid!');
+    else{var err=await res.json();alert('❌ Invalid key: '+(err.error?.message||'Request failed'))}
+  }catch(e){alert('Connection error: '+e.message)}
+}
+async function callAiWithImage(images,prompt){
+  var p=localStorage.getItem('kk_ai_provider')||'claude';
+  var k=localStorage.getItem('kk_ai_key');if(!k)throw new Error('No API key. Go to Admin → Pricing/Templates → AI Auto-Fill.');
+  var res;
+  if(p==='claude'){
+    var content=images.map(function(img){return{type:'image',source:{type:'base64',media_type:img.mt,data:img.b64}}});
+    content.push({type:'text',text:prompt});
+    res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:content}]})});
+    if(!res.ok){var e=await res.json();throw new Error(e.error?.message||'Claude error')}
+    var d=await res.json();return d.content?.[0]?.text||'';
+  }else if(p==='openai'){
+    var content2=images.map(function(img){return{type:'image_url',image_url:{url:'data:'+img.mt+';base64,'+img.b64,detail:'high'}}});
+    content2.push({type:'text',text:prompt});
+    res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},body:JSON.stringify({model:'gpt-4o',max_tokens:4000,messages:[{role:'user',content:content2}]})});
+    if(!res.ok){var e2=await res.json();throw new Error(e2.error?.message||'OpenAI error')}
+    var d2=await res.json();return d2.choices?.[0]?.message?.content||'';
+  }else if(p==='copilot'){
+    var ep=localStorage.getItem('kk_azure_endpoint');var dp=localStorage.getItem('kk_azure_deployment')||'gpt-4o';
+    if(!ep)throw new Error('Azure endpoint not set.');
+    var content3=images.map(function(img){return{type:'image_url',image_url:{url:'data:'+img.mt+';base64,'+img.b64,detail:'high'}}});
+    content3.push({type:'text',text:prompt});
+    res=await fetch(ep+'/openai/deployments/'+dp+'/chat/completions?api-version=2024-02-15-preview',{method:'POST',headers:{'Content-Type':'application/json','api-key':k},body:JSON.stringify({max_tokens:4000,messages:[{role:'user',content:content3}]})});
+    if(!res.ok){var e3=await res.json();throw new Error(e3.error?.message||'Azure error')}
+    var d3=await res.json();return d3.choices?.[0]?.message?.content||'';
+  }
+  throw new Error('Unknown provider');
+}
+function showAiFillModal(){
+  if(!current){alert('Open a quote first');return}
+  var provName={claude:'Claude AI',openai:'ChatGPT',copilot:'Copilot'}[localStorage.getItem('kk_ai_provider')||'claude']||'AI';
+  $('modal').classList.add('open');
+  $('modalTitle').textContent='AI Auto-Fill ('+provName+')';
+  $('modalBody').innerHTML='<p style="color:var(--tx2);font-size:12px;margin:0 0 14px">Upload a booking confirmation screenshot and AI will extract all details automatically.</p>'
+    +'<div style="border:2px dashed var(--bd-h);border-radius:12px;padding:24px;text-align:center;cursor:pointer" onclick="$(\'aiFillFile\').click()">'
+    +'<div style="font-size:28px;margin-bottom:6px">📷</div>'
+    +'<div style="color:var(--tx2);font-size:12px">Click to upload screenshot</div>'
+    +'<div style="color:var(--tx3);font-size:10px;margin-top:4px">JPG, PNG — booking confirmation, itinerary, or invoice</div>'
+    +'<input type="file" id="aiFillFile" accept="image/*" multiple style="display:none" onchange="processAiFill(this.files)">'
+    +'</div>'
+    +'<div id="aiFillStatus" style="margin-top:12px;text-align:center"></div>'
+    +'<div id="aiFillPreview" style="margin-top:12px"></div>';
+}
+async function processAiFill(files){
+  if(!files||!files.length)return;
+  var status=$('aiFillStatus');
+  var provName={claude:'Claude AI',openai:'ChatGPT',copilot:'Copilot'}[localStorage.getItem('kk_ai_provider')||'claude']||'AI';
+  status.innerHTML='<div style="color:var(--gold);font-size:12px">⏳ Reading with '+provName+'...</div>';
+  try{
+    var images=[];
+    for(var i=0;i<files.length;i++){
+      var b64=await new Promise(function(resolve,reject){var r=new FileReader();r.onload=function(){resolve(r.result.split(',')[1])};r.onerror=reject;r.readAsDataURL(files[i])});
+      images.push({b64:b64,mt:files[i].type||'image/jpeg'});
+    }
+    var prompt='Extract ALL booking/travel details from this screenshot. Return ONLY valid JSON with these fields (use empty string for missing fields):\n{"clientName":"","clientContact":"","travelers":"","departureAirport":"","tourTitle":"","tourSub":"","dest":"","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","flightAirline":"","flightClass":"","flightOutFrom":"","flightOutTo":"","flightOutDate":"YYYY-MM-DD","flightOutTime":"HH:MM","flightOutNo":"","flightRetFrom":"","flightRetTo":"","flightRetDate":"YYYY-MM-DD","flightRetTime":"HH:MM","flightRetNo":"","hotels":[{"name":"","city":"","nights":"","stars":"","board":""}],"totalPrice":"","currency":"GBP"}';
+    var text=await callAiWithImage(images,prompt);
+    var cleaned=text.replace(/```json|```/g,'').trim();
+    var data=JSON.parse(cleaned);
+    // Show preview
+    status.innerHTML='<div style="color:#30D158;font-size:12px">✅ Data extracted!</div>';
+    var preview=$('aiFillPreview');
+    var rows=Object.entries(data).filter(function(e){return e[1]&&e[1]!==''&&!Array.isArray(e[1])}).map(function(e){return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bd);font-size:11px"><span style="color:var(--tx3)">'+esc(e[0])+'</span><span style="color:var(--tx);font-weight:500">'+esc(String(e[1]))+'</span></div>'}).join('');
+    if(data.hotels&&data.hotels.length){rows+=data.hotels.map(function(h,i){return '<div style="padding:4px 0;border-bottom:1px solid var(--bd);font-size:11px;color:var(--gold)">Hotel '+(i+1)+': '+esc(h.name||'')+' ('+esc(h.city||'')+') '+esc(h.nights||'')+' nights</div>'}).join('')}
+    preview.innerHTML='<div style="border:1px solid var(--bd);border-radius:8px;padding:12px;max-height:250px;overflow-y:auto">'+rows+'</div>'
+      +'<div style="display:flex;gap:8px;margin-top:12px"><button class="btn" style="flex:1" onclick="applyAiFill()">Apply to Quote</button><button class="btn ghost" style="flex:1" onclick="closeModal()">Cancel</button></div>';
+    window._aiFillData=data;
+  }catch(e){
+    status.innerHTML='<div style="color:var(--danger);font-size:12px">❌ '+esc(e.message)+'</div>';
+  }
+}
+function applyAiFill(){
+  var d=window._aiFillData;if(!d||!current)return;
+  var fields=['clientName','clientContact','travelers','departureAirport','tourTitle','tourSub','dest','startDate','endDate','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo'];
+  fields.forEach(function(f){if(d[f]){current[f]=d[f];var el=$(f);if(el)el.value=d[f]}});
+  if(d.currency){current.curr=d.currency;var el=$('curr');if(el)el.value=d.currency}
+  if(d.flightAirline)current.flightsInc=true;
+  if(d.hotels&&d.hotels.length){
+    d.hotels.forEach(function(h){
+      current.hotels.push({name:h.name||'',city:h.city||'',nights:h.nights||'',stars:h.stars||'',board:h.board||'',img:'',checkin:'',checkout:'',roomType:'',roomFeatures:[],roomDesc:'',maxOccupancy:''});
+    });
+  }
+  if(d.totalPrice){
+    var tp=current.prices.find(function(p){return p.total});
+    if(tp)tp.amt=d.totalPrice;
+  }
+  renderItems();render();autoSave();closeModal();
+  alert('✅ AI data applied to quote!');
+}
+
 // ====== NOTIFICATION SYSTEM ======
 var _notifOpen=false;
 var _lastViewCount=0;
@@ -5206,6 +5343,7 @@ function setupRoleAccess(){
     document.getElementById('tplExcl').value=t.excl||'';
     document.getElementById('tplTerms').value=t.terms||'';
     document.getElementById('tplMarkup').value=t.markup||0;
+    if(typeof initAiSettings==='function')initAiSettings();
   }
   document.getElementById('admSaveTplBtn').addEventListener('click',()=>{
     const t={
