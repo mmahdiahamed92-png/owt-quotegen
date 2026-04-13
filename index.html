@@ -493,12 +493,29 @@ body.viewer-mode #quoteViewer{display:block!important}
   var sbUrl='https://faebuflzzeetphtudycw.supabase.co';
   var sbKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhZWJ1Zmx6emVldHBodHVkeWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNjQxNDcsImV4cCI6MjA4OTk0MDE0N30.WSrZbqdQz1H_ZhXh8wdttiMju7UZRIlQ-XKI60z4hSc';
   window.__shareTokenHandled=true;
-  fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h)+'&select=pdf_url,views',{headers:{'apikey':sbKey,'Authorization':'Bearer '+sbKey}})
+  // Detect device & browser for tracking
+  var _ua=navigator.userAgent.toLowerCase();
+  var _devType=/mobile|android|iphone|ipod|blackberry|opera mini|iemobile/.test(_ua)?(/ipad|tablet/.test(_ua)?'tablet':'mobile'):'desktop';
+  var _browser='Unknown';
+  if(_ua.includes('chrome')&&!_ua.includes('edg'))_browser='Chrome';
+  else if(_ua.includes('safari')&&!_ua.includes('chrome'))_browser='Safari';
+  else if(_ua.includes('firefox'))_browser='Firefox';
+  else if(_ua.includes('edg'))_browser='Edge';
+  else if(_ua.includes('samsung'))_browser='Samsung';
+  var _sesId=sessionStorage.getItem('qv_session');
+  if(!_sesId){_sesId='ses_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);sessionStorage.setItem('qv_session',_sesId)}
+  var _isNew=!sessionStorage.getItem('qv_counted_'+h);
+  var _hdrs={'apikey':sbKey,'Authorization':'Bearer '+sbKey,'Content-Type':'application/json','Prefer':'return=minimal'};
+  fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h)+'&select=pdf_url,views,unique_views',{headers:{'apikey':sbKey,'Authorization':'Bearer '+sbKey}})
     .then(function(r){return r.json()})
     .then(function(rows){
       if(rows&&rows.length&&rows[0].pdf_url){
-        // Increment view count
-        fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h),{method:'PATCH',headers:{'apikey':sbKey,'Authorization':'Bearer '+sbKey,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({views:(rows[0].views||0)+1})}).catch(function(){});
+        // Record view event
+        fetch(sbUrl+'/rest/v1/qg_quote_views',{method:'POST',headers:_hdrs,body:JSON.stringify({token:h,session_id:_sesId,device_type:_devType,browser:_browser,screen_width:window.innerWidth,time_spent_seconds:0,referrer:document.referrer||'direct'})}).catch(function(){});
+        // Update quote counts
+        var upd={views:(rows[0].views||0)+1,last_viewed_at:new Date().toISOString()};
+        if(_isNew){upd.unique_views=(rows[0].unique_views||0)+1;sessionStorage.setItem('qv_counted_'+h,'1')}
+        fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h),{method:'PATCH',headers:_hdrs,body:JSON.stringify(upd)}).catch(function(){});
         // Redirect to PDF
         window.location.replace(rows[0].pdf_url);
       }else{
@@ -4497,6 +4514,8 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
   }
   cleanupExpiredQuotes();
 
+  var _fmtTime=function(s){if(!s)return'—';if(s<60)return s+'s';if(s<3600)return Math.floor(s/60)+'m '+s%60+'s';return Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'m'};
+  var _fmtAgo=function(d){if(!d)return'—';var s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'};
   async function renderSharedQuotes(){
     var stats=$('sharedStats');var tbl=$('sharedQuotesTable');
     if(!stats||!tbl)return;
@@ -4504,20 +4523,58 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
     try{
       var res=await SB.client.from('qg_shared_quotes').select('*').order('created_at',{ascending:false});
       if(res.error)throw res.error;
-      var quotes=res.data||[];
-      var now=new Date();
+      var allViews=[];
+      try{var vr=await SB.client.from('qg_quote_views').select('*').order('viewed_at',{ascending:false});allViews=vr.data||[]}catch(e){}
+      var viewsByToken={};allViews.forEach(function(v){if(!viewsByToken[v.token])viewsByToken[v.token]=[];viewsByToken[v.token].push(v)});
+      var quotes=res.data||[];var now=new Date();
       var active=quotes.filter(function(q){return !q.expires_at||new Date(q.expires_at)>now});
-      var expired=quotes.filter(function(q){return q.expires_at&&new Date(q.expires_at)<=now});
-      var views=quotes.reduce(function(a,q){return a+(q.views||0)},0);
-      stats.innerHTML='<div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+quotes.length+'</div><div class="l">Total</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+active.length+'</div><div class="l">Active</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+expired.length+'</div><div class="l">Expired</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:28px">'+views+'</div><div class="l">Views</div></div>';
-      tbl.innerHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:12px"><thead><tr><th>Quote</th><th>Client</th><th>Dest</th><th>Type</th><th>Status</th><th>Created</th><th>Expires</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
+      var totalViews=quotes.reduce(function(a,q){return a+(q.views||0)},0);
+      var totalUnique=quotes.reduce(function(a,q){return a+(q.unique_views||0)},0);
+      var seenCount=quotes.filter(function(q){return(q.views||0)>0}).length;
+      var unseenCount=quotes.filter(function(q){return(q.views||0)===0}).length;
+      stats.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:16px';
+      stats.innerHTML='<div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+quotes.length+'</div><div class="l">Total</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#30D158">'+seenCount+'</div><div class="l">Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px;color:#888">'+unseenCount+'</div><div class="l">Not Seen</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+totalViews+'</div><div class="l">Opens</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+totalUnique+'</div><div class="l">Unique</div></div><div class="stat" style="padding:14px"><div class="n" style="font-size:24px">'+active.length+'</div><div class="l">Active</div></div>';
+      tbl.innerHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:11px"><thead><tr><th>Ref</th><th>Client</th><th>Seen</th><th>Opens</th><th>Unique</th><th>Avg Time</th><th>Last Open</th><th>Device</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
         var qd=q.quote_data||{};var isExp=q.expires_at&&new Date(q.expires_at)<=now;
         var url=q.pdf_url||'https://quotegen.owtgroupltd.co.uk/#'+q.token;
-        var isPdf=!!q.pdf_url;
-        return '<tr><td><b>'+esc(qd.quoteNo||'—')+'</b></td><td>'+esc(qd.clientName||'—')+'</td><td>'+esc(qd.tourTitle||qd.dest||'—')+'</td><td>'+(isPdf?'<span style="color:var(--gold);font-size:10px">📄 PDF</span>':'<span style="color:var(--tx3);font-size:10px">🔗 Link</span>')+'</td><td>'+(isExp?'<span class="badge expired">Expired</span>':'<span class="badge accepted">Active</span>')+'</td><td>'+(q.created_at?new Date(q.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—')+'</td><td>'+(q.expires_at?new Date(q.expires_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'None')+'</td><td><div style="display:flex;gap:4px"><button class="btn ghost sm" style="font-size:9px;padding:4px 8px" onclick="navigator.clipboard.writeText(\''+url.replace(/'/g,"\\'")+'\');this.textContent=\'Copied!\'">Copy</button><button class="btn ghost sm" style="font-size:9px;padding:4px 8px" onclick="window.open(\''+url.replace(/'/g,"\\'")+'\',\'_blank\')">View</button><button class="btn ghost sm" style="font-size:9px;padding:4px 8px;color:var(--danger)" onclick="deleteSharedQuote(\''+q.token+'\')">Del</button></div></td></tr>';
-      }).join('')+'</tbody></table></div><div style="margin-top:10px;font-size:10px;color:var(--tx3)">PDFs auto-delete after 7 days. Expired links cleaned on agent login.</div>';
+        var vw=viewsByToken[q.token]||[];
+        var totalO=vw.length;var uniqS=[...new Set(vw.map(function(v){return v.session_id}))].length;
+        var avgT=vw.length?Math.round(vw.reduce(function(a,v){return a+(v.time_spent_seconds||0)},0)/vw.length):0;
+        var lastV=vw.length?vw[0]:null;
+        var hasSeen=totalO>0;
+        var mob=vw.filter(function(v){return v.device_type==='mobile'}).length;
+        var desk=vw.filter(function(v){return v.device_type==='desktop'}).length;
+        var tab=vw.filter(function(v){return v.device_type==='tablet'}).length;
+        return '<tr style="'+(hasSeen?'':'opacity:.5')+'"><td><b>'+esc(qd.quoteNo||'—')+'</b></td><td>'+esc(qd.clientName||'—')+'</td>'
+          +'<td>'+(hasSeen?'<span style="color:#30D158;font-weight:600">👁️ Seen</span>':'<span style="color:#888">—</span>')+'</td>'
+          +'<td style="font-weight:600;color:var(--gold)">'+totalO+'</td><td>'+uniqS+'</td>'
+          +'<td>'+(avgT?_fmtTime(avgT):'—')+'</td>'
+          +'<td>'+(lastV?_fmtAgo(lastV.viewed_at):'—')+'</td>'
+          +'<td>'+(mob?'<span style="font-size:9px" title="Mobile">📱'+mob+'</span> ':'')+(desk?'<span style="font-size:9px" title="Desktop">💻'+desk+'</span> ':'')+(tab?'<span style="font-size:9px" title="Tablet">📟'+tab+'</span>':'')+(!totalO?'<span style="font-size:9px;color:#888">—</span>':'')+'</td>'
+          +'<td><div style="display:flex;gap:3px"><button class="btn ghost sm" style="font-size:8px;padding:4px 6px" onclick="navigator.clipboard.writeText(\''+url.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">Copy</button><button class="btn ghost sm" style="font-size:8px;padding:4px 6px" onclick="showQuoteAnalytics(\''+q.token+'\')">Stats</button><button class="btn ghost sm" style="font-size:8px;padding:4px 6px;color:var(--danger)" onclick="deleteSharedQuote(\''+q.token+'\')">Del</button></div></td></tr>';
+      }).join('')+'</tbody></table></div><div style="margin-top:8px;font-size:10px;color:var(--tx3)">PDFs auto-delete after 7 days. Green = client has opened the quote.</div>';
     }catch(e){tbl.innerHTML='<p style="color:var(--danger)">Error: '+esc(e.message)+'</p>'}
   }
+  window.showQuoteAnalytics=async function(token){
+    $('modal').classList.add('open');$('modalTitle').textContent='Quote Analytics';
+    $('modalBody').innerHTML='<p style="text-align:center;color:var(--tx3)">Loading...</p>';
+    try{
+      var vr=await SB.client.from('qg_quote_views').select('*').eq('token',token).order('viewed_at',{ascending:false});
+      var qr=await SB.client.from('qg_shared_quotes').select('*').eq('token',token).single();
+      var qd=(qr.data?.quote_data)||{};var v=vr.data||[];
+      var uniq=[...new Set(v.map(function(x){return x.session_id}))].length;
+      var totalT=v.reduce(function(a,x){return a+(x.time_spent_seconds||0)},0);
+      var avgT=v.length?Math.round(totalT/v.length):0;
+      var mob=v.filter(function(x){return x.device_type==='mobile'}).length;
+      var desk=v.filter(function(x){return x.device_type==='desktop'}).length;
+      $('modalBody').innerHTML='<div style="margin-bottom:14px"><div style="font-size:16px;font-weight:500;color:var(--tx)">'+esc(qd.quoteNo||'')+'  —  '+esc(qd.clientName||'Unknown')+'</div><div style="font-size:12px;color:var(--tx3)">'+esc(qd.tourTitle||qd.dest||'')+'</div></div>'
+        +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px"><div class="stat" style="padding:12px"><div class="n" style="font-size:20px">'+v.length+'</div><div class="l">Opens</div></div><div class="stat" style="padding:12px"><div class="n" style="font-size:20px">'+uniq+'</div><div class="l">Unique</div></div><div class="stat" style="padding:12px"><div class="n" style="font-size:20px">'+_fmtTime(avgT)+'</div><div class="l">Avg Time</div></div><div class="stat" style="padding:12px"><div class="n" style="font-size:20px">'+_fmtTime(totalT)+'</div><div class="l">Total Time</div></div></div>'
+        +'<div style="margin-bottom:14px"><div style="font-size:11px;color:var(--tx3);font-weight:600;letter-spacing:.1em;margin-bottom:8px">DEVICE BREAKDOWN</div><div style="display:flex;gap:8px"><div style="flex:1;padding:10px;border:1px solid var(--bd);border-radius:8px;text-align:center"><div style="font-size:18px">📱</div><div style="font-size:16px;font-weight:600;color:var(--tx)">'+mob+'</div><div style="font-size:9px;color:var(--tx3)">Mobile</div></div><div style="flex:1;padding:10px;border:1px solid var(--bd);border-radius:8px;text-align:center"><div style="font-size:18px">💻</div><div style="font-size:16px;font-weight:600;color:var(--tx)">'+desk+'</div><div style="font-size:9px;color:var(--tx3)">Desktop</div></div><div style="flex:1;padding:10px;border:1px solid var(--bd);border-radius:8px;text-align:center"><div style="font-size:18px">🌐</div><div style="font-size:16px;font-weight:600;color:var(--tx)">'+(new Set(v.map(function(x){return x.browser}).filter(Boolean))).size+'</div><div style="font-size:9px;color:var(--tx3)">Browsers</div></div></div></div>'
+        +'<div><div style="font-size:11px;color:var(--tx3);font-weight:600;letter-spacing:.1em;margin-bottom:8px">VIEW HISTORY</div><div style="max-height:250px;overflow-y:auto">'
+        +(v.length?v.map(function(vi){return '<div style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid var(--bd);font-size:11px"><span style="font-size:14px">'+(vi.device_type==='mobile'?'📱':vi.device_type==='tablet'?'📟':'💻')+'</span><div style="flex:1"><div style="color:var(--tx);font-weight:500">'+new Date(vi.viewed_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+' at '+new Date(vi.viewed_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</div><div style="color:var(--tx3);font-size:10px">'+esc(vi.browser||'Unknown')+' · '+(vi.screen_width||'?')+'px</div></div><div style="text-align:right"><div style="color:var(--gold);font-weight:500">'+_fmtTime(vi.time_spent_seconds||0)+'</div><div style="color:var(--tx3);font-size:9px">time spent</div></div></div>'}).join(''):'<p style="color:var(--tx3);text-align:center;padding:20px">No views yet</p>')
+        +'</div></div>';
+    }catch(e){$('modalBody').innerHTML='<p style="color:var(--danger)">Error: '+esc(e.message)+'</p>'}
+  };
   window.deleteSharedQuote=async function(token){
     if(!confirm('Delete this shared link?'))return;
     try{
