@@ -3583,7 +3583,9 @@ function renderDashboard(){
   const search=($('dashSearch').value||'').toLowerCase();
   const list=vq.filter(q=>!search||(q.clientName+q.dest+q.quoteNo+q.tourTitle).toLowerCase().includes(search))
     .sort((a,b)=>b.updatedAt-a.updatedAt);
-  $('qtbody').innerHTML=list.length?list.map(q=>{
+  var _showAllQuotes=window._dashShowAllQuotes||false;
+  var displayList=_showAllQuotes?list:list.slice(0,10);
+  $('qtbody').innerHTML=displayList.length?displayList.map(q=>{
     const b=brands.find(x=>x.id===q.brandId);
     return `<tr>
       <td style="color:var(--gold);font-weight:600">${esc(q.quoteNo||'—')}</td>
@@ -3595,6 +3597,8 @@ function renderDashboard(){
       <td>${new Date(q.updatedAt).toLocaleDateString('en-GB')}</td>
       <td><button class="btn sm ghost" onclick="editQuote('${q.id}')">Open</button> <button class="btn sm danger" onclick="deleteQuote('${q.id}')">×</button></td>
     </tr>`}).join(''):'<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--tx3)">No quotes yet. Click <b style="color:var(--gold)">+ New Quote</b> to begin.</td></tr>';
+  var showMoreEl=$('dashQuotesShowMore');if(!showMoreEl){showMoreEl=document.createElement('div');showMoreEl.id='dashQuotesShowMore';$('qtable').parentElement.appendChild(showMoreEl)}
+  if(list.length>10){showMoreEl.innerHTML='<div style="text-align:center;margin-top:10px"><button class="btn ghost sm" onclick="window._dashShowAllQuotes=!window._dashShowAllQuotes;renderDashboard()" style="font-size:11px;padding:8px 20px">'+(_showAllQuotes?'Show Less ↑':'Show All '+list.length+' Quotes ↓')+'</button></div>'}else{showMoreEl.innerHTML=''}
   // Load full shared quotes on dashboard
   if(typeof renderSharedQuotes==='function')renderSharedQuotes();
 }
@@ -5515,7 +5519,9 @@ window.rbacDeleteUser=rbacDeleteUser;
       var _applyStats=function(el){if(!el)return;el.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:16px';el.innerHTML=statsHTML};
       _applyStats(stats);_applyStats(dashStats);
       // Table with follow-up column
-      var tableHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:11px"><thead><tr><th>Ref</th><th>Client</th><th>Approval</th><th>Seen</th><th>Opens</th><th>Last Open</th><th>Follow-up</th><th>Device</th><th>Actions</th></tr></thead><tbody>'+quotes.map(function(q){
+      var _showAllShared=window._dashShowAllShared||false;
+      var displayQuotes=_showAllShared?quotes:quotes.slice(0,10);
+      var tableHTML='<div style="overflow-x:auto"><table class="qtable" style="font-size:11px"><thead><tr><th>Ref</th><th>Client</th><th>Approval</th><th>Seen</th><th>Opens</th><th>Last Open</th><th>Follow-up</th><th>Device</th><th>Actions</th></tr></thead><tbody>'+displayQuotes.map(function(q){
         var qd=q.quote_data||{};
         var url=q.pdf_url||'https://quotegen.owtgroupltd.co.uk/#'+q.token;
         var vw=viewsByToken[q.token]||[];
@@ -5536,7 +5542,9 @@ window.rbacDeleteUser=rbacDeleteUser;
           +'<td><span style="display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:4px;font-size:8px;font-weight:600;color:#fff;background:'+fu.color+'">'+fu.icon+' '+fu.label+'</span></td>'
           +'<td>'+(mob?'<span style="font-size:9px">📱'+mob+'</span> ':'')+(desk?'<span style="font-size:9px">💻'+desk+'</span> ':'')+(tabC?'<span style="font-size:9px">📟'+tabC+'</span>':'')+(!totalO?'—':'')+'</td>'
           +'<td><div style="display:flex;gap:3px"><button class="btn ghost sm" style="font-size:8px;padding:4px 6px" onclick="navigator.clipboard.writeText(\''+url.replace(/'/g,"\\'")+'\');this.textContent=\'✓\'">Copy</button><button class="btn ghost sm" style="font-size:8px;padding:4px 6px" onclick="showQuoteAnalytics(\''+q.token+'\')">Stats</button><button class="btn ghost sm" style="font-size:8px;padding:4px 6px;color:var(--danger)" onclick="deleteSharedQuote(\''+q.token+'\')">Del</button></div></td></tr>';
-      }).join('')+'</tbody></table></div><div style="margin-top:8px;font-size:10px;color:var(--tx3)">PDFs auto-delete after 7 days. Follow-up status auto-calculated from view tracking.</div>';
+      }).join('')+'</tbody></table></div>'
+      +(quotes.length>10?'<div style="text-align:center;margin-top:10px"><button class="btn ghost sm" onclick="window._dashShowAllShared=!window._dashShowAllShared;renderSharedQuotes()" style="font-size:11px;padding:8px 20px">'+(_showAllShared?'Show Less ↑':'Show All '+quotes.length+' Shared Quotes ↓')+'</button></div>':'')
+      +'<div style="margin-top:8px;font-size:10px;color:var(--tx3)">PDFs auto-delete after 7 days. Follow-up status auto-calculated from view tracking.</div>';
       // Write table to both admin and dashboard
       if(tbl)tbl.innerHTML=tableHTML;
       if(dashTbl&&dashTbl!==tbl)dashTbl.innerHTML=tableHTML;
