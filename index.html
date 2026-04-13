@@ -3401,10 +3401,10 @@ function openTrainingDoc(i){
   var ov=document.createElement('div');ov.id='lndOverlay';
   ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#06060A;overflow-y:auto';
   ov.innerHTML='<div style="max-width:900px;margin:0 auto;padding:20px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;position:sticky;top:0;background:#06060A;padding:12px 0;z-index:1;border-bottom:1px solid var(--bd)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;position:sticky;top:0;background:#06060A;padding:14px 0;z-index:10;border-bottom:1px solid var(--bd)">'
     +'<div><div style="font-family:var(--fh);font-size:20px;font-weight:500;color:var(--tx)">'+esc(doc.destination)+'</div>'
     +'<div style="font-size:11px;color:var(--tx3)">'+esc(doc.title||'Training Guide')+'</div></div>'
-    +'<button class="btn ghost" onclick="document.getElementById(\'lndOverlay\').remove()" style="font-size:18px;padding:8px 14px">✕</button>'
+    +'<button onclick="document.getElementById(\'lndOverlay\').remove()" style="background:#FF453A;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Close</button>'
     +'</div>'
     +'<div id="lndDocContent" style="color:var(--tx);line-height:1.7;font-size:14px"></div></div>';
   document.body.appendChild(ov);
