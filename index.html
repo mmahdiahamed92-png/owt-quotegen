@@ -959,7 +959,7 @@ body.viewer-mode #quoteViewer{display:block!important}
       <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Total Quotes</div></div>
       <div class="stat"><div class="n" id="statDraft">0</div><div class="l">Drafts</div></div>
       <div class="stat"><div class="n" id="statSent">0</div><div class="l">Sent</div></div>
-      <div class="stat"><div class="n" id="statLib">0</div><div class="l">Library Entries</div></div>
+      <div class="stat"><div class="n" id="statAccepted" style="color:#30D158">0</div><div class="l">Accepted</div></div>
     </div>
 
     <!-- Shared Quote Links -->
@@ -3570,7 +3570,7 @@ function renderDashboard(){
   $('statTotal').textContent=vq.length;
   $('statDraft').textContent=vq.filter(q=>q.status==='draft').length;
   $('statSent').textContent=vq.filter(q=>q.status==='sent').length;
-  $('statLib').textContent=library.length;
+  $('statAccepted').textContent=vq.filter(q=>q.status==='accepted').length;
   // Show brand filter indicator
   var dashSub=document.querySelector('#view-dashboard .sub');
   if(dashSub&&window.currentUserRole){
@@ -5000,6 +5000,17 @@ function getVisibleQuotes(){
   return[];
 }
 
+function _resolveBrandId(sq){
+  // Get brandId from quote_data, or resolve from quote ref prefix
+  var bid=sq.quote_data?.brandId||sq.brand_data?.id||'';
+  if(bid)return bid;
+  var ref=sq.quote_data?.quoteNo||'';
+  if(!ref)return '';
+  var prefix=ref.split('-')[0];
+  if(!prefix)return '';
+  var match=brands.find(function(b){return(b.code||'').toUpperCase()===prefix.toUpperCase()});
+  return match?match.id:'';
+}
 async function getVisibleSharedQuotes(){
   if(!SB.client||!SB.user)return[];
   var res=await SB.client.from('qg_shared_quotes').select('*').order('created_at',{ascending:false});
@@ -5008,12 +5019,12 @@ async function getVisibleSharedQuotes(){
   var activeBrand=getActiveBrandFilter();
   var visible=res.data;
   if(role==='super_admin'){
-    if(activeBrand)visible=visible.filter(function(sq){return(sq.quote_data?.brandId||'')=== activeBrand});
+    if(activeBrand)visible=visible.filter(function(sq){return _resolveBrandId(sq)===activeBrand});
     return visible;
   }
   var myB=window.currentUserRole?.assignedBrands||[];
-  visible=visible.filter(function(sq){var bid=sq.quote_data?.brandId||'';return myB.includes(bid)});
-  if(activeBrand)visible=visible.filter(function(sq){return(sq.quote_data?.brandId||'')===activeBrand});
+  visible=visible.filter(function(sq){return myB.includes(_resolveBrandId(sq))});
+  if(activeBrand)visible=visible.filter(function(sq){return _resolveBrandId(sq)===activeBrand});
   // Agent — only own shared quotes
   if(role==='agent'){
     var myName=(window.currentUserRole?.name||'').toLowerCase();
@@ -5045,6 +5056,10 @@ function switchActiveBrand(brandId){
   window.currentUserRole.activeBrand=brandId;
   renderBrandSwitcher();
   renderDashboard();
+  // Also refresh admin views if open
+  if(typeof renderUsers==='function')try{renderUsers()}catch(e){}
+  if(typeof renderAdmQuotes==='function')try{renderAdmQuotes()}catch(e){}
+  if(typeof renderAnalytics==='function')try{renderAnalytics()}catch(e){}
 }
 
 // ── Apply permissions to UI ──
