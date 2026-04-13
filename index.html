@@ -525,8 +525,11 @@ body.viewer-mode #quoteViewer{display:block!important}
   fetch(sbUrl+'/rest/v1/qg_shared_quotes?token=eq.'+encodeURIComponent(h)+'&select=*',{headers:{'apikey':sbKey,'Authorization':'Bearer '+sbKey}})
     .then(function(r){return r.json()})
     .then(function(rows){
+      // Handle error responses from PostgREST
+      if(!Array.isArray(rows)){console.error('[Share] API error:',rows);rows=[]}
+      console.log('[Share] API response:',rows.length?JSON.stringify({token:rows[0].token,mode:rows[0].mode,has_pdf:!!rows[0].pdf_url,has_full:!!rows[0].full_quote,keys:Object.keys(rows[0])}):'empty array');
       // ── HTML MODE: render live quote page ──
-      if(rows&&rows.length&&rows[0].mode==='html'&&rows[0].full_quote){
+      if(rows.length&&rows[0].mode==='html'&&rows[0].full_quote){
         var row=rows[0];var q=row.full_quote;var b=row.brand_data||{};var qd=row.quote_data||{};
         var isApproved=row.approved===true;
         // Record view
@@ -760,10 +763,24 @@ body.viewer-mode #quoteViewer{display:block!important}
         function esc(s){var d2=document.createElement('div');d2.textContent=s;return d2.innerHTML}
         return;// Don't redirect — show approval page
       }else if(rows&&rows.length){
-        // Row exists but no pdf_url and not html mode — might be incomplete
-        console.log('[Share] Row found but no pdf_url or html data:',JSON.stringify({token:rows[0].token,mode:rows[0].mode,has_pdf:!!rows[0].pdf_url,has_full:!!rows[0].full_quote}));
-        d.innerHTML='<div style="font-size:32px">⏳</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Quote is being prepared</div><div style="color:#888;font-size:13px">This link is not ready yet. Please try again in a moment.</div>';
+        // Row exists but didn't match pdf or html checks — try to handle gracefully
+        var _r=rows[0];
+        console.log('[Share] Row found, mode='+_r.mode+', has_pdf='+!!_r.pdf_url+', has_full='+!!_r.full_quote);
+        // If it has full_quote but mode check failed, try rendering anyway
+        if(_r.full_quote){
+          console.log('[Share] Fallback: rendering full_quote despite mode mismatch');
+          // Trigger page reload with the data available
+          window.__fallbackQuoteData=_r;
+          d.innerHTML='<div style="font-size:32px">⏳</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Loading quote...</div><div style="color:#888;font-size:13px">Please wait</div>';
+          setTimeout(function(){location.reload()},1500);
+        }else if(_r.pdf_url){
+          // Has PDF but didn't trigger — redirect manually
+          window.open(_r.pdf_url,'_self');
+        }else{
+          d.innerHTML='<div style="font-size:32px">⏳</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Quote is being prepared</div><div style="color:#888;font-size:13px">This link is not ready yet. Please try again in a moment.</div>';
+        }
       }else{
+        console.log('[Share] No rows returned for token:',h,'response:',JSON.stringify(rows));
         d.innerHTML='<div style="font-size:32px">❌</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Quote Not Found</div><div style="color:#888;font-size:13px">This link may have expired or is invalid.</div>';
       }
     }).catch(function(e){
