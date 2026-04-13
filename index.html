@@ -3378,7 +3378,8 @@ function renderLnD(){
     return '<div style="border-radius:12px;overflow:hidden;border:1px solid var(--bd);background:var(--bg-secondary);cursor:'+(has?'pointer':'default')+';transition:all .3s;opacity:'+(has?'1':'0.6')+'" '
       +(has?'onclick="openTrainingDoc('+i+')" ':'')
       +'onmouseover="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 24px rgba(0,0,0,.3)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">'
-      +'<div style="height:90px;background:linear-gradient(135deg,'+color+','+color2+');display:flex;align-items:center;justify-content:center;position:relative">'
+      +'<div style="height:120px;background:'+(t.image?'url('+IMG.src(t.image)+') center/cover':'linear-gradient(135deg,'+color+','+color2+')')+';display:flex;align-items:center;justify-content:center;position:relative">'
+      +(t.image?'<div style="position:absolute;inset:0;background:rgba(0,0,0,.3)"></div>':'')
       +(_lndIcons[t.icon]||_lndIcons.beach)
       +(has?'<div style="position:absolute;top:8px;right:8px;padding:3px 10px;background:rgba(48,209,88,.2);border:1px solid rgba(48,209,88,.3);border-radius:100px;font-size:7px;color:#30D158;font-weight:600;letter-spacing:.06em">AVAILABLE</div>':'<div style="position:absolute;top:8px;right:8px;padding:3px 10px;background:rgba(0,0,0,.3);border-radius:100px;font-size:7px;color:rgba(255,255,255,.5);font-weight:500;letter-spacing:.06em">COMING SOON</div>')
       +'</div>'
@@ -3461,6 +3462,9 @@ function editTrainingMeta(i){
     +'<label>Description</label><input id="lndEditDesc" value="'+esc(t.description||'')+'">'
     +'<label>Icon</label><select id="lndEditIcon">'+icons.map(function(ic){return '<option value="'+ic+'"'+(t.icon===ic?' selected':'')+'>'+ic+'</option>'}).join('')+'</select>'
     +'<label>Card Colour</label><div style="display:flex;gap:8px;align-items:center"><input type="color" id="lndEditColor" value="'+(t.coverColor||'#C4A55A')+'"><input id="lndEditColorTxt" value="'+(t.coverColor||'#C4A55A')+'" style="width:80px;font-size:12px"></div>'
+    +'<label>Cover Image</label>'
+    +(t.image?'<div style="margin-bottom:8px"><img src="'+IMG.src(t.image)+'" style="max-height:100px;border-radius:8px;display:block;margin-bottom:6px"><button class="btn ghost sm" onclick="removeLnDImage('+i+')" style="font-size:10px;color:var(--danger)">Remove Image</button></div>':'')
+    +'<div style="display:flex;gap:6px;margin-bottom:12px"><button class="btn ghost sm" onclick="$(\'lndImgFile\').click()">📁 Upload Image</button><button class="btn ghost sm" onclick="pickLnDImageFromLib('+i+')">📷 From Library</button><input type="file" id="lndImgFile" accept="image/*" style="display:none" onchange="uploadLnDImage('+i+',this.files[0])"></div>'
     +'<div style="display:flex;gap:8px;margin-top:16px"><button class="btn" style="flex:1" onclick="saveLnDMeta('+i+')">Save</button><button class="btn ghost" style="flex:1" onclick="closeModal()">Cancel</button>'
     +'<button class="btn ghost" style="color:var(--danger);border-color:var(--danger)" onclick="if(confirm(\'Delete this destination?\')){var d=getLnDData();d.splice('+i+',1);saveLnDData(d);renderLnD();closeModal()}">Delete</button></div>';
 }
@@ -3472,6 +3476,43 @@ function saveLnDMeta(i){
   training[i].coverColor=$('lndEditColor').value;
   training[i].title='Agent Training Guide — '+training[i].destination;
   saveLnDData(training);renderLnD();closeModal();
+}
+
+function uploadLnDImage(i,file){
+  if(!file)return;
+  fileToData(file,function(src){
+    var training=getLnDData();
+    training[i].image=src;
+    saveLnDData(training);
+    editTrainingMeta(i);
+    renderLnD();
+  });
+}
+function removeLnDImage(i){
+  var training=getLnDData();
+  training[i].image='';
+  saveLnDData(training);
+  editTrainingMeta(i);
+  renderLnD();
+}
+function pickLnDImageFromLib(i){
+  closeModal();
+  _imgLibTarget='_lnd';_imgLibIndex=i;
+  openImageLibrary('_lnd',i);
+}
+var _origApplyImageToTarget=null;
+if(typeof applyImageToTarget==='function'){
+  _origApplyImageToTarget=applyImageToTarget;
+  applyImageToTarget=function(src,dims){
+    if(_imgLibTarget==='_lnd'&&_imgLibIndex!=null){
+      var training=getLnDData();
+      training[_imgLibIndex].image=src;
+      saveLnDData(training);
+      renderLnD();
+      return;
+    }
+    _origApplyImageToTarget(src,dims);
+  };
 }
 
 function switchLibTab(tab){
