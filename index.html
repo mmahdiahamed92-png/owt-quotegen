@@ -759,10 +759,15 @@ body.viewer-mode #quoteViewer{display:block!important}
         };
         function esc(s){var d2=document.createElement('div');d2.textContent=s;return d2.innerHTML}
         return;// Don't redirect — show approval page
+      }else if(rows&&rows.length){
+        // Row exists but no pdf_url and not html mode — might be incomplete
+        console.log('[Share] Row found but no pdf_url or html data:',JSON.stringify({token:rows[0].token,mode:rows[0].mode,has_pdf:!!rows[0].pdf_url,has_full:!!rows[0].full_quote}));
+        d.innerHTML='<div style="font-size:32px">⏳</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Quote is being prepared</div><div style="color:#888;font-size:13px">This link is not ready yet. Please try again in a moment.</div>';
       }else{
         d.innerHTML='<div style="font-size:32px">❌</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Quote Not Found</div><div style="color:#888;font-size:13px">This link may have expired or is invalid.</div>';
       }
     }).catch(function(e){
+      console.error('[Share] Fetch error:',e);
       d.innerHTML='<div style="font-size:32px">&#x26A0;&#xFE0F;</div><div style="color:#1a1a1a;font-size:18px;font-weight:500">Error Loading Quote</div><div style="color:#888;font-size:13px">Please try again later.</div>';
     });
 })();
@@ -3420,6 +3425,7 @@ async function shareQuoteLink(){
     var expiresAt=new Date(Date.now()+7*864e5).toISOString();
     var dbRes=await SB.client.from('qg_shared_quotes').upsert({
       token:token,
+      mode:'pdf',
       quote_data:{quoteNo:current.quoteNo,clientName:current.clientName,tourTitle:current.tourTitle,dest:current.dest,agent:current.agent,brandId:current.brandId,clientContact:current.clientContact},
       brand_data:{name:b.name||'',id:b.id||''},
       pdf_url:pdfUrl,
