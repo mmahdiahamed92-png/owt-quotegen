@@ -1337,9 +1337,9 @@ body.viewer-mode #quoteViewer{display:block!important}
   <div class="dash">
     <h1>Library</h1>
     <p class="sub">Destinations, packages, and shared images</p>
-    <div style="display:flex;gap:4px;margin-bottom:18px">
-      <button class="lib-tab active" data-lib="destinations" onclick="switchLibTab('destinations')" style="flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--bd-gold);background:var(--gold);color:#fff;transition:all .2s">Destination Library</button>
-      <button class="lib-tab" data-lib="images" onclick="switchLibTab('images')" style="flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg-tertiary);color:var(--tx2);transition:all .2s">Image Library</button>
+    <div style="display:flex;gap:6px;margin-bottom:18px">
+      <button class="lib-tab active" data-lib="destinations" onclick="switchLibTab('destinations')" style="flex:1;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--bd-gold);background:#0A0A0F;color:var(--gold);font-family:var(--fh);letter-spacing:.02em;transition:all .2s">Destination Library</button>
+      <button class="lib-tab" data-lib="images" onclick="switchLibTab('images')" style="flex:1;padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:#0A0A0F;color:var(--gold);font-family:var(--fh);letter-spacing:.02em;transition:all .2s;opacity:.5">Image Library</button>
     </div>
 
     <div id="libPanelDestinations" class="lib-panel">
@@ -4163,11 +4163,11 @@ if(typeof applyImageToTarget==='function'){
 
 function switchLibTab(tab){
   document.querySelectorAll('.lib-panel').forEach(function(p){p.style.display='none'});
-  document.querySelectorAll('.lib-tab').forEach(function(t){t.style.background='var(--bg-tertiary)';t.style.color='var(--tx2)';t.style.borderColor='var(--bd)'});
+  document.querySelectorAll('.lib-tab').forEach(function(t){t.style.background='#0A0A0F';t.style.color='var(--gold)';t.style.borderColor='var(--bd)';t.style.opacity='.5'});
   if(tab==='destinations'){$('libPanelDestinations').style.display='block'}
   else if(tab==='images'){$('libPanelImages').style.display='block';if(window.renderAdmImgLib)window.renderAdmImgLib()}
   var at=document.querySelector('.lib-tab[data-lib="'+tab+'"]');
-  if(at){at.style.background='var(--gold)';at.style.color='#fff';at.style.borderColor='var(--bd-gold)'}
+  if(at){at.style.background='#0A0A0F';at.style.color='var(--gold)';at.style.borderColor='var(--bd-gold)';at.style.opacity='1'}
 }
 var _destFilter='all';
 var _countryMap={'france':['paris','disneyland','disney','nice','lyon'],'thailand':['phuket','phi phi','bangkok','koh samui','krabi','chiang mai'],'greece':['athens','santorini','crete','rhodes','corfu','mykonos'],'italy':['rome','milan','venice','florence','amalfi','naples'],'spain':['barcelona','madrid','malaga','ibiza','tenerife','majorca'],'uae':['dubai','abu dhabi'],'poland':['krakow','warsaw'],'iceland':['reykjavik'],'maldives':['maldives','male'],'sri lanka':['colombo','kandy','galle'],'turkey':['istanbul','antalya','bodrum'],'egypt':['cairo','sharm','hurghada']};
