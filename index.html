@@ -3495,10 +3495,14 @@ function addNotification(n){
   if(notifs.length>50)notifs=notifs.slice(0,50);
   localStorage.setItem('kk_notifications',JSON.stringify(notifs));
   updateNotifBadge();
-  // Browser toast
-  showToast(n.icon+' '+n.title,n.message);
+  // Browser toast with context-aware styling
+  var _toastOpts={icon:n.icon,duration:8000};
+  if(n.priority<=3){_toastOpts.border='#FF3B30';_toastOpts.titleColor='#FF3B30';_toastOpts.bg='rgba(255,59,48,.08)';_toastOpts.duration=12000}
+  else if(n.priority<=5){_toastOpts.border='#FF9F0A';_toastOpts.titleColor='#FF9F0A'}
+  if(n.phone){_toastOpts.action="sendFollowUpWhatsApp('"+n.fuStatus+"','"+esc(n.clientFirst||'')+"','"+esc(n.dest||'')+"','"+esc(n.ref||'')+"','"+n.phone+"','"+esc(n.pdfUrl||'')+"')"}
+  showToast(n.title,n.message,_toastOpts);
   // Sound for hot leads
-  if(n.priority<=3&&_notifSound)try{_notifSound.play()}catch(e){}
+  if(n.priority<=5&&_notifSound)try{_notifSound.play()}catch(e){}
   // Browser push notification
   if(Notification&&Notification.permission==='granted'){
     try{new Notification(n.title,{body:n.message,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">'+encodeURIComponent(n.icon)+'</text></svg>'})}catch(e){}
@@ -3510,13 +3514,19 @@ function updateNotifBadge(){
   var badge=$('notifBadge');
   if(badge){badge.textContent=unread;badge.style.display=unread>0?'block':'none'}
 }
-function showToast(title,msg){
+function showToast(title,msg,opts){
+  opts=opts||{};
   var t=document.createElement('div');
-  t.style.cssText='position:fixed;top:20px;right:20px;max-width:320px;background:var(--bg-secondary);backdrop-filter:blur(20px);border:1px solid var(--bd-gold);border-radius:12px;padding:12px 16px;z-index:99999;box-shadow:0 8px 30px rgba(0,0,0,.4);animation:lxFadeUp .3s ease;cursor:pointer';
-  t.innerHTML='<div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:2px">'+esc(title)+'</div><div style="font-size:10px;color:var(--tx3)">'+esc(msg)+'</div>';
-  t.onclick=function(){t.remove()};
+  t.style.cssText='position:fixed;top:20px;right:20px;max-width:360px;background:'+(opts.bg||'var(--bg-secondary)')+';backdrop-filter:blur(20px);border:1px solid '+(opts.border||'var(--bd-gold)')+';border-radius:14px;padding:16px 20px;z-index:99999;box-shadow:0 12px 40px rgba(0,0,0,.5);cursor:pointer;transform:translateX(400px);transition:transform .4s cubic-bezier(.2,.8,.2,1)';
+  t.innerHTML='<div style="display:flex;align-items:flex-start;gap:12px">'
+    +(opts.icon?'<span style="font-size:24px;flex-shrink:0">'+opts.icon+'</span>':'')
+    +'<div style="flex:1"><div style="font-size:13px;font-weight:600;color:'+(opts.titleColor||'var(--tx)')+';margin-bottom:3px">'+esc(title)+'</div><div style="font-size:11px;color:var(--tx3);line-height:1.4">'+esc(msg)+'</div></div>'
+    +(opts.action?'<button style="font-size:9px;padding:6px 10px;background:#25D366;color:#fff;border:none;border-radius:6px;cursor:pointer;flex-shrink:0;margin-top:2px" onclick="event.stopPropagation();'+opts.action+'">💬 Reply</button>':'')
+    +'</div>';
+  t.onclick=function(){t.style.transform='translateX(400px)';setTimeout(function(){t.remove()},400)};
   document.body.appendChild(t);
-  setTimeout(function(){if(t.parentElement)t.remove()},5000);
+  setTimeout(function(){t.style.transform='translateX(0)'},50);
+  setTimeout(function(){if(t.parentElement){t.style.transform='translateX(400px)';setTimeout(function(){t.remove()},400)}},opts.duration||6000);
 }
 // Poll for new views every 60 seconds
 var _notifPollTimer=null;
@@ -3527,7 +3537,7 @@ function startNotifPolling(){
   $('notifBell').style.display='block';
   updateNotifBadge();
   checkForNewViews();
-  _notifPollTimer=setInterval(checkForNewViews,60000);
+  _notifPollTimer=setInterval(checkForNewViews,30000);
 }
 async function checkForNewViews(){
   if(!SB.client||!SB.user)return;
@@ -3544,11 +3554,20 @@ async function checkForNewViews(){
       var q=quotes2.find(function(q2){return q2.token===v.token});
       if(!q)return;
       var qd=q.quote_data||{};
+      var clientName=qd.clientName||'A client';
+      var clientFirst=clientName.split(' ')[0];
+      var dest=qd.tourTitle||qd.dest||'your quote';
+      var viewCount=(viewsByToken[q.token]||[]).length;
+      var timeAgo=Math.floor((Date.now()-new Date(v.viewed_at).getTime())/1000);
+      var agoTxt=timeAgo<60?'just now':timeAgo<3600?Math.floor(timeAgo/60)+' min ago':Math.floor(timeAgo/3600)+'h ago';
+      var viewMsg=clientName+' viewed your '+dest+' quote '+agoTxt;
+      if(viewCount>1)viewMsg+=(' ('+viewCount+' total views)');
       addNotification({
-        key:'view_'+v.id,icon:'👁️',title:esc(qd.clientName||'Client')+' viewed your quote',
-        message:esc(qd.quoteNo||'')+' — '+(v.device_type==='mobile'?'📱 Mobile':'💻 Desktop')+' · '+(v.browser||''),
-        ts:new Date(v.viewed_at).getTime(),read:false,priority:8,
-        fuStatus:'follow_up',clientFirst:(qd.clientName||'').split(' ')[0],dest:qd.tourTitle||qd.dest||'',ref:qd.quoteNo||'',
+        key:'view_'+v.id,icon:'👁️',
+        title:clientFirst+' is viewing your quote right now',
+        message:qd.quoteNo+' · '+dest+' · '+(v.device_type==='mobile'?'📱 on mobile':'💻 on desktop'),
+        ts:new Date(v.viewed_at).getTime(),read:false,priority:6,
+        fuStatus:'follow_up',clientFirst:clientFirst,dest:dest,ref:qd.quoteNo||'',
         phone:((qd.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,''),pdfUrl:q.pdf_url||''
       });
     });
@@ -4749,7 +4768,7 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 
   var _fmtTime=function(s){if(!s)return'—';if(s<60)return s+'s';if(s<3600)return Math.floor(s/60)+'m '+s%60+'s';return Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'m'};
   var _fmtAgo=function(d){if(!d)return'—';var s=Math.floor((Date.now()-new Date(d))/1000);if(s<60)return'Just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'};
-  function getFollowUpStatus(q,views){
+  window.getFollowUpStatus=function(q,views){
     var now=new Date();var ca=new Date(q.created_at);var ea=q.expires_at?new Date(q.expires_at):null;
     var hSinceCreated=(now-ca)/36e5;var hUntilExpiry=ea?(ea-now)/36e5:999;
     var tv=(views||[]).length;var us=[...new Set((views||[]).map(function(v){return v.session_id}))].length;
