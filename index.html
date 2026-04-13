@@ -1328,6 +1328,8 @@ body.viewer-mode #quoteViewer{display:block!important}
       <div class="dash-actions">
         <input id="libSearch" placeholder="Search by destination, country, tag..." oninput="renderLibrary()">
       </div>
+      <div id="destFilterTabs" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bd);overflow-x:auto;-webkit-overflow-scrolling:touch">
+      </div>
       <div id="libGrid" class="libgrid"></div>
     </div>
 
@@ -4098,14 +4100,37 @@ function switchLibTab(tab){
   var at=document.querySelector('.lib-tab[data-lib="'+tab+'"]');
   if(at){at.style.background='var(--gold)';at.style.color='#fff';at.style.borderColor='var(--bd-gold)'}
 }
+var _destFilter='all';
+var _countryMap={'france':['paris','disneyland','disney','nice','lyon'],'thailand':['phuket','phi phi','bangkok','koh samui','krabi','chiang mai'],'greece':['athens','santorini','crete','rhodes','corfu','mykonos'],'italy':['rome','milan','venice','florence','amalfi','naples'],'spain':['barcelona','madrid','malaga','ibiza','tenerife','majorca'],'uae':['dubai','abu dhabi'],'poland':['krakow','warsaw'],'iceland':['reykjavik'],'maldives':['maldives','male'],'sri lanka':['colombo','kandy','galle'],'turkey':['istanbul','antalya','bodrum'],'egypt':['cairo','sharm','hurghada']};
+function detectCountry(name){
+  var n=(name||'').toLowerCase();
+  for(var c in _countryMap){if(n.includes(c)||_countryMap[c].some(function(k){return n.includes(k)}))return c}
+  return name||'Other';
+}
+function getLibCountry(l){return(l.country||detectCountry(l.name)||detectCountry(l.dest)||'Other').trim()}
+function filterDestinations(c){_destFilter=c;renderLibrary()}
 function renderLibrary(){
   var s=($('libSearch').value||'').toLowerCase();
+  // Build country counts
+  var countries={};
+  library.forEach(function(l){var c=getLibCountry(l);var k=c.toLowerCase();if(!countries[k])countries[k]={name:c.charAt(0).toUpperCase()+c.slice(1),count:0};countries[k].count++});
+  var sorted=Object.values(countries).sort(function(a,b){return a.name.localeCompare(b.name)});
+  // Render filter tabs
+  var tabs=$('destFilterTabs');
+  if(tabs){
+    tabs.innerHTML='<button onclick="filterDestinations(\'all\')" style="padding:5px 12px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid '+(_destFilter==='all'?'var(--gold)':'var(--bd)')+';background:'+(_destFilter==='all'?'var(--gold)':'var(--bg-tertiary)')+';color:'+(_destFilter==='all'?'#fff':'var(--tx2)')+';white-space:nowrap">All ('+library.length+')</button>'
+      +sorted.map(function(c){var isA=_destFilter===c.name.toLowerCase();return '<button onclick="filterDestinations(\''+c.name.toLowerCase().replace(/'/g,"\\'")+'\')" style="padding:5px 12px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid '+(isA?'var(--gold)':'var(--bd)')+';background:'+(isA?'var(--gold)':'var(--bg-tertiary)')+';color:'+(isA?'#fff':'var(--tx2)')+';white-space:nowrap">'+esc(c.name)+' ('+c.count+')</button>'}).join('');
+  }
+  // Filter list
   var list=library.filter(function(l){
+    var c=getLibCountry(l).toLowerCase();
+    if(_destFilter!=='all'&&c!==_destFilter)return false;
     if(!s)return true;
     return(l.name+l.country+(l.tags||[]).join(' ')+(l.dest||'')).toLowerCase().includes(s);
   });
   $('libGrid').innerHTML=list.length?list.map(function(l){
-    return '<div class="libcard">'
+    var c=getLibCountry(l).toLowerCase();
+    return '<div class="libcard" data-dest-country="'+esc(c)+'">'
       +(l.heroSrc?'<img src="'+IMG.src(l.heroSrc)+'" style="width:100%;height:120px;object-fit:cover">':'<div class="ph">'+esc(l.name)+'</div>')
       +'<div class="b"><b>'+esc(l.name)+'</b><small>'+esc(l.country||'')+' · by '+esc(l.createdBy||'')+'</small>'
       +'<div class="tags">'+(l.tags||[]).map(function(t){return '<span class="tag">'+esc(t)+'</span>'}).join('')+'</div>'
@@ -4113,7 +4138,7 @@ function renderLibrary(){
       +'<button class="btn sm" style="flex:1" onclick="editLibrary(\''+l.id+'\')">✏️ Edit</button>'
       +'<button class="btn ghost sm" style="flex:1" onclick="delLib(\''+l.id+'\')">Remove</button>'
       +'</div></div></div>';
-  }).join(''):'<div class="empty"><h3>Library is empty</h3><p>Save destinations from the quote editor to build your shared library.</p></div>';
+  }).join(''):'<div class="empty"><h3>'+(_destFilter!=='all'?'No packages for this country':'Library is empty')+'</h3><p>'+(_destFilter!=='all'?'Try selecting "All" or add new packages.':'Save destinations from the quote editor to build your shared library.')+'</p></div>';
 }
 function delLib(id){if(!confirm('Remove from library?'))return;library=library.filter(x=>x.id!==id);save(LS.library,library);renderLibrary()}
 
