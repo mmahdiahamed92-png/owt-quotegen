@@ -1643,6 +1643,7 @@ function newQuote(){
   pickCompanyForNewQuote();
 }
 function createQuoteForBrand(brandId){
+  if(_brandJustDropped)return;
   current=blankQuote();
   current.brandId=brandId;
   const b=brands.find(x=>x.id===brandId);
@@ -1658,7 +1659,7 @@ function pickCompanyForNewQuote(){
   $('modalBody').innerHTML=`
     <p style="color:var(--tx2);margin:0 0 18px;font-size:13px;line-height:1.6">Choose which company this quote is being prepared for. The quote format, logo, branding and default terms will automatically update to match.</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
-      ${brands.map(b=>{var c=b.brandColor||'#C4A55A';var c2=adjustColor(c,-20);var ini=(b.name||'BR').split(' ').map(function(w){return w[0]}).join('').substring(0,3).toUpperCase();return `<div class="brand-card" onclick="createQuoteForBrand('${b.id}')">
+      ${brands.map(b=>{var c=b.brandColor||'#C4A55A';var c2=adjustColor(c,-20);var ini=(b.name||'BR').split(' ').map(function(w){return w[0]}).join('').substring(0,3).toUpperCase();return `<div class="brand-card" draggable="true" data-brand-id="${b.id}" ondragstart="brandDragStart(event,'${b.id}')" ondragover="brandDragOver(event)" ondrop="event.preventDefault();brandDrop(event,'${b.id}');pickCompanyForNewQuote()" ondragend="brandDragEnd(event)" onclick="createQuoteForBrand('${b.id}')">
         <div style="height:80px;background:linear-gradient(135deg,rgba(212,175,106,.12),rgba(20,20,28,.4));display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border-bottom:1px solid var(--bd)">
           <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(212,175,106,.1),transparent 70%)"></div>
           <div style="position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:100px;background:rgba(20,20,28,.6);border:1px solid var(--bd-gold);font-size:8px;color:var(--gold);font-weight:600;letter-spacing:.1em">${esc((b.code||'—').toUpperCase())}</div>
@@ -1672,7 +1673,8 @@ function pickCompanyForNewQuote(){
           <button class="btn full" style="padding:10px;border-radius:8px;font-size:11px;font-weight:600">Use This Company →</button>
         </div>
       </div>`}).join('')}
-    </div>`;
+    </div>
+    <p style="color:var(--tx3);font-size:10px;margin-top:12px;text-align:center">Drag and drop to reorder companies</p>`;
 }
 function editQuote(id){
   current=quotes.find(q=>q.id===id);if(!current)return;
@@ -3487,18 +3489,21 @@ function renderBrands(){
   const addCard=`<div class="brand-add" onclick="addBrand()"><div style="font-size:42px;font-weight:300;line-height:1;font-family:var(--fb)">+</div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.18em;font-weight:600">Add Company</div></div>`;
   $('brandList').innerHTML=`<div class="brand-grid">${cards}${addCard}</div>`;
 }
-var _dragBrandId=null;
+var _dragBrandId=null;var _brandJustDropped=false;
 function brandDragStart(e,id){_dragBrandId=id;e.dataTransfer.effectAllowed='move';e.currentTarget.style.opacity='0.4'}
-function brandDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';var card=e.currentTarget;card.style.borderColor='var(--gold)'}
+function brandDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.style.borderColor='var(--gold)'}
 function brandDrop(e,targetId){
   e.preventDefault();e.currentTarget.style.borderColor='';
-  if(!_dragBrandId||_dragBrandId===targetId)return;
+  if(!_dragBrandId||_dragBrandId===targetId){_dragBrandId=null;return}
+  _brandJustDropped=true;
   var fromIdx=brands.findIndex(function(b){return b.id===_dragBrandId});
   var toIdx=brands.findIndex(function(b){return b.id===targetId});
   if(fromIdx<0||toIdx<0)return;
   var item=brands.splice(fromIdx,1)[0];
   brands.splice(toIdx,0,item);
   saveBrands();renderBrands();
+  _dragBrandId=null;
+  setTimeout(function(){_brandJustDropped=false},200);
 }
 function brandDragEnd(e){_dragBrandId=null;e.currentTarget.style.opacity='';e.currentTarget.style.borderColor=''}
 function editBrand(id){
