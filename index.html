@@ -814,6 +814,7 @@ body.viewer-mode #quoteViewer{display:block!important}
         <div style="text-align:center;padding:10px 6px;background:var(--bg-tertiary);border-radius:8px;border:1px solid var(--bd)"><div style="font-size:20px;font-weight:600;color:var(--gold)" id="dsOpens">—</div><div style="font-size:8px;color:var(--tx3);font-weight:600;letter-spacing:.5px;margin-top:2px">OPENS</div></div>
         <div style="text-align:center;padding:10px 6px;background:var(--bg-tertiary);border-radius:8px;border:1px solid var(--bd)"><div style="font-size:20px;font-weight:600;color:var(--tx)" id="dsUnique">—</div><div style="font-size:8px;color:var(--tx3);font-weight:600;letter-spacing:.5px;margin-top:2px">UNIQUE</div></div>
       </div>
+      <div id="dashFollowUps" style="margin-top:12px"></div>
       <div id="dashRecentViews" style="margin-top:12px"></div>
     </div>
     <div class="dash-actions">
@@ -3378,7 +3379,7 @@ function renderDashboard(){
 async function loadDashAnalytics(){
   if(!SB.client||!SB.user)return;
   try{
-    var res=await SB.client.from('qg_shared_quotes').select('token,views,unique_views,last_viewed_at,quote_data').order('created_at',{ascending:false});
+    var res=await SB.client.from('qg_shared_quotes').select('*').order('created_at',{ascending:false});
     var quotes2=res.data||[];
     var sent=quotes2.length;
     var seen=quotes2.filter(function(q){return(q.views||0)>0}).length;
@@ -3391,7 +3392,25 @@ async function loadDashAnalytics(){
     if(el('dsUnseen'))el('dsUnseen').textContent=unseen;
     if(el('dsOpens'))el('dsOpens').textContent=opens;
     if(el('dsUnique'))el('dsUnique').textContent=unique;
-    // Show recent views
+    // Fetch views for follow-up calculation
+    var allViews=[];
+    try{var vr=await SB.client.from('qg_quote_views').select('*').order('viewed_at',{ascending:false});allViews=vr.data||[]}catch(e){}
+    var viewsByToken={};allViews.forEach(function(v){if(!viewsByToken[v.token])viewsByToken[v.token]=[];viewsByToken[v.token].push(v)});
+    // Follow-ups on dashboard
+    var fuDiv=el('dashFollowUps');
+    if(fuDiv&&typeof getFollowUpStatus==='function'){
+      var followUps=quotes2.map(function(q){var vw=viewsByToken[q.token]||[];return{quote:q,views:vw,status:getFollowUpStatus(q,vw)}}).filter(function(f){return f.status.priority<10}).sort(function(a,b){return a.status.priority-b.status.priority}).slice(0,5);
+      if(followUps.length){
+        fuDiv.innerHTML='<div style="font-size:10px;color:var(--tx3);font-weight:600;letter-spacing:.08em;margin-bottom:6px">ACTION REQUIRED</div>'
+          +followUps.map(function(f){var qd=f.quote.quote_data||{};var cn=qd.clientName||'Client';var cf=cn.split(' ')[0];var dest=qd.tourTitle||qd.dest||'trip';var ref=qd.quoteNo||'';var ph=((qd.clientContact||'').match(/[\+\d][\d\s\-\(\)]{7,}/)||[''])[0].replace(/[^\d+]/g,'');var purl=f.quote.pdf_url||'';
+            return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);font-size:11px">'
+              +'<span style="font-size:14px">'+f.status.icon+'</span>'
+              +'<div style="flex:1;min-width:0"><span style="color:var(--tx);font-weight:500">'+esc(cn)+'</span> <span style="color:var(--tx3)">· '+esc(ref)+'</span> <span style="padding:2px 6px;border-radius:4px;font-size:7px;font-weight:600;color:#fff;background:'+f.status.color+'">'+f.status.label+'</span><div style="font-size:9px;color:var(--tx3);margin-top:1px">'+f.status.message+'</div></div>'
+              +'<button style="font-size:9px;padding:5px 8px;background:#25D366;color:#fff;border:none;border-radius:6px;cursor:pointer;flex-shrink:0" onclick="sendFollowUpWhatsApp(\''+f.status.status+'\',\''+cf.replace(/'/g,"\\'")+'\',\''+dest.replace(/'/g,"\\'")+'\',\''+ref.replace(/'/g,"\\'")+'\',\''+ph+'\',\''+purl.replace(/'/g,"\\'")+'\')">💬</button></div>';
+          }).join('');
+      }
+    }
+    // Recent views
     var recentDiv=el('dashRecentViews');
     if(recentDiv){
       var recentlyViewed=quotes2.filter(function(q){return q.last_viewed_at}).sort(function(a,b){return new Date(b.last_viewed_at)-new Date(a.last_viewed_at)}).slice(0,5);
