@@ -794,15 +794,14 @@ body.viewer-mode #quoteViewer{display:block!important}
     </div>
 
     <div class="adm-panel active" id="adm-users">
-      <h3 style="margin:0 0 12px;color:#F5F5F7">Users</h3>
-      <div class="form-row">
-        <input id="admNewUser" type="email" placeholder="Email (e.g. agent@owtgroup.com)">
-        <input id="admNewPass" type="text" placeholder="Password (min 6 chars)">
-        <input id="admNewRole" placeholder="Agent Name (e.g. Jane Doe)">
-        <button class="adm-btn" id="admAddUserBtn">Add User</button>
+      <div id="admUsersContainer">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div><h3 style="margin:0;color:#F5F5F7">Team Members</h3><p style="font-size:10px;color:var(--tx3);margin:2px 0 0" id="admUsersSubtitle"></p></div>
+          <button class="adm-btn" id="admAddUserBtn" onclick="showAddUserForm()">+ Add User</button>
+        </div>
+        <table class="qtable" style="font-size:11px"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Brands</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+        <tbody id="admUsersTbody"></tbody></table>
       </div>
-      <table><thead><tr><th>Email</th><th>Name</th><th>Created</th><th>Last Login</th><th>Actions</th></tr></thead>
-      <tbody id="admUsersTbody"></tbody></table>
     </div>
 
     <div class="adm-panel" id="adm-quotes">
@@ -1874,7 +1873,8 @@ function blankQuote(){
     flightOutFrom:'',flightOutTo:'',flightOutDate:'',flightOutTime:'',flightOutNo:'',
     flightOutName:'',flightOutDuration:'',flightOutArrival:'',flightRetName:'',flightRetDuration:'',flightRetArrival:'',
     baggageCabin:[],baggageChecked:[],baggageCustom:'',
-    agentPhone:'',agentEmail:'',agentWhatsapp:'',agentMessage:'',
+    agentPhone:'',agentEmail:window.currentUserRole?.email||'',agentWhatsapp:'',agentMessage:'',
+    ownerEmail:window.currentUserRole?.email||'',
     subFont:'Montserrat',subSize:'11pt',subColor:'#888',subWeight:'600',subStyle:'normal',
     depositAmount:'',depositDesc:'',instalmentCount:'',instalmentStartDate:'',instalments:[],originalPrice:'',quoteMessage:'',quoteSummaryIncl:'',
     flightRetAirline:'',flightRetClass:'',
@@ -1973,7 +1973,7 @@ function onBrandChange(){
 }
 
 // ====== FORM <-> CURRENT ======
-const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightOutArrival','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','flightRetArrival','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','subFont','subSize','subColor','subWeight','subStyle','depositAmount','depositDesc','instalmentStartDate','originalPrice','quoteMessage','quoteSummaryIncl','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape'];
+const FIELDS=['agent','status','quoteDate','validity','clientName','clientContact','travelers','departureAirport','flightsInc','flightAirline','flightClass','flightOutFrom','flightOutTo','flightOutDate','flightOutTime','flightOutNo','flightOutName','flightOutDuration','flightOutArrival','flightRetFrom','flightRetTo','flightRetDate','flightRetTime','flightRetNo','flightRetName','flightRetDuration','flightRetArrival','baggageCustom','agentPhone','agentEmail','agentWhatsapp','agentMessage','subFont','subSize','subColor','subWeight','subStyle','depositAmount','depositDesc','instalmentStartDate','originalPrice','quoteMessage','quoteSummaryIncl','tourTitle','titleFont','tourSub','startDate','endDate','dest','curr','terms','overview','footMsg','heroPos','heroFocus','heroShape','ownerEmail'];
 
 // ====== INCLUSIONS / EXCLUSIONS CATALOGUE ======
 const INCL_CATALOGUE=[
@@ -2145,6 +2145,9 @@ function syncFormToCurrent(){
   if(!current)return;
   FIELDS.forEach(f=>{const el=$(f);if(!el)return;current[f]=el.type==='checkbox'?el.checked:el.value});
   current.updatedAt=Date.now();
+  // Stamp ownership for RBAC
+  if(!current.ownerEmail&&window.currentUserRole?.email)current.ownerEmail=window.currentUserRole.email;
+  if(!current.agent&&window.currentUserRole?.name)current.agent=window.currentUserRole.name;
   // Update quote message name preview
   var np=$('quoteMsgNamePreview');if(np)np.textContent=(current.clientName||'').split(' ')[0]||'Client';
   // inclusion warning
@@ -3215,8 +3218,8 @@ async function shareQuoteLink(){
     var expiresAt=new Date(Date.now()+7*864e5).toISOString();
     var dbRes=await SB.client.from('qg_shared_quotes').upsert({
       token:token,
-      quote_data:{quoteNo:current.quoteNo,clientName:current.clientName,tourTitle:current.tourTitle,dest:current.dest,agent:current.agent},
-      brand_data:{name:b.name||''},
+      quote_data:{quoteNo:current.quoteNo,clientName:current.clientName,tourTitle:current.tourTitle,dest:current.dest,agent:current.agent,brandId:current.brandId,clientContact:current.clientContact},
+      brand_data:{name:b.name||'',id:b.id||''},
       pdf_url:pdfUrl,
       storage_path:storagePath,
       expires_at:expiresAt,
@@ -3535,8 +3538,7 @@ function renderDashboard(){
 async function loadDashAnalytics(){
   if(!SB.client||!SB.user)return;
   try{
-    var res=await SB.client.from('qg_shared_quotes').select('*').order('created_at',{ascending:false});
-    var quotes2=res.data||[];
+    var quotes2=await getVisibleSharedQuotes();
     var sent=quotes2.length;
     var seen=quotes2.filter(function(q){return(q.views||0)>0}).length;
     var unseen=sent-seen;
@@ -3823,8 +3825,7 @@ function startNotifPolling(){
 async function checkForNewViews(){
   if(!SB.client||!SB.user)return;
   try{
-    var res=await SB.client.from('qg_shared_quotes').select('*').order('created_at',{ascending:false});
-    var quotes2=res.data||[];
+    var quotes2=await getVisibleSharedQuotes();
     var allViews=[];
     try{var vr=await SB.client.from('qg_quote_views').select('*').order('viewed_at',{ascending:false}).limit(50);allViews=vr.data||[]}catch(e){}
     var viewsByToken={};allViews.forEach(function(v){if(!viewsByToken[v.token])viewsByToken[v.token]=[];viewsByToken[v.token].push(v)});
@@ -4262,7 +4263,8 @@ function renderBrands(){
   var _brandPalette=['#2E86AB','#E84855','#44BBA4','#E8871E','#7B68EE','#D4507A','#3AA5D1','#8B6B3A','#6C8C3C','#C75B39','#5B7DB1','#9B59B6','#1ABC9C'];
   brands.forEach(function(b,i){if(!b.brandColor)b.brandColor=_brandPalette[i%_brandPalette.length]});
   var qCounts={};(quotes||[]).forEach(function(q){qCounts[q.brandId]=(qCounts[q.brandId]||0)+1});
-  const cards=brands.map(b=>{
+  var visibleBrands=getVisibleBrands();
+  const cards=visibleBrands.map(b=>{
     var color=b.brandColor||'#C4A55A';
     var color2=adjustColor(color,-20);
     var initials=(b.name||'BR').split(' ').map(function(w){return w[0]}).join('').substring(0,3).toUpperCase();
@@ -4306,7 +4308,7 @@ function renderBrands(){
       </div>
     </div>`;
   }).join('');
-  const addCard=`<div class="brand-add" onclick="addBrand()"><div style="font-size:42px;font-weight:300;line-height:1;font-family:var(--fb)">+</div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.18em;font-weight:600">Add Company</div></div>`;
+  const addCard=isSuperAdmin()?`<div class="brand-add" onclick="addBrand()"><div style="font-size:42px;font-weight:300;line-height:1;font-family:var(--fb)">+</div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.18em;font-weight:600">Add Company</div></div>`:'';
   $('brandList').innerHTML=`<div class="brand-grid">${cards}${addCard}</div>`;
 }
 var _dragBrandId=null;var _brandJustDropped=false;
@@ -4846,49 +4848,299 @@ $('navAgent').onclick=()=>{const n=prompt('Your name:',load(LS.agent,''));if(n){
 })();
 
 /* ============================================================
-   ROLE-BASED ACCESS CONTROL
+   4-TIER ROLE-BASED ACCESS CONTROL
+   Tier 1: super_admin — 1 hardcoded, sees everything
+   Tier 2: brand_manager — per-brand(s), creates agents
+   Tier 3: senior_agent — team visibility within brand
+   Tier 4: agent — own quotes only
    ============================================================ */
-var SUPER_ADMIN_EMAIL='admin@owtgroupltd.co.uk';
+var SUPER_ADMIN_EMAIL='prince@owtgroup.com';
 window.currentUserRole=null;
+
+// ── Role detection after auth ──
 async function getUserRole(){
   if(!SB.user)return null;
   var email=SB.user.email.toLowerCase();
-  if(email===SUPER_ADMIN_EMAIL.toLowerCase())return{role:'super_admin',assignedBrands:'__all__',name:'Super Admin'};
+  // Super admin — hardcoded, always works
+  if(email===SUPER_ADMIN_EMAIL.toLowerCase()){
+    try{await SB.client.from('qg_users').upsert({email:email,name:'Super Admin',role:'super_admin',assigned_brands:[],active:true,last_login:new Date().toISOString()},{onConflict:'email'})}catch(e){}
+    return{role:'super_admin',assignedBrands:'__all__',name:'Super Admin',email:email,activeBrand:'all'};
+  }
   try{
     var res=await SB.client.from('qg_users').select('*').eq('email',email).single();
-    if(res.error||!res.data)return null;
+    if(res.error||!res.data)return{role:'denied',message:'Your account has not been set up. Please contact your administrator.'};
     if(!res.data.active)return{role:'frozen',assignedBrands:[],name:res.data.name};
-    return{role:res.data.role,assignedBrands:res.data.assigned_brands||[],name:res.data.name||email,id:res.data.id};
+    await SB.client.from('qg_users').update({last_login:new Date().toISOString()}).eq('email',email);
+    var ab=res.data.assigned_brands||[];
+    return{role:res.data.role,assignedBrands:ab,name:res.data.name||email,email:email,id:res.data.id,activeBrand:ab.length===1?ab[0]:'all'};
   }catch(e){return null}
 }
+
+// ── Permission helpers ──
+function isSuperAdmin(){return window.currentUserRole&&window.currentUserRole.role==='super_admin'}
+function isBrandManager(){return window.currentUserRole&&['super_admin','brand_manager'].includes(window.currentUserRole.role)}
+function isSeniorAgent(){return window.currentUserRole&&['super_admin','brand_manager','senior_agent'].includes(window.currentUserRole.role)}
+function isAgent(){return window.currentUserRole&&window.currentUserRole.role==='agent'}
+function hasAccessToBrand(brandId){
+  if(!window.currentUserRole)return false;
+  if(window.currentUserRole.assignedBrands==='__all__')return true;
+  return(window.currentUserRole.assignedBrands||[]).includes(brandId);
+}
+function getActiveBrandFilter(){
+  if(!window.currentUserRole)return null;
+  if(window.currentUserRole.activeBrand==='all')return null;
+  return window.currentUserRole.activeBrand;
+}
+
 function getVisibleBrands(){
   if(!window.currentUserRole)return brands;
-  if(window.currentUserRole.role==='super_admin'||window.currentUserRole.assignedBrands==='__all__')return brands;
+  if(window.currentUserRole.assignedBrands==='__all__')return brands;
   var assigned=window.currentUserRole.assignedBrands||[];
   return brands.filter(function(b){return assigned.includes(b.id)});
 }
+
 function getVisibleQuotes(){
   if(!window.currentUserRole)return quotes;
-  if(window.currentUserRole.role==='super_admin'||window.currentUserRole.assignedBrands==='__all__')return quotes;
-  var assigned=window.currentUserRole.assignedBrands||[];
-  return quotes.filter(function(q){return assigned.includes(q.brandId)});
+  var role=window.currentUserRole.role;
+  var activeBrand=getActiveBrandFilter();
+  var visible=quotes||[];
+  // Super admin — all
+  if(role==='super_admin'){
+    if(activeBrand)visible=visible.filter(function(q){return q.brandId===activeBrand});
+    return visible;
+  }
+  // Brand manager — all quotes for assigned brands
+  if(role==='brand_manager'){
+    var myB=window.currentUserRole.assignedBrands||[];
+    visible=visible.filter(function(q){return myB.includes(q.brandId)});
+    if(activeBrand)visible=visible.filter(function(q){return q.brandId===activeBrand});
+    return visible;
+  }
+  // Senior agent — all quotes for their brand (team view)
+  if(role==='senior_agent'){
+    var myB2=window.currentUserRole.assignedBrands||[];
+    visible=visible.filter(function(q){return myB2.includes(q.brandId)});
+    if(activeBrand)visible=visible.filter(function(q){return q.brandId===activeBrand});
+    return visible;
+  }
+  // Agent — ONLY their own quotes
+  if(role==='agent'){
+    var myB3=window.currentUserRole.assignedBrands||[];
+    var myEmail=window.currentUserRole.email;
+    var myName=(window.currentUserRole.name||'').toLowerCase();
+    visible=visible.filter(function(q){
+      if(!myB3.includes(q.brandId))return false;
+      // Match by ownerEmail (primary), or agent name/agentEmail as fallback for legacy quotes
+      var ownerMatch=(q.ownerEmail||'').toLowerCase()===myEmail;
+      var agentMatch=(q.agent||'').toLowerCase()===myName;
+      return ownerMatch||agentMatch;
+    });
+    return visible;
+  }
+  return[];
 }
-function isSuperAdmin(){return window.currentUserRole&&window.currentUserRole.role==='super_admin'}
-function isBrandAdmin(){return window.currentUserRole&&window.currentUserRole.role==='brand_admin'}
-function isAgent(){return window.currentUserRole&&window.currentUserRole.role==='agent'}
+
+async function getVisibleSharedQuotes(){
+  if(!SB.client||!SB.user)return[];
+  var res=await SB.client.from('qg_shared_quotes').select('*').order('created_at',{ascending:false});
+  if(!res.data)return[];
+  var role=window.currentUserRole?.role;
+  var activeBrand=getActiveBrandFilter();
+  var visible=res.data;
+  if(role==='super_admin'){
+    if(activeBrand)visible=visible.filter(function(sq){return(sq.quote_data?.brandId||'')=== activeBrand});
+    return visible;
+  }
+  var myB=window.currentUserRole?.assignedBrands||[];
+  visible=visible.filter(function(sq){var bid=sq.quote_data?.brandId||'';return myB.includes(bid)});
+  if(activeBrand)visible=visible.filter(function(sq){return(sq.quote_data?.brandId||'')===activeBrand});
+  // Agent — only own shared quotes
+  if(role==='agent'){
+    var myName=(window.currentUserRole?.name||'').toLowerCase();
+    visible=visible.filter(function(sq){return(sq.quote_data?.agent||'').toLowerCase()===myName});
+  }
+  return visible;
+}
+
+// ── Brand Switcher ──
+function renderBrandSwitcher(){
+  var container=$('brandSwitcher');
+  if(!container){
+    container=document.createElement('div');container.id='brandSwitcher';
+    var navRight=document.querySelector('.nav .right');
+    if(navRight)navRight.insertBefore(container,navRight.firstChild);
+  }
+  var vb=getVisibleBrands();
+  // Don't show for single-brand non-admin users
+  if(vb.length<=1&&!isSuperAdmin()){container.innerHTML='';return}
+  var active=window.currentUserRole?.activeBrand||'all';
+  container.innerHTML='<div style="display:flex;gap:3px;margin-right:12px">'
+    +'<button onclick="switchActiveBrand(\'all\')" style="padding:4px 10px;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid '+(active==='all'?'var(--gold)':'var(--bd)')+';background:'+(active==='all'?'var(--gold)':'transparent')+';color:'+(active==='all'?'#0a0a0a':'var(--tx2)')+';transition:all .2s">All</button>'
+    +vb.map(function(b){
+      var isActive=active===b.id;var c=b.brandColor||'#C4A55A';
+      return '<button onclick="switchActiveBrand(\''+esc(b.id)+'\')" style="padding:4px 10px;border-radius:6px;font-size:9px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid '+(isActive?c:'var(--bd)')+';background:'+(isActive?c:'transparent')+';color:'+(isActive?'#fff':'var(--tx2)')+';transition:all .2s;display:flex;align-items:center;gap:3px">'
+        +'<span style="width:5px;height:5px;border-radius:50%;background:'+c+';flex-shrink:0"></span>'+esc(b.name||b.id)+'</button>';
+    }).join('')+'</div>';
+}
+function switchActiveBrand(brandId){
+  if(!window.currentUserRole)return;
+  window.currentUserRole.activeBrand=brandId;
+  renderBrandSwitcher();
+  renderDashboard();
+}
+
+// ── Apply permissions to UI ──
 function setupRoleAccess(){
   var role=window.currentUserRole?.role;
-  // Agents: hide Admin tab
-  if(role==='agent'){
-    var at=document.getElementById('navAdminTab');if(at)at.style.display='none';
+  // Admin tab visibility
+  var adminTab=$('navAdminTab');
+  if(adminTab){
+    if(role==='agent'||role==='senior_agent')adminTab.style.display='none';
+    else adminTab.style.display='';
   }
-  // Show role badge in header
-  var chip=document.getElementById('navUserChip');
+  // Admin sub-tabs: hide settings for brand managers
+  if(role==='brand_manager'){
+    var st=document.querySelector('[data-adm="settings"]');if(st)st.style.display='none';
+    var bt=document.querySelector('[data-adm="backup"]');if(bt)bt.style.display='none';
+    var lt=document.querySelector('[data-adm="log"]');if(lt)lt.style.display='none';
+  }
+  // Companies tab: only super_admin and brand_manager
+  var brandsTab=document.querySelector('[data-view="brands"]');
+  if(brandsTab){
+    if(role==='agent'||role==='senior_agent')brandsTab.style.display='none';
+    else brandsTab.style.display='';
+  }
+  // L&D admin section — only super admin
+  var lndAdmin=$('lndAdmin');if(lndAdmin)lndAdmin.style.display=isSuperAdmin()?'block':'none';
+
+  // Role badge in nav
+  var chip=$('navUserChip');
   if(chip&&window.currentUserRole){
-    var rl=role==='super_admin'?'Super Admin':role==='brand_admin'?'Brand Admin':'Agent';
-    chip.innerHTML='<b>'+esc(window.currentUserRole.name||'')+'</b> <span style="font-size:8px;padding:2px 6px;border-radius:4px;background:'+(role==='super_admin'?'rgba(212,175,106,.15);color:#C4A55A':role==='brand_admin'?'rgba(43,76,126,.15);color:#5B9BD5':'var(--bg-tertiary);color:var(--tx3)')+'">'+rl+'</span>';
+    var roleLabels={super_admin:'Super Admin',brand_manager:'Brand Manager',senior_agent:'Senior Agent',agent:'Agent'};
+    var roleColors={super_admin:'rgba(212,175,106,.15);color:#C4A55A',brand_manager:'rgba(43,76,126,.15);color:#5B9BD5',senior_agent:'rgba(48,209,88,.12);color:#30D158',agent:'var(--bg-tertiary);color:var(--tx3)'};
+    var rl=roleLabels[role]||role;
+    var brandNames=isSuperAdmin()?'All Brands':getVisibleBrands().map(function(b){return b.name}).join(', ')||'No brands';
+    chip.innerHTML='<b>'+esc(window.currentUserRole.name||'')+'</b> <span style="font-size:8px;padding:2px 6px;border-radius:4px;background:'+(roleColors[role]||'var(--bg-tertiary);color:var(--tx3)')+'">'+rl+'</span>'
+      +'<span style="font-size:7px;color:var(--tx3);margin-left:4px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle">'+esc(brandNames)+'</span>';
   }
+  // Render brand switcher
+  renderBrandSwitcher();
 }
+
+// ── Access denied screen ──
+function showAccessDenied(message){
+  var gate=$('loginGate');
+  if(gate)gate.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:12px"><div style="font-size:48px">&#x1F512;</div><div style="font-size:20px;font-weight:600;color:#fff">Access Denied</div><div style="font-size:13px;color:#888;max-width:360px;text-align:center;line-height:1.6">'+esc(message)+'</div><button class="btn ghost" onclick="SB.client.auth.signOut();location.reload()" style="margin-top:12px">Sign Out</button></div>';
+}
+
+// ── User Management (role-aware) ──
+function showAddUserForm(){
+  if(!isBrandManager()){alert('You do not have permission to add users.');return}
+  var myRole=window.currentUserRole?.role;
+  var roleOptions='<option value="agent">Agent</option><option value="senior_agent">Senior Agent</option>';
+  if(myRole==='super_admin')roleOptions+='<option value="brand_manager">Brand Manager</option>';
+  var availBrands=getVisibleBrands();
+  $('modal').classList.add('open');
+  $('modalTitle').textContent='Add Team Member';
+  $('modalBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<div><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">Full Name</label><input id="nuName" placeholder="e.g. Mark Wilson" style="width:100%"></div>'
+    +'<div><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">Email</label><input id="nuEmail" type="email" placeholder="e.g. mark@ivytravel.co.uk" style="width:100%"></div>'
+    +'<div><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">Password (first login)</label><input id="nuPassword" type="text" placeholder="Min 6 characters" style="width:100%"></div>'
+    +'<div><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">Role</label><select id="nuRole" style="width:100%">'+roleOptions+'</select></div>'
+    +'<div><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">Assign to Brand(s)</label>'
+    +'<div style="display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto;padding:8px;border:1px solid var(--bd);border-radius:8px">'
+    +availBrands.map(function(b){return '<label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;padding:2px 0"><input type="checkbox" class="nuBrandCb" value="'+esc(b.id)+'" style="width:auto;accent-color:'+(b.brandColor||'#C4A55A')+'"><span style="width:8px;height:8px;border-radius:50%;background:'+(b.brandColor||'#C4A55A')+';flex-shrink:0"></span>'+esc(b.name)+'</label>'}).join('')
+    +'</div></div>'
+    +'<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="createNewUser()" style="flex:1">Create User</button><button class="btn ghost" onclick="closeModal()" style="flex:1">Cancel</button></div></div>';
+}
+window.showAddUserForm=showAddUserForm;
+
+async function createNewUser(){
+  var name=($('nuName')||{}).value?.trim();
+  var email=($('nuEmail')||{}).value?.trim().toLowerCase();
+  var password=($('nuPassword')||{}).value;
+  var role=($('nuRole')||{}).value||'agent';
+  var selectedBrands=[].slice.call(document.querySelectorAll('.nuBrandCb:checked')).map(function(cb){return cb.value});
+  if(!name||name.length<2){alert('Enter a name');return}
+  if(!email||!email.includes('@')){alert('Enter a valid email');return}
+  if(!password||password.length<6){alert('Password must be 6+ characters');return}
+  if(!selectedBrands.length){alert('Assign at least one brand');return}
+  if(window.currentUserRole?.role==='brand_manager'&&role==='brand_manager'){alert('Only the Super Admin can create Brand Manager accounts.');return}
+  if(role==='super_admin'){alert('Super Admin role cannot be assigned');return}
+  // Brand manager cannot assign brands outside their own
+  if(window.currentUserRole?.role==='brand_manager'){
+    var myB=window.currentUserRole.assignedBrands||[];
+    var invalid=selectedBrands.filter(function(b){return!myB.includes(b)});
+    if(invalid.length){alert('You can only assign brands you manage');return}
+  }
+  try{
+    var authRes=await SB.client.auth.signUp({email:email,password:password});
+    if(authRes.error&&!authRes.error.message.includes('already registered'))throw authRes.error;
+    var dbRes=await SB.client.from('qg_users').upsert({email:email,name:name,role:role,assigned_brands:selectedBrands,created_by:window.currentUserRole?.email||'',active:true},{onConflict:'email'});
+    if(dbRes.error)throw dbRes.error;
+    closeModal();renderUsers();
+    var roleLabel={brand_manager:'Brand Manager',senior_agent:'Senior Agent',agent:'Agent'}[role]||role;
+    var brandLabels=selectedBrands.map(function(id){return(brands.find(function(b){return b.id===id})||{}).name||id}).join(', ');
+    alert('Created '+roleLabel+': '+name+'\nBrands: '+brandLabels+'\nEmail: '+email);
+    if(typeof logAct==='function')logAct('user.created',name+' ('+email+') as '+roleLabel);
+  }catch(e){alert('Error: '+e.message)}
+}
+window.createNewUser=createNewUser;
+
+async function editUserRole(userId){
+  var res=await SB.client.from('qg_users').select('*').eq('id',userId).single();
+  if(res.error||!res.data)return;
+  var user=res.data;
+  if(user.email.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase()){alert('Super Admin cannot be edited');return}
+  var myRole=window.currentUserRole?.role;
+  var availBrands=myRole==='super_admin'?brands:brands.filter(function(b){return(window.currentUserRole?.assignedBrands||[]).includes(b.id)});
+  var roleOpts='<option value="agent" '+(user.role==='agent'?'selected':'')+'>Agent</option><option value="senior_agent" '+(user.role==='senior_agent'?'selected':'')+'>Senior Agent</option>';
+  if(myRole==='super_admin')roleOpts+='<option value="brand_manager" '+(user.role==='brand_manager'?'selected':'')+'>Brand Manager</option>';
+  $('modal').classList.add('open');
+  $('modalTitle').textContent='Edit User: '+(user.name||user.email);
+  $('modalBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<div><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">Name</label><input id="euName" value="'+esc(user.name||'')+'" style="width:100%"></div>'
+    +'<div><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">Role</label><select id="euRole" style="width:100%">'+roleOpts+'</select></div>'
+    +'<div><label style="font-size:11px;color:var(--tx2);display:block;margin-bottom:4px">Assigned Brands</label>'
+    +'<div style="display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto;padding:8px;border:1px solid var(--bd);border-radius:8px">'
+    +availBrands.map(function(b){return '<label style="display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer;padding:2px 0"><input type="checkbox" class="euBrandCb" value="'+esc(b.id)+'" '+((user.assigned_brands||[]).includes(b.id)?'checked':'')+' style="width:auto;accent-color:'+(b.brandColor||'#C4A55A')+'"><span style="width:8px;height:8px;border-radius:50%;background:'+(b.brandColor||'#C4A55A')+';flex-shrink:0"></span>'+esc(b.name)+'</label>'}).join('')
+    +'</div></div>'
+    +'<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="saveUserEdit(\''+userId+'\')" style="flex:1">Save Changes</button><button class="btn ghost" onclick="closeModal()" style="flex:1">Cancel</button></div></div>';
+}
+window.editUserRole=editUserRole;
+
+async function saveUserEdit(userId){
+  var name=($('euName')||{}).value?.trim();
+  var role=($('euRole')||{}).value;
+  var selectedBrands=[].slice.call(document.querySelectorAll('.euBrandCb:checked')).map(function(cb){return cb.value});
+  if(!name){alert('Enter a name');return}
+  if(!selectedBrands.length){alert('Assign at least one brand');return}
+  if(role==='super_admin'){alert('Cannot assign Super Admin role');return}
+  try{
+    await SB.client.from('qg_users').update({name:name,role:role,assigned_brands:selectedBrands}).eq('id',userId);
+    closeModal();renderUsers();
+    if(typeof logAct==='function')logAct('user.edited',name+' → '+role);
+  }catch(e){alert('Error: '+e.message)}
+}
+window.saveUserEdit=saveUserEdit;
+
+async function toggleUserFreeze(userId,currentlyActive){
+  var action=currentlyActive?'freeze':'unfreeze';
+  if(!confirm('Are you sure you want to '+action+' this user?'))return;
+  await SB.client.from('qg_users').update({active:!currentlyActive}).eq('id',userId);
+  if(typeof logAct==='function')logAct('user.'+action,userId);
+  renderUsers();
+}
+window.toggleUserFreeze=toggleUserFreeze;
+
+async function rbacDeleteUser(userId){
+  if(!confirm('Permanently delete this user? They will lose access immediately.'))return;
+  if(!confirm('This cannot be undone. Are you absolutely sure?'))return;
+  await SB.client.from('qg_users').delete().eq('id',userId);
+  if(typeof logAct==='function')logAct('user.deleted',userId);
+  renderUsers();
+}
+window.rbacDeleteUser=rbacDeleteUser;
 
 /* ============================================================
    AUTH + ADMIN PANEL SYSTEM (Supabase Auth + cloud sync)
@@ -4926,21 +5178,25 @@ function setupRoleAccess(){
   async function showApp(){
     const email=SB.user?.email||'Agent';
     const name=SB.user?.user_metadata?.name||email.split('@')[0];
-    // Check user role
+    // Check user role via 4-tier RBAC
     errEl.textContent='Checking access...';
     window.currentUserRole=await getUserRole();
-    // If no role record found — grant full access (backwards compatible with existing users)
+    // Handle denied/frozen/null
     if(!window.currentUserRole){
-      window.currentUserRole={role:'super_admin',assignedBrands:'__all__',name:name};
+      showAccessDenied('Unable to verify your account. Please contact your administrator.');
+      return;
+    }
+    if(window.currentUserRole.role==='denied'){
+      showAccessDenied(window.currentUserRole.message||'Account not set up.');
+      return;
     }
     if(window.currentUserRole.role==='frozen'){
       errEl.textContent='';
-      document.getElementById('loginGate').innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh"><div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:16px">❄️</div><div style="font-size:18px;color:#fff;margin-bottom:8px">Account Frozen</div><div style="font-size:13px;color:#888">Your account has been frozen. Contact your administrator.</div></div></div>';
+      showAccessDenied('Your account has been frozen. Please contact your manager.');
       return;
     }
     gate.classList.add('hidden');
-    document.getElementById('navUserName').textContent=name;
-    document.getElementById('navAdminTab').style.display='';
+    document.getElementById('navUserName').textContent=window.currentUserRole.name||name;
     setupRoleAccess();
     // Pull data from cloud
     try{
@@ -4948,10 +5204,12 @@ function setupRoleAccess(){
       await SB.pullAll();
       brands=load(LS.brands,[]);quotes=load(LS.quotes,[]);library=load(LS.library,[]);
       renderBrandDropdown();renderDashboard();
+      // Re-render brand switcher after brands loaded
+      renderBrandSwitcher();
     }catch(e){console.warn('Pull error:',e)}
     errEl.textContent='';
     renderUsers();renderAdmQuotes();renderTemplates();renderLog();
-    logAct('login',email);
+    logAct('login',email+' ('+window.currentUserRole.role+')');
     // Start notification polling
     if(typeof startNotifPolling==='function')startNotifPolling();
   }
@@ -5016,68 +5274,55 @@ function setupRoleAccess(){
   });
 
   // ---- USERS ----
+  // ── RBAC-aware renderUsers (uses global RBAC functions) ──
   async function renderUsers(){
-    const tb=document.getElementById('admUsersTbody');if(!tb)return;
-    const myEmail=SB.user?.email||'';
-    if(SB.client){
-      try{
-        const{data,error}=await SB.client.rpc('list_agents');
-        if(!error&&data&&data.length){
-          tb.innerHTML=data.map(function(u){
-            var isMe=u.email===myEmail;
-            var isSA=u.email.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase();
-            var actions=isMe?'<span style="color:var(--success);font-size:11px">● You</span>':
-              isSA?'<span style="color:var(--gold);font-size:10px">🔒 Super Admin</span>':
-              '<button class="adm-btn ghost" style="padding:4px 10px;font-size:10px" onclick="resetAgentPw(\''+u.id+'\',\''+esc(u.email)+'\')">Reset PW</button> '+
-              '<button class="adm-btn danger" style="padding:4px 10px;font-size:10px" onclick="deleteAgent(\''+u.id+'\',\''+esc(u.email)+'\')">Delete</button>';
-            return '<tr><td><b>'+esc(u.email)+'</b></td><td>'+esc(u.name||'')+'</td><td>'+fmtTs(u.created_at)+'</td><td>'+(u.last_sign_in?fmtTs(u.last_sign_in):'Never')+'</td><td style="text-align:right">'+actions+'</td></tr>';
-          }).join('');
-          return;
-        }
-      }catch(e){console.warn('List agents:',e)}
-    }
-    tb.innerHTML='<tr><td><b>'+esc(myEmail)+'</b></td><td>'+esc(SB.user?.user_metadata?.name||'')+'</td><td>'+(SB.user?.created_at?fmtTs(SB.user.created_at):'—')+'</td><td>'+(SB.user?.last_sign_in_at?fmtTs(SB.user.last_sign_in_at):'—')+'</td><td style="text-align:right"><span style="color:var(--success);font-size:11px">● You</span></td></tr>';
-  }
-  window.deleteAgent=async function(id,email){
-    if(email.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase()){alert('Cannot delete the Super Admin account.');return}
-    if(!confirm('Delete agent '+email+'? This cannot be undone.'))return;
+    var tb=document.getElementById('admUsersTbody');if(!tb)return;
+    if(!SB.client||!isBrandManager()){tb.innerHTML='';return}
+    var subtitle=document.getElementById('admUsersSubtitle');
     try{
-      var{error}=await SB.client.rpc('delete_agent',{agent_id:id});
-      if(error)throw error;
-      logAct('agent.deleted',email);
-      await renderUsers();
-      alert('Agent '+email+' deleted.');
-    }catch(e){alert('Delete failed: '+(e.message||e))}
-  };
-  window.resetAgentPw=async function(id,email){
-    var np=prompt('New password for '+email+' (min 6 chars):');
-    if(!np||np.length<6){if(np)alert('Password must be at least 6 characters');return}
-    try{
-      var{error}=await SB.client.rpc('reset_agent_password',{agent_id:id,new_password:np});
-      if(error)throw error;
-      logAct('agent.resetPassword',email);
-      alert('Password updated for '+email);
-    }catch(e){alert('Reset failed: '+(e.message||e))}
-  };
-  document.getElementById('admAddUserBtn').addEventListener('click',async()=>{
-    const email=document.getElementById('admNewUser').value.trim();
-    const pass=document.getElementById('admNewPass').value.trim();
-    const name=document.getElementById('admNewRole').value.trim()||email.split('@')[0];
-    if(!email||!pass){alert('Email and password required');return}
-    if(!email.includes('@')){alert('Enter a valid email address');return}
-    if(pass.length<6){alert('Password must be at least 6 characters');return}
-    try{
-      const{data,error}=await SB.client.rpc('create_agent',{agent_email:email,agent_password:pass,agent_name:name});
-      if(error)throw error;
-      logAct('agent.registered',email);
-      document.getElementById('admNewUser').value='';document.getElementById('admNewPass').value='';document.getElementById('admNewRole').value='';
-      await renderUsers();
-      alert('✅ Agent registered: '+email+'\n\nThey can now log in with this email and password.');
+      var res=await SB.client.from('qg_users').select('*').order('created_at',{ascending:false});
+      var allUsers=res.data||[];
+      var visible=allUsers;
+      // Brand manager: only users assigned to their brands
+      if(window.currentUserRole?.role==='brand_manager'){
+        var myBrands=window.currentUserRole.assignedBrands||[];
+        visible=visible.filter(function(u){return(u.assigned_brands||[]).some(function(b){return myBrands.includes(b)})});
+      }
+      // Filter by active brand
+      var activeBrand=getActiveBrandFilter();
+      if(activeBrand)visible=visible.filter(function(u){return(u.assigned_brands||[]).includes(activeBrand)});
+      if(subtitle)subtitle.textContent=visible.length+' member'+(visible.length!==1?'s':'')+(activeBrand?' in '+(brands.find(function(b){return b.id===activeBrand})||{}).name||'':'');
+      var roleLabels={super_admin:'Super Admin',brand_manager:'Brand Manager',senior_agent:'Senior Agent',agent:'Agent'};
+      var roleColors={super_admin:'#C4A55A',brand_manager:'#5B9BD5',senior_agent:'#30D158',agent:'#888'};
+      tb.innerHTML=visible.map(function(u){
+        var isSelf=(u.email||'')===window.currentUserRole?.email;
+        var isSA=u.email.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase();
+        var clr=roleColors[u.role]||'#888';
+        var brandNames=(u.assigned_brands||[]).map(function(bid){return(brands.find(function(b){return b.id===bid})||{}).name||bid}).join(', ');
+        var canEdit=isSuperAdmin()||(window.currentUserRole?.role==='brand_manager'&&(u.role==='agent'||u.role==='senior_agent'));
+        var canDelete=canEdit&&!isSelf&&!isSA;
+        var lastLogin=u.last_login?fmtTs(u.last_login):'Never';
+        var actions=isSA?'<span style="font-size:8px;color:var(--gold)">Protected</span>':
+          isSelf?'<span style="color:var(--success);font-size:10px">You</span>':
+          canEdit?'<div style="display:flex;gap:3px">'
+            +'<button class="adm-btn ghost" style="padding:3px 8px;font-size:9px" onclick="editUserRole(\''+u.id+'\')">Edit</button>'
+            +'<button class="adm-btn ghost" style="padding:3px 8px;font-size:9px" onclick="toggleUserFreeze(\''+u.id+'\','+u.active+')">'+(u.active?'Freeze':'Unfreeze')+'</button>'
+            +(canDelete?'<button class="adm-btn danger" style="padding:3px 8px;font-size:9px" onclick="rbacDeleteUser(\''+u.id+'\')">Del</button>':'')
+            +'</div>':'—';
+        return '<tr>'
+          +'<td><b>'+esc(u.name||'—')+'</b>'+(isSelf?' <span style="font-size:7px;color:var(--gold)">(you)</span>':'')+'</td>'
+          +'<td style="font-size:10px;color:var(--tx2)">'+esc(u.email)+'</td>'
+          +'<td><span style="padding:2px 6px;border-radius:3px;font-size:8px;font-weight:600;background:'+clr+'20;color:'+clr+'">'+esc(roleLabels[u.role]||u.role)+'</span></td>'
+          +'<td style="font-size:9px;max-width:120px;overflow:hidden;text-overflow:ellipsis" title="'+esc(brandNames)+'">'+esc(brandNames||'—')+'</td>'
+          +'<td>'+(u.active?'<span style="color:#30D158;font-size:10px">Active</span>':'<span style="color:#FF3B30;font-size:10px">Frozen</span>')+'</td>'
+          +'<td style="font-size:9px;color:var(--tx3)">'+lastLogin+'</td>'
+          +'<td style="text-align:right">'+actions+'</td></tr>';
+      }).join('')||'<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--tx3)">No users found</td></tr>';
     }catch(e){
-      console.error('Create agent error:',e);
-      alert('Registration failed: '+(e.message||e));
+      console.warn('renderUsers:',e);
+      tb.innerHTML='<tr><td colspan="7" style="color:var(--danger)">Error loading users</td></tr>';
     }
-  });
+  }
 
   // ---- QUOTES (admin view) ----
   var _admImgPending=[];
@@ -5179,12 +5424,11 @@ function setupRoleAccess(){
     if(!stats||!tbl)return;
     if(!SB.user||!SB.client){tbl.innerHTML='<p style="color:var(--tx3)">Log in to view shared quotes.</p>';return}
     try{
-      var res=await SB.client.from('qg_shared_quotes').select('*').order('created_at',{ascending:false});
-      if(res.error)throw res.error;
+      var quotes=await getVisibleSharedQuotes();
       var allViews=[];
       try{var vr=await SB.client.from('qg_quote_views').select('*').order('viewed_at',{ascending:false});allViews=vr.data||[]}catch(e){}
       var viewsByToken={};allViews.forEach(function(v){if(!viewsByToken[v.token])viewsByToken[v.token]=[];viewsByToken[v.token].push(v)});
-      var quotes=res.data||[];window._sharedQuotesCache=quotes;var now=new Date();
+      window._sharedQuotesCache=quotes;var now=new Date();
       var active=quotes.filter(function(q){return !q.expires_at||new Date(q.expires_at)>now});
       var totalViews=quotes.reduce(function(a,q){return a+(q.views||0)},0);
       var totalUnique=quotes.reduce(function(a,q){return a+(q.unique_views||0)},0);
@@ -5399,7 +5643,8 @@ function setupRoleAccess(){
   function renderAdmQuotes(){
     const tb=document.getElementById('admQuotesTbody');if(!tb)return;
     const q=(document.getElementById('admQSearch').value||'').toLowerCase();
-    const list=load(LS.quotes,[]).filter(x=>{
+    const allQuotes=getVisibleQuotes();
+    const list=allQuotes.filter(x=>{
       if(!q)return true;
       return (x.quoteNo||'').toLowerCase().includes(q)||(x.clientName||'').toLowerCase().includes(q)||(x.brandCode||'').toLowerCase().includes(q);
     });
