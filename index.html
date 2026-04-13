@@ -1301,6 +1301,7 @@ body.viewer-mode #quoteViewer{display:block!important}
         <button class="btn ghost" onclick="shareQuoteLink()" style="border-color:var(--bd-gold);color:var(--gold)">🔗 Share Link</button>
         <button class="btn ghost" onclick="sendWhatsApp()">📱 WhatsApp</button>
         <button class="btn ghost" onclick="sendEmail()">✉️ Email</button>
+        <button class="btn ghost" onclick="manualApproveQuote()" style="border-color:#30D158;color:#30D158">✅ Approve</button>
         <button class="btn ghost" onclick="openLibrary('save')">⭐ Save to Library</button>
       </div>
     </div>
@@ -3555,6 +3556,28 @@ async function loadDashAnalytics(){
   }catch(e){}
 }
 $('dashSearch').addEventListener('input',renderDashboard);
+
+// ====== MANUAL QUOTE APPROVAL ======
+async function manualApproveQuote(){
+  if(!current){alert('Open a quote first');return}
+  if(!SB.user||!SB.client){alert('Please log in');return}
+  // Find the shared quote for this quote number
+  try{
+    var res=await SB.client.from('qg_shared_quotes').select('token,approved,approved_name,approved_at').eq('quote_data->>quoteNo',current.quoteNo);
+    var shared=res.data&&res.data.length?res.data[0]:null;
+    if(!shared){alert('This quote has not been shared yet. Send the link first, then approve.');return}
+    if(shared.approved){
+      alert('This quote is already approved'+(shared.approved_name?' by '+shared.approved_name:'')+(shared.approved_at?' on '+new Date(shared.approved_at).toLocaleDateString('en-GB'):'')+'.');
+      return;
+    }
+    var name=prompt('Client name confirming approval:',current.clientName||'');
+    if(!name)return;
+    if(!confirm('Mark this quote as APPROVED by '+name+'?'))return;
+    await SB.client.from('qg_shared_quotes').update({approved:true,approved_at:new Date().toISOString(),approved_name:name.trim()}).eq('token',shared.token);
+    current.status='accepted';$('status').value='accepted';autoSave();
+    alert('✅ Quote approved! Status set to Accepted.');
+  }catch(e){alert('Error: '+e.message)}
+}
 
 // ====== AI AUTO-FILL SYSTEM ======
 function initAiSettings(){
